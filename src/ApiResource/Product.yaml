@@ -1,0 +1,29 @@
+App\Entity\Product:
+    operations:
+        get_product:
+            method: 'GET'
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/product/{id}'
+            normalizationContext:
+                groups: ['product:read','image:read','id:read']
+            openapi:
+                summary: 'Get a product'
+                description: 'Get a product by id'
+                parameters:
+                    - name: 'id'
+                      in: 'path'
+                      description:  'The id of the product'
+
+        get_products:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/product'
+            normalizationContext:
+                groups:  ['product:read','image:read','id:read']
+            openapi:
+                summary: 'Get all products'
+                description: 'Get all products'
+
+    normalizationContext:
+        groups: ['product:read']
+                      

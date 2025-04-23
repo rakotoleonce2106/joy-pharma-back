@@ -1,0 +1,29 @@
+App\Entity\Category:
+    operations:
+        get_category:
+            method: 'GET'
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/category/{id}'
+            normalizationContext:
+                groups: ['category:read']
+            openapi:
+                summary: 'Get a category'
+                description: 'Get a category by id'
+                parameters:
+                    - name: 'id'
+                      in: 'path'
+                      description:  'The id of the category'
+
+        get_categories:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/category'
+            normalizationContext:
+                groups: ['category:read']
+            openapi:
+                summary: 'Get all categories'
+                description: 'Get all categories'
+
+    normalizationContext:
+        groups: ['category:read']
+                      

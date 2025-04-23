@@ -4,6 +4,9 @@
 namespace App\Entity;
 
 
+use App\Entity\Traits\EntityIdTrait;
+use App\Entity\Traits\EntityStatusTrait;
+use App\Entity\Traits\EntityTimestampTrait;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
 use Vich\UploaderBundle\Entity\File as EmbeddedFile;
@@ -24,11 +27,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
 
 
-    #[Groups(['user:read'])]
-    #[ORM\Id]
-    #[ORM\Column(type: 'integer')]
-    #[ORM\GeneratedValue]
-    private ?int $id = null;
+    use EntityIdTrait;
+    use EntityStatusTrait;
+    use EntityTimestampTrait;
 
     #[Assert\NotBlank]
     #[Assert\Email]
@@ -68,21 +69,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?EmbeddedFile $image = null;
 
 
-    #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
-
-    #[ORM\Column]
-    private ?\DateTimeImmutable $updatedAt = null;
-
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->image = new EmbeddedFile();
-    }
-
-    public function getId(): ?int
-    {
-        return $this->id;
     }
 
     public function getEmail(): ?string
@@ -209,10 +199,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
-    {
-        return $this->updatedAt;
-    }
+
 
     public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
     {

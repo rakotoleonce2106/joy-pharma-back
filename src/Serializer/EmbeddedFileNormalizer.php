@@ -3,6 +3,7 @@
 
 namespace App\Serializer;
 
+use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Vich\UploaderBundle\Entity\File as EmbeddedFile;
 
@@ -10,7 +11,7 @@ class EmbeddedFileNormalizer implements NormalizerInterface
 {
     private $router;
 
-    public function __construct(\Symfony\Component\Routing\RouterInterface $router)
+    public function __construct(RouterInterface $router)
     {
         $this->router = $router;
     }
@@ -26,7 +27,7 @@ class EmbeddedFileNormalizer implements NormalizerInterface
             'name' => $object->getName(),
             'size' => $object->getSize(),
             'mimeType' => $object->getMimeType(),
-            'url' => '/uploads/products/' . $object->getName()
+            'url' => '/images/profile/' . $object->getName()
             // If you need a more dynamic URL, use the router
             // 'url' => $this->router->generate('image_path', ['filename' => $object->getName()])
         ];
@@ -43,4 +44,6 @@ class EmbeddedFileNormalizer implements NormalizerInterface
             EmbeddedFile::class => true,
         ];
     }
+
+
 }

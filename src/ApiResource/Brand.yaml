@@ -1,0 +1,29 @@
+App\Entity\Brand:
+    operations:
+        get_brand:
+            method: 'GET'
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/brand/{id}'
+            normalizationContext:
+                groups: ['brand:read']
+            openapi:
+                summary: 'Get a brand'
+                description: 'Get a brand by id'
+                parameters:
+                    - name: 'id'
+                      in: 'path'
+                      description:  'The id of the brand'
+
+        get_brands:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/brand'
+            normalizationContext:
+                groups: ['brand:read']
+            openapi:
+                summary: 'Get all brands'
+                description: 'Get all brands'
+
+    normalizationContext:
+        groups: ['brand:read']
+                      
