@@ -30,7 +30,7 @@ class MediaFile
     #[Groups(['image:read'])]
     private ?string $url = null;
 
-    #[ORM\ManyToOne(inversedBy: 'images')]
+    #[ORM\ManyToOne(targetEntity: Product::class, cascade: ['persist'], inversedBy: 'images')]
     private ?Product $product = null;
 
 

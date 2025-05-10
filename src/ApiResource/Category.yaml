@@ -19,11 +19,12 @@ App\Entity\Category:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/category'
             normalizationContext:
-                groups: ['category:read']
+                groups: ['id:read','category:read']
             openapi:
                 summary: 'Get all categories'
                 description: 'Get all categories'
+                
 
     normalizationContext:
-        groups: ['category:read']
+        groups: ['id:read','category:read']
                       

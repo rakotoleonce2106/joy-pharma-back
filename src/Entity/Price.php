@@ -25,10 +25,10 @@ class Price
     #[Groups(['product:read'])]
     private ?float $totalPrice = null;
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
+    #[ORM\Column(length: 255)]
+    #[Groups(['product:read'])]
+    private ?string $currency = null;
+
 
     public function getQuantity(): ?Quantity
     {
@@ -62,6 +62,18 @@ class Price
     public function setTotalPrice(?float $totalPrice): static
     {
         $this->totalPrice = $totalPrice;
+
+        return $this;
+    }
+
+    public function getCurrency(): ?string
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(string $currency): static
+    {
+        $this->currency = $currency;
 
         return $this;
     }

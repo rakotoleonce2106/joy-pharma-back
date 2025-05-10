@@ -3,20 +3,18 @@
 namespace App\Entity\Traits;
 
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Uid\Uuid;
 
 trait EntityIdTrait
 {
     #[ORM\Id]
-    #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
-    #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
+    #[ORM\Column(type: 'integer')]
+    #[ORM\GeneratedValue]
     #[Groups(['id:read'])]
-    private ?Uuid $id = null;
+    private ?int $id = null;
 
-    public function getId(): ?Uuid
+
+    public function getId(): ?int
     {
         return $this->id;
     }

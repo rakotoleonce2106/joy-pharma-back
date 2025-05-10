@@ -2,16 +2,23 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiFilter;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityStatusTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\ProductRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
+#[ApiFilter(SearchFilter::class, properties: [
+    '$name' => 'ipartial',
+    'category.id' => 'exact',
+])]
 class Product
 {
     use EntityIdTrait;
@@ -27,7 +34,7 @@ class Product
     private ?string $code = null;
 
 
-    #[ORM\Column(length: 2000, nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['product:read'])]
     private ?string $description = null;
 
@@ -59,7 +66,6 @@ class Product
      * @var Collection<int, Category>
      */
     #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'products')]
-    #[Groups(['product:read'])]
     private Collection $category;
 
     /**
@@ -68,6 +74,17 @@ class Product
     #[ORM\ManyToMany(targetEntity: Restricted::class, inversedBy: 'products')]
     #[Groups(['product:read'])]
     private Collection $restricted;
+
+    #[ORM\Column]
+    #[Groups(['product:read'])]
+    private ?bool $isActive = null;
+
+    #[ORM\Column(type: Types::ARRAY, nullable: true)]
+    #[Groups(['product:read'])]
+    private ?array $variants = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $salesCount = null;
 
     public function __construct()
     {
@@ -235,6 +252,42 @@ class Product
     public function removeRestricted(Restricted $restricted): static
     {
         $this->restricted->removeElement($restricted);
+
+        return $this;
+    }
+
+    public function isActive(): ?bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    public function getVariants(): ?array
+    {
+        return $this->variants;
+    }
+
+    public function setVariants(?array $variants): static
+    {
+        $this->variants = $variants;
+
+        return $this;
+    }
+
+    public function getSalesCount(): ?int
+    {
+        return $this->salesCount;
+    }
+
+    public function setSalesCount(?int $salesCount): static
+    {
+        $this->salesCount = $salesCount;
 
         return $this;
     }

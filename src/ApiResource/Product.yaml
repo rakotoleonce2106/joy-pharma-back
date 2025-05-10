@@ -1,11 +1,21 @@
 App\Entity\Product:
     operations:
+        add_products:
+            method: "POST"
+            class: ApiPlatform\Metadata\Post
+            controller: 'App\Controller\Api\Product\AddProductController'
+            uriTemplate: "/products"
+            deserialize: false
+            openapi:
+                summary: "Add products"
+                description: "Add products"
+                
         get_product:
             method: 'GET'
             class: ApiPlatform\Metadata\Get
             uriTemplate: '/product/{id}'
             normalizationContext:
-                groups: ['product:read','image:read','id:read']
+                groups: ['id:read','product:read','image:read']
             openapi:
                 summary: 'Get a product'
                 description: 'Get a product by id'
@@ -17,13 +27,22 @@ App\Entity\Product:
         get_products:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
-            uriTemplate: '/product'
+            uriTemplate: '/products'
             normalizationContext:
-                groups:  ['product:read','image:read','id:read']
+                groups:  ['id:read','product:read','image:read']
             openapi:
                 summary: 'Get all products'
                 description: 'Get all products'
+                
+        get_products_summary:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            controller: 'App\Controller\Api\Product\ProductSummaryController'
+            uriTemplate: '/products/home'
+            openapi:
+                summary: 'Get all products home'
+                description: 'Get all products home'
 
     normalizationContext:
-        groups: ['product:read']
+        groups: ['id:read','product:read']
                       

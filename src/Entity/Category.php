@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiFilter;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\CategoryRepository;
@@ -9,8 +10,12 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
+#[ApiFilter(SearchFilter::class, properties: [
+    'parent' => 'exact',
+])]
 class Category
 {
     use EntityIdTrait;
@@ -20,21 +25,33 @@ class Category
     private ?string $name = null;
 
 
-    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'categories')]
+    #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['category:read','product:read'])]
+    private ?string $description = null;
+
+    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[Groups(['category:read','product:read'])]
+    private ?MediaFile $svg = null;
+
+    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[Groups(['category:read','product:read'])]
+    private ?MediaFile $image = null;
+
+
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'categories')]
     private ?self $parent = null;
 
     /**
      * @var Collection<int, self>
      */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
-    #[Groups(['category:read'])]
     private Collection $categories;
 
     /**
      * @var Collection<int, self>
      */
     #[ORM\ManyToMany(targetEntity: self::class, inversedBy: 'categories')]
+    #[Groups(['category:read'])]
     private Collection $children;
 
     /**
@@ -43,6 +60,8 @@ class Category
     #[ORM\ManyToMany(targetEntity: Product::class, mappedBy: 'category')]
     private Collection $products;
 
+
+
     public function __construct()
     {
         $this->categories = new ArrayCollection();
@@ -50,6 +69,12 @@ class Category
         $this->products = new ArrayCollection();
     }
 
+
+
+    public function getDisplayProducts(): ?Collection
+    {
+        return $this->getParent() === null ? $this->products : null;
+    }
 
     public function getName(): ?string
     {
@@ -152,6 +177,42 @@ class Category
         if ($this->products->removeElement($product)) {
             $product->removeCategory($this);
         }
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getSvg(): ?MediaFile
+    {
+        return $this->svg;
+    }
+
+    public function setSvg(?MediaFile $svg): static
+    {
+        $this->svg = $svg;
+
+        return $this;
+    }
+
+    public function getImage(): ?MediaFile
+    {
+        return $this->image;
+    }
+
+    public function setImage(?MediaFile $image): static
+    {
+        $this->image = $image;
 
         return $this;
     }

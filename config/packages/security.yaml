@@ -38,6 +38,7 @@ security:
        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
        - { path: ^/api/register, roles: PUBLIC_ACCESS }
        - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
+       - { path: ^/api/products }
     # - { path: ^/profile, roles: ROLE_USER }
 
 when@test:
