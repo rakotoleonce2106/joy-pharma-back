@@ -1,0 +1,19 @@
+<div {{ attributes }}>
+    {{ form_start(form, { attr: {
+        class: 'space-y-4',
+        'id': 'plan-form'
+    } }) }}
+    {{ form_row(form.name) }}
+    {{ form_row(form.price) }}
+    {{ form_row(form.interval) }}
+    {{ form_row(form.description) }}
+
+    <div class="items-center justify-center gap-2 mt-6 hidden turbo-frame:flex">
+        <twig:ui:button:root href="{{ path('admin_plans') }}" variant="outline">
+            {{ 'Discard'|trans }}
+        </twig:ui:button:root>
+        <twig:ui:button:root formnovalidate>{{ 'Save Plan'|trans }}</twig:ui:button:root>
+    </div>
+
+    {{ form_end(form) }}
+</div>

@@ -1,0 +1,5 @@
+{% set attrs = attributes.add(stimulus_target('ui--alert-dialog', 'cancel')) %}
+
+{% component 'ui:button:root' with {...attrs} %}
+    {% block content %}{{ block(outerBlocks.content) }}{% endblock %}
+{% endcomponent %}

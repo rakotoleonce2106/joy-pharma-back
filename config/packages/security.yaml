@@ -32,6 +32,14 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
+        admin:
+            pattern: ^/
+            provider: admin_users
+            custom_authenticator: App\Security\AdminAuthenticator
+            logout:
+                path: app_logout
+                target: app_home
+
 
     access_control:
        - { path: ^/admin, roles: ROLE_ADMIN }

@@ -1,0 +1,75 @@
+admin_top_menu:
+    tree:
+        dashboard:
+            label: "admin.menu.dashboard"
+            route: "admin_dashboard"
+            extras:
+                icon: "lucide:activity"
+
+        advertisement:
+            label: "admin.menu.advertisement"
+            route: "admin_advertisement"
+            extras:
+                icon: "arcticons:microsoft-advertising"
+                routes:
+                    - "admin_advertisement"
+
+        category:
+            label: "admin.menu.category"
+            route: "admin_category"
+            extras:
+                icon: "material-symbols:category-outline"
+                routes:
+                    - "admin_category"
+
+        genre:
+            label: "admin.menu.genre"
+            route: "admin_genre"
+            extras:
+                icon: "la:glide-g"
+                routes:
+                    - "admin_genre"
+
+        products:
+            label: "admin.menu.products"
+            route: "admin_products"
+            extras:
+                icon: "lucide:clapperboard"
+                routes:
+                    - "admin_products"
+
+
+        subscriptions:
+            label: "admin.menu.subscriptions"
+            route: "admin_subscriptions"
+            extras:
+                icon: "lucide:shopping-cart"
+
+        plans:
+            label: "admin.menu.plans"
+            route: "admin_plans"
+            extras:
+                icon: "lucide:box"
+                routes:
+                    - "admin_plans_create"
+                    - "admin_plans_edit"
+
+
+admin_bottom_menu:
+    tree:
+        dashboard:
+            label: "admin.menu.home"
+            route: "app_home"
+            extras:
+                icon: "lucide:home"
+
+        settings:
+            label: "admin.menu.settings"
+            extras:
+                icon: "lucide:settings"
+
+        logout:
+            label: "admin.menu.logout"
+            route: "app_logout"
+            extras:
+                icon: "lucide:log-out"

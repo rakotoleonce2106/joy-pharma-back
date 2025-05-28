@@ -1,0 +1,4 @@
+<a {{ attributes.without('class') }}
+        class="{{ ['transition-colors hover:text-foreground', attributes.render('class')] | tailwind_merge }}">
+    {% block content %}{% endblock %}
+</a>

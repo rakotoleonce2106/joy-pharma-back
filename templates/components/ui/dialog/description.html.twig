@@ -1,0 +1,4 @@
+<div {{ attributes.add(stimulus_target('ui--dialog', 'description')).without('class') }}
+        class="{{ ['text-sm text-muted-foreground', attributes.render('class')] | tailwind_merge }}">
+    {% block content %}{% endblock %}
+</div>

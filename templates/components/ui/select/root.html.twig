@@ -1,0 +1,8 @@
+{% props placement = 'bottom-start', trigger = 'click', dismissAfter = null, matchWidth = true, target = null, multiple = false %}
+
+<div {{ attributes.add(stimulus_controller(controllerName='ui--select', controllerValues={placement, trigger, dismissAfter, matchWidth, isMultiple: multiple}, controllerOutlets={
+    'ui--input': '#' ~ target,
+    'ui--text': '#' ~ target,
+})).without('class') }} class="{{ attributes.render('class') }}">
+    {% block content %}{% endblock %}
+</div>

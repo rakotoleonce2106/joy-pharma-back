@@ -1,0 +1,3 @@
+<div {{ attributes.add(stimulus_target('ui--sheet', 'close')).without('class') }} data-state="closed" class="{{ ['', attributes.render('class')] | tailwind_merge }}">
+    {% block content %}{% endblock %}
+</div>

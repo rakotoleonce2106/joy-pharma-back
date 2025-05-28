@@ -8,6 +8,7 @@ api_platform:
         jsonld: ['application/ld+json']
         json: ['application/json']
         multipart: [ 'multipart/form-data' ]
+        html: ['text/html']  # Add HTML support
     docs_formats:
         jsonld: ['application/ld+json']
         jsonopenapi: ['application/vnd.openapi+json']
@@ -19,4 +20,8 @@ api_platform:
         stateless: true
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
-            
+    enable_docs: true
+    enable_entrypoint: true
+    enable_swagger_ui: false
+    enable_re_doc: true
+    show_webby: false

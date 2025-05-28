@@ -1,0 +1,8 @@
+<span role="presentation"
+      aria-hidden="true"
+      class="{{ ['flex h-9 w-9 items-center justify-center', attributes.render('class')] |tailwind_merge }}"
+    {{ attributes.without('class') }}
+>
+    <twig:ux:icon name="radix-icons:dots-horizontal" class="h-4 w-4"/>
+    <span class="sr-only">More</span>
+</span>

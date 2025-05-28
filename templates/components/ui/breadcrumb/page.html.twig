@@ -1,0 +1,8 @@
+<span {{ attributes.without('class') }}
+        class="{{ ['font-normal text-foreground', attributes.render('class')] | tailwind_merge }}"
+        role="link"
+        aria-disabled="true"
+        aria-current="page"
+>
+    {% block content %}{% endblock %}
+</span>

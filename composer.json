@@ -49,7 +49,7 @@
         "symfony/ux-turbo": "^2.25.2",
         "symfony/validator": "7.2.*",
         "symfony/yaml": "7.2.*",
-        "symfonycasts/tailwind-bundle": "*",
+        "symfonycasts/tailwind-bundle": "^0.5.3",
         "vich/uploader-bundle": "^2.6.1"
     },
     "config": {

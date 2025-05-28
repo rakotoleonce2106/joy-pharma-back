@@ -1,0 +1,6 @@
+<span {{ attributes.add(stimulus_target('ui--checkbox', 'indicator')).without('class') }}
+        class="{{ ['flex items-center justify-center text-current', attributes.render('class')] | tailwind_merge }}"
+        style="pointer-events: none; display: none;"
+>
+    <twig:ux:icon name="radix-icons:check" class="w-4 h-4"/>
+</span>

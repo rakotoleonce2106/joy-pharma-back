@@ -1,0 +1,4 @@
+<tr {{ attributes.without('class') }}
+        class="{{ ['border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted', attributes.render('class')] | tailwind_merge }}">
+    {% block content %}{% endblock %}
+</tr>

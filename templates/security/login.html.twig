@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'Log in!'|trans }}{% endblock %}
+
+{% block body %}
+    <div class="w-full lg:grid min-h-screen">
+        <form method="post" class="flex items-center justify-center py-12 min-h-screen">
+            <twig:ui:card:root class="w-full max-w-sm">
+                <twig:ui:card:header>
+                    <twig:ui:card:title class="text-2xl">{{ 'Login'|trans }}</twig:ui:card:title>
+                    <twig:ui:card:description>
+                        {{ 'Enter your email below to login to your account.'|trans }}
+                    </twig:ui:card:description>
+                </twig:ui:card:header>
+
+                <twig:ui:card:content class="grid gap-4">
+                    {% if error %}
+                        <twig:ui:alert:root variant="destructive">
+                            <twig:ui:alert:title>{{ 'Error'|trans }}</twig:ui:alert:title>
+                            <twig:ui:alert:description>{{ error.messageKey|trans(error.messageData, 'security') }}</twig:ui:alert:description>
+                        </twig:ui:alert:root>
+                    {% endif %}
+
+                    <div class="grid gap-2">
+                        <twig:ui:label:root for="email">{{ 'Email'|trans }}</twig:ui:label:root>
+                        <twig:ui:input:default id="email" type="email" name="email" placeholder="{{ 'm@example.com'|trans }}" required="required"/>
+                    </div>
+                    <div class="grid gap-2">
+                        <twig:ui:label:root for="password">{{ 'Password'|trans }}</twig:ui:label:root>
+                        <twig:ui:input:default id="password" name="password" type="password" required="required"/>
+                    </div>
+                </twig:ui:card:content>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <twig:ui:card:footer>
+                    <twig:ui:button:root type="submit" class="w-full">{{ 'Sign in'|trans }}</twig:ui:button:root>
+                </twig:ui:card:footer>
+            </twig:ui:card:root>
+        </form>
+    </div>
+{% endblock %}

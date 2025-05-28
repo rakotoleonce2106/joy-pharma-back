@@ -1,0 +1,8 @@
+<li {{ attributes.without('class') }}
+        role="presentation"
+        aria-hidden="true"
+        class="{{ ['[&>svg]:size-3.5', attributes.render('class')] |tailwind_merge }}">
+    {% block content %}
+        <twig:ux:icon name="radix-icons:chevron-right"/>
+    {% endblock %}
+</li>

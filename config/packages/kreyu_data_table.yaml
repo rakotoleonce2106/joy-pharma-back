@@ -1,0 +1,10 @@
+kreyu_data_table:
+    defaults:
+        personalization:
+            enabled: true
+        filtration:
+            enabled: true
+        sorting:
+            enabled: true
+        themes:
+            - 'themes/datatable.html.twig'

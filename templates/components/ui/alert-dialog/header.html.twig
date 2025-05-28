@@ -1,0 +1,4 @@
+<div{{ attributes.add(stimulus_target('ui--alert-dialog', 'header')).without('class') }}
+        class="{{ ['flex flex-col space-y-2 text-center sm:text-left', attributes.render('class')] | tailwind_merge }}">
+    {% block content %}{% endblock %}
+</div>

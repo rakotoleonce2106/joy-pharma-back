@@ -1,0 +1,22 @@
+<div {{ attributes }}>
+    {{ form_start(form, { attr: {
+        class: 'space-y-4',
+        'id': 'product-form'
+    } }) }}
+    {{ form_row(form.title) }}
+    {{ form_row(form.description) }}
+    {{ form_row(form.date) }}
+    {{ form_row(form.rating) }}
+    {{ form_row(form.isActive) }}
+    {{ form_row(form.category) }}
+    {{ form_row(form.genres) }}
+    {{ form_row(form.trailer) }}
+    <div class="items-center justify-center gap-2 mt-6 hidden turbo-frame:flex">
+        <twig:ui:button:root href="{{ path('admin_products') }}" variant="outline">
+            {{ 'Discard'|trans }}
+        </twig:ui:button:root>
+        <twig:ui:button:root formnovalidate>{{ 'Save Product'|trans }}</twig:ui:button:root>
+    </div>
+
+    {{ form_end(form) }}
+</div>

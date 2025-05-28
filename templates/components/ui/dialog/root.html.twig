@@ -1,0 +1,7 @@
+<div
+        data-action="turbo:before-cache@window->ui--dialog#close"
+        {{ attributes.add(stimulus_controller('ui--dialog')).without('class') }}
+        data-state="closed" class="{{ ['', attributes.render('class')] |tailwind_merge }}"
+>
+    {% block content %}{% endblock %}
+</div>

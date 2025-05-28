@@ -1,0 +1,53 @@
+{% trans_default_domain 'menu' %}
+
+{% props menu = null %}
+{% set current_menu = knp_menu_get_current_item(menu) %}
+
+<twig:ui:breadcrumb:root {{ ...attributes }}>
+    <twig:ui:breadcrumb:list>
+
+        <twig:ui:breadcrumb:item>
+            <twig:ui:breadcrumb:link>
+                <a href="{{ path('admin_dashboard') }}">{{ 'Home'|trans }}</a>
+            </twig:ui:breadcrumb:link>
+        </twig:ui:breadcrumb:item>
+
+        <twig:ui:breadcrumb:separator/>
+
+        {% if knp_menu_get_breadcrumbs_array(current_menu)|length > 1 %}
+            {% for breadcrumb_item in knp_menu_get_breadcrumbs_array(current_menu)[1:] %}
+                {% if not loop.last %}
+                    <twig:ui:breadcrumb:item>
+                        <twig:ui:breadcrumb:link>
+                            <a href="{{ breadcrumb_item.uri }}">{{ breadcrumb_item.label|trans }}</a>
+                        </twig:ui:breadcrumb:link>
+                    </twig:ui:breadcrumb:item>
+
+                    <twig:ui:breadcrumb:separator/>
+                {% else %}
+                    {% if breadcrumb_item.uri != path(app.request.get('_route'), app.request.get('_route_params')) and (app.request.get('title') is not empty) %}
+                        <twig:ui:breadcrumb:item>
+                            <twig:ui:breadcrumb:link>
+                                <a href="{{ breadcrumb_item.uri }}">{{ breadcrumb_item.label|trans }}</a>
+                            </twig:ui:breadcrumb:link>
+                        </twig:ui:breadcrumb:item>
+
+                        <twig:ui:breadcrumb:separator/>
+
+                        <twig:ui:breadcrumb:item>
+                            <twig:ui:breadcrumb:page>{{ app.request.get('title')|trans }}</twig:ui:breadcrumb:page>
+                        </twig:ui:breadcrumb:item>
+                    {% else %}
+                        <twig:ui:breadcrumb:item>
+                            <twig:ui:breadcrumb:page>{{ breadcrumb_item.label|trans }}</twig:ui:breadcrumb:page>
+                        </twig:ui:breadcrumb:item>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <twig:ui:breadcrumb:item>
+                <twig:ui:breadcrumb:page>{{ app.request.get('title')|trans }}</twig:ui:breadcrumb:page>
+            </twig:ui:breadcrumb:item>
+        {% endif %}
+    </twig:ui:breadcrumb:list>
+</twig:ui:breadcrumb:root>

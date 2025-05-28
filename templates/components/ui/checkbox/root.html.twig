@@ -1,0 +1,17 @@
+{% props checked = false, disabled = false, required = false, id = null %}
+
+{% set isIndeterminate = (checked == 'indeterminate') %}
+{% set state = checked ? 'checked' : 'unchecked' %}
+
+<button {{ attributes.add(stimulus_controller('ui--checkbox', {
+    'id': id
+})).add(stimulus_target('ui--checkbox', 'button')).without('class') }}
+        type="button"
+        role="checkbox"
+        aria-checked="{{ isIndeterminate ? 'mixed' : (checked ? 'true' : 'false') }}"
+        aria-required="{{ required ? 'true' : 'false' }}"
+        data-state="{{ state }}"
+        data-disabled="{{ disabled ? 'true' : 'false' }}"
+        class="{{ ['peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground text-primary', attributes.render('class')] | tailwind_merge }}">
+    {% block content %}{% endblock %}
+</button>

@@ -1,0 +1,20 @@
+{% props inset = false, asLink = false, asButton = false %}
+{% set asLink = attributes.all.href is defined %}
+
+{% if asLink %}
+    {% set slot = 'a' %}
+{% elseif asButton %}
+    {% set slot = 'button' %}
+{% else %}
+    {% set slot = 'div' %}
+{% endif %}
+
+<{{ slot }} {{ attributes.without('class') }}
+        role="menuitem"
+        class="{{ [
+            'relative flex cursor-default text-foreground select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+            inset ? 'pl-8' : '',
+            attributes.render('class')
+        ] | tailwind_merge }}">
+    {% block content %}{% endblock %}
+</{{ slot }}>

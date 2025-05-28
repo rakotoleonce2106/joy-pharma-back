@@ -1,0 +1,4 @@
+<div{{ attributes.without('class') }}
+        class="{{ ['text-sm [&_p]:leading-relaxed', attributes.render('class')] | tailwind_merge }}">
+    {% block content %}{% endblock %}
+</div>

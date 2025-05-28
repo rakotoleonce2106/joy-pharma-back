@@ -1,0 +1,20 @@
+<div {{ attributes }}>
+    {{ form_start(form, { attr: {
+        class: 'space-y-4',
+        'id': 'addvertisement-form'
+    } }) }}
+    {{ form_row(form.title) }}
+    {{ form_row(form.description) }}
+    {{ form_row(form.subtitle) }}
+    {{ form_row(form.price) }}
+    {{ form_row(form.upload) }}
+
+    <div class="items-center justify-center gap-2 mt-6 hidden turbo-frame:flex">
+        <twig:ui:button:root href="{{ path('admin_advertisement') }}" variant="outline">
+            {{ 'Discard'|trans }}
+        </twig:ui:button:root>
+        <twig:ui:button:root formnovalidate>{{ 'Save Advertisement'|trans }}</twig:ui:button:root>
+    </div>
+
+    {{ form_end(form) }}
+</div>

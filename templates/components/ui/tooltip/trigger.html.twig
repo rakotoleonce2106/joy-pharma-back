@@ -1,0 +1,4 @@
+<div {{ attributes.add(stimulus_target('ui--tooltip', 'trigger')).without('class') }}
+        class="{{ ['', attributes.render('class')] |tailwind_merge }}">
+    {% block content %}{% endblock %}
+</div>

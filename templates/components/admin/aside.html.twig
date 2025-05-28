@@ -1,0 +1,18 @@
+<aside class="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
+    <nav class="flex flex-col items-center gap-4 px-2 sm:py-4">
+        <a href="{{ path('admin_dashboard') }}"
+           class="group flex h-[40px] w-[40px] shrink-0 items-center justify-center gap-2">
+            <img src="{{ asset('images/icon.png') }}" alt="Logo"
+                 class="h-[40px] w-[40px] transition-all group-hover:scale-110"/>
+            <span class="sr-only">Joy-Movie</span>
+        </a>
+        {{ knp_menu_render('admin_top_menu', {
+            'template': 'admin/shared/web-menu.html.twig'
+        }) }}
+    </nav>
+    <nav class="mt-auto flex flex-col items-center gap-4 px-2 sm:py-4">
+        {{ knp_menu_render('admin_bottom_menu', {
+            'template': 'admin/shared/web-menu.html.twig'
+        }) }}
+    </nav>
+</aside>
