@@ -1,12 +1,12 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ 'Joy-Pharma - Stream Your Favorite'|trans }}{% endblock %}
+{% block title %}{{ 'Joy-Pharma - Explore the produit pharmaceutique'|trans }}{% endblock %}
 
 {% block body %}
     <div class="bg-white min-h-screen text-gray-900">
         <header class="bg-white border-b border-gray-200 py-4 shadow-sm">
             <div class="container mx-auto px-4 flex justify-between items-center">
-                <h1 class="text-3xl font-bold text-red-600">{{ 'Joy-Movie'|trans }}</h1>
+                <h1 class="text-3xl font-bold text-red-600">{{ 'Joy-Pharma'|trans }}</h1>
                 <nav>
                     {% if app.user %}
                         <span class="mr-4 text-gray-700">{{ 'Welcome, %username%'|trans({'%username%': app.user.userIdentifier}) }}</span>
@@ -25,18 +25,18 @@
 
         <main class="container mx-auto px-4 py-8">
             <section class="text-center mb-12">
-                <h2 class="text-4xl font-bold mb-4 text-gray-900">{{ 'Welcome to Joy-Movie'|trans }}</h2>
-                <p class="text-xl text-gray-600">{{ 'Stream your favorite movies anytime, anywhere!'|trans }}</p>
+                <h2 class="text-4xl font-bold mb-4 text-gray-900">{{ 'Welcome to Joy-Pharma'|trans }}</h2>
+                <p class="text-xl text-gray-600">{{ 'Stream your favorite Pharmas anytime, anywhere!'|trans }}</p>
             </section>
 
             <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Sample movie cards -->
+                <!-- Sample Pharma cards -->
                 {% for i in 1..6 %}
                     <twig:ui:card:root class="rounded-lg overflow-hidden shadow-md">
-                        <img src="https://via.placeholder.com/300x450" alt="{{ 'Movie poster'|trans }}"
+                        <img src="https://via.placeholder.com/300x450" alt="{{ 'Pharma poster'|trans }}"
                              class="w-full h-64 object-cover">
                         <div class="p-4">
-                            <h3 class="text-xl font-semibold mb-2 text-gray-900">{{ 'Movie Title %number%'|trans({'%number%': i}) }}</h3>
+                            <h3 class="text-xl font-semibold mb-2 text-gray-900">{{ 'Pharma Title %number%'|trans({'%number%': i}) }}</h3>
                             <p class="text-gray-600 mb-4">{{ 'Action, Adventure'|trans }}</p>
                             <twig:ui:button:root href="#" class="w-full">{{ 'Watch Now'|trans }}</twig:ui:button:root>
                         </div>
@@ -47,7 +47,7 @@
 
         <footer class="bg-gray-100 py-4 mt-12 border-t border-gray-200">
             <div class="container mx-auto px-4 text-center text-gray-600">
-                <p>{{ '© %year% Joy-Movie. All rights reserved.'|trans({'%year%': 'now'|date('Y')}) }}</p>
+                <p>{{ '© %year% Joy-Pharma. All rights reserved.'|trans({'%year%': 'now'|date('Y')}) }}</p>
             </div>
         </footer>
     </div>

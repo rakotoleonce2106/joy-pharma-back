@@ -63,7 +63,8 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "src/"
+            "App\\": "src/",
+            "Jb\\Bundle\\ConfigKnpMenuBundle\\": "lib/config-knp-menu-bundle/"
         }
     },
     "autoload-dev": {

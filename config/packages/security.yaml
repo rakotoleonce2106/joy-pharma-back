@@ -1,6 +1,6 @@
 security:
     password_hashers:
-        App\Entity\User: 'auto'
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
     providers:
         users:
             entity:
@@ -10,7 +10,7 @@ security:
             memory:
                 users:
                     johndoe@mailinator.com:
-                        password: '$2y$13$.oaFkWoNsnlqjifcLQXXyul8V/3lzR4D7SbfjiEpS1tPAeXm/wQZO' # Admin@123546
+                        password: '$2y$13$NsUTDnHURiTT9sQh5cnXz.DEvm93QaCBUPAXJshNDoImxYNTRaKRq'
                         roles: [ 'ROLE_USER', 'ROLE_ADMIN' ]
     
     firewalls:

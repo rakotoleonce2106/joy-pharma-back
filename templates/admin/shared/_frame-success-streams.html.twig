@@ -1,0 +1,8 @@
+{% if app.request.headers.get('turbo-frame') == frame %}
+    <turbo-stream action="update" target="toast-container">
+        <template>{{ include('admin/shared/toasts.html.twig') }}</template>
+    </turbo-stream>
+    {% for stream in app.flashes('stream') %}
+        {{ stream|raw }}
+    {% endfor %}
+{% endif %}

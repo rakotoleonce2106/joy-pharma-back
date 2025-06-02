@@ -1,0 +1,12 @@
+parameters:
+    jb_config.menu.provider.class: Jb\Bundle\ConfigKnpMenuBundle\Provider\ConfigurationMenuProvider
+
+services:
+    jb_config.menu.provider:
+        class: '%jb_config.menu.provider.class%'
+        arguments:
+            - '@knp_menu.factory'
+            - '@event_dispatcher'
+            - '@security.authorization_checker'
+        tags:
+            - { name: knp_menu.provider }
