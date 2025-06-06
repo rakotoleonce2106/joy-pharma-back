@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\MediaFile;
 use App\Repository\MediaFileRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 
 readonly class MediaFileService
@@ -36,6 +37,48 @@ readonly class MediaFileService
 
         $this->manager->persist($mediaFile);
 
+        return $mediaFile;
+    }
+
+    public  function createMediaByFile(UploadedFile $file, string $path):MediaFile
+    {
+        $filename = $file->getClientOriginalName();
+        $extension = $file->guessExtension() ?: 'bin';
+        $mimeType = $this->getMimeTypeFromExtension($extension);
+
+        $mediaFile = new MediaFile();
+        $mediaFile->setName($filename);
+        $mediaFile->setMimeType($mimeType);
+        $mediaFile->setUrl($path . $filename);
+
+        // Move the file to the uploads directory
+        $file->move($path, $filename);
+
+        $this->manager->persist($mediaFile);
+        return $mediaFile;
+    }
+
+    public function updateMediaFileFromFile(MediaFile $mediaFile, UploadedFile $file, string $path): MediaFile
+    {
+        // Remove the old file if it exists
+        if (file_exists($mediaFile->getUrl())) {
+            unlink($mediaFile->getUrl());
+        }
+
+        $filename = $file->getClientOriginalName();
+        $extension = $file->guessExtension() ?: 'bin';
+        $mimeType = $this->getMimeTypeFromExtension($extension);
+
+        // Update media file properties
+        $mediaFile->setName($filename);
+        $mediaFile->setMimeType($mimeType);
+        $mediaFile->setUrl($path . $filename);
+
+        // Move the new file to the uploads directory
+        $file->move($path, $filename);
+
+        // Persist the updated media file
+        $this->manager->persist($mediaFile);
         return $mediaFile;
     }
 
