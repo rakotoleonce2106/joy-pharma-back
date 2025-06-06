@@ -43,6 +43,21 @@ category:
     form:
         name: 'Name'
         name_placeholder: 'Enter name'
+        description: 'Description'
+        description_placeholder: 'Enter description'
+        isActive: 'Status Active'
+        isActive_placeholder: 'Choose status'
+        image: 'Image'
+        image_placeholder: 'Upload image'
+        upload_image: 'Upload'
+        upload_placeholder: 'Upload image'
+        svg: 'SVG'
+        svg_placeholder: 'Upload SVG'
+        upload_svg: 'Upload SVG'
+        upload_svg_placeholder: 'Upload SVG file'
+        parent: ' Parent Category'
+        parent_placeholder: 'Select parent category'
+        parent_info: 'If you want to create a subcategory, select the parent category here.'
 
     #DataTable translations
     datatable:
