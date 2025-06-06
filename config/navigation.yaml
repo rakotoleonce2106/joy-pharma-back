@@ -6,6 +6,14 @@ admin_top_menu:
             extras:
                 icon: "lucide:activity"
 
+        category:
+            label: "admin.menu.category"
+            route: "admin_category"
+            extras:
+                icon: "material-symbols:category-outline"
+                routes:
+                    - "admin_category"
+
 admin_bottom_menu:
     tree:
         dashboard:
