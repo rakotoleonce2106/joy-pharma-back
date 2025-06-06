@@ -1,0 +1,728 @@
+{% trans_default_domain 'messages' %}
+{% extends '@KreyuDataTable/themes/base.html.twig' %}
+
+{% block kreyu_data_table %}
+    <turbo-frame id="kreyu_data_table_{{ name }}" class="w-full space-y-4 relative caption-bottom text-sm"
+            {% if has_batch_actions %}
+                data-controller="kreyu--data-table-bundle--batch"
+            {% endif %}
+    >
+        {{ block('action_bar') }}
+        {{ block('table') }}
+
+        {% if pagination_enabled %}
+            {{ data_table_pagination(pagination) }}
+        {% endif %}
+
+        {{ include('admin/shared/_frame-success-streams.html.twig', { frame: 'kreyu_data_table_' ~ name }) }}
+    </turbo-frame>
+{% endblock %}
+
+{% block table_body %}
+    <tbody class="[&_tr:last-child]:border-0">{{ block('table_body_row') }}</tbody>
+{% endblock %}
+
+{% block table %}
+    <div class="rounded-md border">
+        {% set attrs = table_attr|default({}) %}
+
+        {% with { head: block('table_head'), body: block('table_body') } %}
+            <twig:ui:table:root {{ ...attrs }}>
+                {{ head|raw }}
+                {{ body|raw }}
+            </twig:ui:table:root>
+        {% endwith %}
+    </div>
+{% endblock %}
+
+{% block table_head %}
+    {% with {row: block('table_head_row') } %}
+        <twig:ui:table:header class="[&_tr]:border-b">{{ row|raw }}</twig:ui:table:header>
+    {% endwith %}
+{% endblock %}
+
+{% block kreyu_data_table_header_row %}
+    <twig:ui:table:row {{ ...row.vars.attr }}>
+        {% for column_header in row %}
+            {{- data_table_column_header(column_header) -}}
+        {% endfor %}
+    </twig:ui:table:row>
+{% endblock %}
+
+{% block column_header %}
+    {% set label_attr = label_attr|default({}) %}
+
+    {% if data_table.vars.sorting_enabled and sortable %}
+        {% set current_sort_field = sorting_field_data.name|default(null) %}
+        {% set current_sort_direction = sorting_field_data.direction|default(null) %}
+
+        {% set active_attr = active_attr|default({}) %}
+        {% set inactive_attr = inactive_attr|default({}) %}
+
+        {% set attr = attr|default({}) %}
+        {% set attr = attr|merge(sorted ? active_attr : inactive_attr) %}
+
+        <twig:ui:table:head {{ ...attr }}>
+            <div class="flex items-center">
+                <twig:ui:dropdown-menu:root placement="bottom-start">
+                    <twig:ui:dropdown-menu:trigger>
+                        <twig:ui:button:root variant="ghost" size="sm" class="h-8 data-[state=open]:bg-accent">
+                            {{- block('column_header_label', theme, _context) -}}
+                            {% if sorted %}
+                                {% if sort_direction == 'asc' %}
+                                    {{ block('sort_arrow_asc', theme, _context) }}
+                                {% else %}
+                                    {{ block('sort_arrow_desc', theme, _context) }}
+                                {% endif %}
+                            {% else %}
+                                {{ block('sort_arrow_none', theme, _context) }}
+                            {% endif %}
+                        </twig:ui:button:root>
+                    </twig:ui:dropdown-menu:trigger>
+                    <twig:ui:dropdown-menu:content>
+                        {% set query_params = app.request.query.all %}
+                        {% set query_params = query_params|merge({ (sort_parameter_name): {
+                            (name): 'asc'
+                        } }) %}
+
+                        {% set query_params = app.request.attributes.get('_route_params')|merge(query_params) %}
+
+                        {% set asc_label_attr = { href: path(app.request.get('_route'), query_params) }|merge(label_attr) %}
+                        {% set asc_label_attr = { 'data-turbo-action': 'advance' }|merge(asc_label_attr) %}
+
+                        <twig:ui:dropdown-menu:item {{ ...asc_label_attr }}>
+                            <twig:ux:icon name="radix-icons:arrow-up"
+                                          class="mr-2 h-3.5 w-3.5 text-muted-foreground/70"/>
+                            {{ 'Asc'|trans }}
+                        </twig:ui:dropdown-menu:item>
+
+                        {% set query_params = app.request.query.all %}
+                        {% set query_params = query_params|merge({ (sort_parameter_name): {
+                            (name): 'desc'
+                        } }) %}
+
+                        {% set query_params = app.request.attributes.get('_route_params')|merge(query_params) %}
+
+                        {% set desc_label_attr = { href: path(app.request.get('_route'), query_params) }|merge(label_attr) %}
+                        {% set desc_label_attr = { 'data-turbo-action': 'advance' }|merge(desc_label_attr) %}
+
+                        <twig:ui:dropdown-menu:item {{ ...desc_label_attr }}>
+                            <twig:ux:icon name="radix-icons:arrow-down"
+                                          class="mr-2 h-3.5 w-3.5 text-muted-foreground/70"/>
+                            {{ 'Desc'|trans }}
+                        </twig:ui:dropdown-menu:item>
+                    </twig:ui:dropdown-menu:content>
+                </twig:ui:dropdown-menu:root>
+            </div>
+        </twig:ui:table:head>
+    {% else %}
+        {% if label_attr.class is defined %}
+            {% set label_attr = label_attr|merge({class: "ml-3 text-xs block " ~ label_attr.class}) %}
+        {% else %}
+            {% set label_attr = label_attr|merge({class: "ml-3 text-xs"}) %}
+        {% endif %}
+
+        <twig:ui:table:head {{ ...attr }}>
+            <span {% for key, value in label_attr %}{{ key }}="{{ value }}"{% endfor %}>
+            {{- block('column_header_label', theme, _context) -}}
+            </span>
+        </twig:ui:table:head>
+    {% endif %}
+{% endblock %}
+
+{% block sort_arrow_none %}
+    <twig:ux:icon name="radix-icons:caret-sort" class="ml-2 h-4 w-4"/>
+{% endblock %}
+
+{% block sort_arrow_asc %}
+    <twig:ux:icon name="radix-icons:arrow-up" class="ml-2 h-4 w-4"/>
+{% endblock %}
+
+{% block sort_arrow_desc %}
+    <twig:ux:icon name="radix-icons:arrow-down" class="ml-2 h-4 w-4"/>
+{% endblock %}
+
+{% block column_header_label %}
+    {% if translation_domain is not same as false %}
+        {{ label|trans(translation_parameters, translation_domain) }}
+    {% else %}
+        {{ label }}
+    {% endif %}
+{% endblock %}
+
+{% block table_body_row_results %}
+    {% for value_row in value_rows %}
+        <twig:ui:table:row {{ ...value_row.vars.attr }}>{{ data_table_value_row(value_row) }}</twig:ui:table:row>
+    {% endfor %}
+{% endblock %}
+
+{% block kreyu_data_table_value_row %}
+    {% for column_value in row %}
+        {{- data_table_column_value(column_value) -}}
+    {% endfor %}
+{% endblock %}
+
+{% block column_value %}
+    {% set attr = attr|merge({class: (attr.class ?? '') ~ " pl-5"}) %}
+
+    <twig:ui:table:cell {{ ...attr }}>
+        {%- if translation_domain is not same as false -%}
+            {{- value|trans({}, translation_domain) -}}
+        {%- else -%}
+            {{- value -}}
+        {%- endif -%}
+    </twig:ui:table:cell>
+{% endblock %}
+
+{% block pagination_widget %}
+    <div
+            class="grid sm:flex items-center sm:text-start space-y-2 sm:space-y-0 text-center justify-center sm:justify-between px-2">
+        <div class="flex-1 text-sm text-muted-foreground">
+            {{ block('pagination_counters', theme) }}
+        </div>
+        <div class="flex items-center space-x-6 lg:space-x-8">
+            <div class="flex w-[100px] items-center justify-center text-sm font-medium">
+                {{ 'Page %current_page% of %page_count%'|trans({'%current_page%': current_page_number, '%page_count%': page_count}) }}
+            </div>
+            <div class="flex items-center space-x-2">
+                {{ block('pagination_controls', theme) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block pagination_controls %}
+    {%- if has_previous_page -%}
+        {% with { path: path(app.request.get('_route'), app.request.attributes.get('_route_params')|merge(app.request.query.all)|merge({ (page_parameter_name): 1 })) } %}
+            {{ block('pagination_first', theme) }}
+        {% endwith %}
+
+        {% with { path: path(app.request.get('_route'), app.request.attributes.get('_route_params')|merge(app.request.query.all)|merge({ (page_parameter_name): current_page_number - 1 })) } %}
+            {{ block('pagination_previous', theme) }}
+        {% endwith %}
+    {%- else -%}
+        {{ block('pagination_first_disabled', theme) }}
+        {{ block('pagination_previous_disabled', theme) }}
+    {%- endif -%}
+
+    {%- if has_next_page -%}
+        {% with { path: path(app.request.get('_route'), app.request.attributes.get('_route_params')|merge(app.request.query.all)|merge({ (page_parameter_name): current_page_number + 1 })) } %}
+            {{ block('pagination_next', theme) }}
+        {% endwith %}
+
+        {% with { path: path(app.request.get('_route'), app.request.attributes.get('_route_params')|merge(app.request.query.all)|merge({ (page_parameter_name): page_count })) } %}
+            {{ block('pagination_last', theme) }}
+        {% endwith %}
+    {%- else -%}
+        {{ block('pagination_next_disabled', theme) }}
+        {{ block('pagination_last_disabled', theme) }}
+    {%- endif -%}
+{% endblock %}
+
+{% block pagination_first %}
+    {% set attr = attr|default({}) %}
+    {% set attr = attr|merge({ href: path, 'data-turbo-action': 'advance' }) %}
+
+    <twig:ui:button:root {{ ...attr }} variant="outline" class="hidden h-8 w-8 p-0 lg:flex">
+        {{ block('pagination_first_message', theme) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block pagination_first_disabled %}
+    {% set attr = attr|default({}) %}
+
+    <twig:ui:button:root {{ ...attr }} variant="outline" class="hidden h-8 w-8 p-0 lg:flex" disabled>
+        {{ block('pagination_first_message', theme) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block pagination_first_message %}
+    <span class="sr-only">{{ 'Go to first page'|trans({}) }}</span>
+    <twig:ux:icon name="radix-icons:double-arrow-left" class="w-4 h-4"/>
+{% endblock %}
+
+{% block pagination_previous %}
+    {% set attr = attr|default({}) %}
+    {% set attr = attr|merge({ href: path, 'data-turbo-action': 'advance' }) %}
+
+    <twig:ui:button:root {{ ...attr }} variant="outline" class="h-8 w-8 p-0">
+        {{ block('pagination_previous_message', theme) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block pagination_previous_disabled %}
+    {% set attr = attr|default({}) %}
+
+    <twig:ui:button:root {{ ...attr }} variant="outline" class="h-8 w-8 p-0" disabled>
+        {{ block('pagination_previous_message', theme) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block pagination_previous_message %}
+    <span class="sr-only">{{ 'Go to previous page'|trans }}</span>
+    <twig:ux:icon name="radix-icons:chevron-left" class="w-4 h-4"/>
+{% endblock %}
+
+{% block pagination_next %}
+    {% set attr = attr|default({}) %}
+    {% set attr = attr|merge({ href: path, 'data-turbo-action': 'advance' }) %}
+
+    <twig:ui:button:root {{ ...attr }} variant="outline" class="h-8 w-8 p-0">
+        {{ block('pagination_next_message', theme) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block pagination_next_disabled %}
+    {% set attr = attr|default({}) %}
+
+    <twig:ui:button:root {{ ...attr }} variant="outline" class="h-8 w-8 p-0" disabled>
+        {{ block('pagination_next_message', theme) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block pagination_next_message %}
+    <span class="sr-only">{{ 'Go to next page'|trans({}) }}</span>
+    <twig:ux:icon name="radix-icons:chevron-right" class="w-4 h-4"/>
+{% endblock %}
+
+{% block pagination_last %}
+    {% set attr = attr|default({}) %}
+    {% set attr = attr|merge({ href: path, 'data-turbo-action': 'advance' }) %}
+
+    <twig:ui:button:root {{ ...attr }} variant="outline" class="hidden h-8 w-8 p-0 lg:flex">
+        {{ block('pagination_last_message', theme) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block pagination_last_disabled %}
+    {% set attr = attr|default({}) %}
+
+    <twig:ui:button:root {{ ...attr }} variant="outline" class="hidden h-8 w-8 p-0 lg:flex" disabled>
+        {{ block('pagination_last_message', theme) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block pagination_last_message %}
+    <span class="sr-only">{{ 'Go to last page'|trans({}) }}</span>
+    <twig:ux:icon name="radix-icons:double-arrow-right" class="w-4 h-4"/>
+{% endblock %}
+
+{% block column_checkbox_header %}
+    {% set attr = attr|default({}) %}
+
+    <twig:ui:table:head {{ ...attr }}>
+        {% set attrs = stimulus_controller(controllerName='ui--datatable', controllerOutlets={
+            'ui--checkbox': '.select-row'
+        }) %}
+
+        {% set attrs = attrs|merge(stimulus_target('ui--datatable', 'selectAll')) %}
+
+        <twig:ui:checkbox:root {{ ...attrs }} id="selectAll" class="translate-y-[2px] select-all">
+            <twig:ui:checkbox:indicator/>
+        </twig:ui:checkbox:root>
+
+        {% set input_attr = {
+            'type': 'checkbox',
+            'id': 'selectAll',
+            'aria-label': 'Select all checkbox',
+            'data-identifier-name': identifier_name,
+            'data-kreyu--data-table-bundle--batch-target': 'selectAllCheckbox',
+            'data-action': 'input->kreyu--data-table-bundle--batch#selectAll',
+            'class': 'hidden',
+        }|merge(input_attr|default({})) %}
+
+        <input {% for key, value in input_attr %}{{ key }}="{{ value }}"{% endfor %}>
+    </twig:ui:table:head>
+{% endblock %}
+
+{% block column_checkbox_value %}
+    <twig:ui:table:cell {{ ...attr }}>
+        {% set attrs = stimulus_controller(controllerName='ui--datatable', controllerOutlets={
+            'ui--checkbox': '.select-all',
+            'ui--datatable': '.select-row'
+        }) %}
+
+        {% set attrs = attrs|merge(stimulus_target('ui--datatable', 'selectRow')) %}
+
+        <twig:ui:checkbox:root {{ ...attrs }} id="{{ row.index }}" class="translate-y-[2px] select-row">
+            <twig:ui:checkbox:indicator/>
+        </twig:ui:checkbox:root>
+
+        {% set input_attr = {
+            'type': 'checkbox',
+            'value': value,
+            'aria-label': 'Select all checkbox',
+            'data-index': row.index,
+            'id': row.index,
+            'data-identifier-name': identifier_name,
+            'data-kreyu--data-table-bundle--batch-target': 'selectRowCheckbox',
+            'data-action': 'input->kreyu--data-table-bundle--batch#selectRow',
+            'class': 'hidden',
+        }|merge(input_attr|default({})) %}
+
+        <twig:ui:input:default {{ ...input_attr }} />
+    </twig:ui:table:cell>
+{% endblock %}
+
+{% block batch_action_bar %}
+    <div data-kreyu--data-table-bundle--batch-target="batchActionBar" hidden>
+        <div class="flex justify-between items-center">
+            {{ block('batch_action_bar_title', theme) }}
+            {{ block('batch_action_bar_actions', theme) }}
+        </div>
+    </div>
+{% endblock %}
+
+{% block batch_action_bar_title %}
+    {% set wrapper_attr = { class: 'flex-1 text-sm text-muted-foreground' }|merge(wrapper_attr|default({})) %}
+
+    <div {% with { attr: wrapper_attr } %}{{ block('attributes') }}{% endwith %}>
+        {{ 'Selected'|trans({}) }}: <span
+                data-kreyu--data-table-bundle--batch-target="selectedCounter">0</span>
+    </div>
+{% endblock %}
+
+{% block batch_action_bar_actions %}
+    <div class="ml-auto flex space-x-2">
+        {% for action in batch_actions %}
+            {{ data_table_action(action) }}
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block action_form_value %}
+    {% set attr = { action, method: html_friendly_method }|merge(attr|default({})) %}
+
+    {% if confirmation %}
+        {% set attr = {
+            'aria-haspopup':"dialog",
+            'aria-expanded':"false",
+            'data-state':"closed",
+            'type': 'button'
+        }|merge(button_attr) %}
+
+        {% set attr = attr|filter((v, k) => k != 'href') %}
+
+        {% with { attr, confirm_button_attr: { type: 'submit', form: form_id }, block: 'action_form_value' } %}{{ block('action_confirmation_dialog') }}{% endwith %}
+    {% else %}
+        {% if batch %}
+            {% set attr = { 'data-kreyu--data-table-bundle--batch-target': 'identifierHolder' }|merge(attr) %}
+        {% endif %}
+
+        <form id="{{ form_id }}" {{- block('attributes') -}}>
+            {# Reset attributes to prevent bubbling #}
+            {% set attr = {} %}
+
+            <input type="hidden" name="_method" value="{{ method }}"/>
+
+            {% set attr = { type: 'submit', variant:'outline' }|merge(button_attr) %}
+
+            <twig:ui:button:root {{ ...attr }}>
+                {{- block('action_value', theme, _context) -}}
+            </twig:ui:button:root>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block action_bar %}
+    {% set display_filter_action = filtration_enabled and filters|length > 0 and filtration_form.children|length > 0 %}
+    {% set display_export_action = exporting_enabled and exporters|length > 0 %}
+
+    <div class="inline items-center lg:space-x-2 space-y-2 md:space-y-0 md:flex">
+        <div class="flex flex-1 items-center space-x-2">
+            {% if title or has_active_filters or display_filter_action or display_export_action or personalization_enabled %}
+                {% if filtration_enabled and filtration_form and filtration_form.vars.search_fields|length > 0 %}
+                    {{ block('action_search') }}
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="ml-auto space-y-2 block md:flex md:space-x-2 md:space-y-0">
+            {% if title or has_active_filters or display_filter_action or display_export_action or personalization_enabled %}
+                {% if filtration_enabled and filtration_form and filtration_form.vars.search_fields|length > 0 %}
+                    <div class="space-y-2 md:space-x-2 md:space-y-0 md:flex">
+                        {% for action in actions %}
+                            {{ data_table_action(action) }}
+                        {% endfor %}
+                    </div>
+
+                    {% if display_filter_action and filtration_enabled and filtration_form and filters|length > 0 %}
+                        {% with {filter: block('action_filter')} %}
+                            <twig:ui:dialog:root>
+                                <twig:ui:dialog:trigger>
+                                    {{ filter|raw }}
+                                </twig:ui:dialog:trigger>
+                                <twig:ui:dialog:content>
+                                    <twig:ui:dialog:header>
+                                        <twig:ui:dialog:title>
+                                            {{ 'Filters'|trans({}) }}
+                                        </twig:ui:dialog:title>
+                                        <twig:ui:dialog:description>
+                                            {{ 'Filter your data by applying filters.'|trans({}) }}
+                                        </twig:ui:dialog:description>
+                                    </twig:ui:dialog:header>
+                                    <div class="grid gap-2">
+                                        {{ data_table_filters_form(filtration_form) }}
+                                    </div>
+                                </twig:ui:dialog:content>
+                            </twig:ui:dialog:root>
+                        {% endwith %}
+                    {% elseif filtration_enabled and filtration_form and filters|length > 0 %}
+                        <div class="hidden">
+                            {{ data_table_filters_form(filtration_form) }}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    {% if has_active_filters %}
+        {{ block('active_filters') }}
+    {% endif %}
+
+    {% if has_batch_actions %}
+        {{ block('batch_action_bar', theme) }}
+    {% endif %}
+{% endblock %}
+
+{% block action_search %}
+    {% for child in filtration_form.vars.search_fields %}
+        {{ form_widget(child.value, { attr: {
+            form: filtration_form.vars.id,
+            'data-target-form': '#' ~ filtration_form.vars.id,
+            class: 'lg:w-[250px] w-full md:w-[150px]',
+            'data-controller':'ui--autosubmit-input',
+            autofocus: 'autofocus',
+        } }) }}
+    {% endfor %}
+{% endblock %}
+
+{% block action_filter %}
+    {% set attr = {
+        'variant': 'outline',
+        'class': 'w-full',
+        'title': 'Filter'|trans({}),
+    }|merge(attr|default({})) %}
+
+    <twig:ui:button:root {{ ...attr }} >
+        <twig:ux:icon name="lucide:list-filter" class="w-4 h-4 mr-2"/>
+        {{ 'Filters'|trans({}) }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block column_actions_value %}
+    {% set attr = attr|merge({class: "pl-5"}) %}
+
+    <twig:ui:table:cell {{ ...attr }}>
+        <div class="flex items-center space-x-2">
+            {% for action in actions %}
+                {{ data_table_action(action) }}
+            {% endfor %}
+        </div>
+    </twig:ui:table:cell>
+{% endblock %}
+
+{% block action_link_value %}
+    {% set attr = { href, target, variant: 'outline' }|merge(attr) %}
+    {% set attr = attr|merge({ class: [attr.class ?? '', 'w-full md:w-auto']|tailwind_merge }) %}
+
+    {% if batch %}
+        {% set attr = { 'data-kreyu--data-table-bundle--batch-target': 'identifierHolder' }|merge(attr) %}
+    {% endif %}
+
+    <twig:ui:button:root {{ ...attr }}>
+        {% with { attr: {} } %}{{- block('action_value', theme, _context) -}}{% endwith %}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block action_button_value %}
+    {% set attr = { target, variant: 'outline' }|merge(attr) %}
+    {% set attr = attr|merge({ class: [attr.class ?? '', 'w-full md:w-auto']|tailwind_merge }) %}
+
+    {% if confirmation %}
+        {% set attr = {
+            'aria-haspopup':"dialog",
+            'aria-expanded':"false",
+            'data-state':"closed"
+        }|merge(attr) %}
+
+        {% set attr = attr|filter((v, k) => k != 'href') %}
+        {% set confirm_button_attr = { href }|merge(confirm_button_attr|default({})) %}
+
+        {% if batch %}
+            {% set confirm_button_attr = {
+                'data-kreyu--data-table-bundle--batch-target': 'identifierHolder',
+            }|merge(confirm_button_attr) %}
+        {% endif %}
+
+        {% with { attr, confirm_button_attr, block: 'action_button_value' } %}{{ block('action_confirmation_dialog') }}{% endwith %}
+    {% else %}
+        <twig:ui:button:root {{ ...attr }}>
+            {% with { attr: {} } %}{{- block('action_value', theme, _context) -}}{% endwith %}
+        </twig:ui:button:root>
+    {% endif %}
+{% endblock %}
+
+{% block action_confirmation_dialog %}
+    {% set dialog_confirm_button_variant = {
+        'info': 'default',
+        'warning': 'outline',
+        'danger': 'destructive',
+    }[confirmation.type] %}
+
+    {% set confirm = confirmation %}
+    {% with { attr, confirmation: false, button_attr: attr} %}
+        {% with {trigger: block(block)} %}
+            <twig:ui:alert-dialog:root>
+                <twig:ui:alert-dialog:trigger>
+                    {{ trigger|raw }}
+                </twig:ui:alert-dialog:trigger>
+                <twig:ui:alert-dialog:content>
+                    <twig:ui:alert-dialog:header>
+                        <twig:ui:alert-dialog:title>
+                            {{ confirm.label_title|trans({}, confirm.translation_domain) }}
+                        </twig:ui:alert-dialog:title>
+                        <twig:ui:alert-dialog:description>
+                            {{ confirm.label_description|trans({}, confirm.translation_domain) }}
+                        </twig:ui:alert-dialog:description>
+                    </twig:ui:alert-dialog:header>
+                    <twig:ui:alert-dialog:footer>
+                        <twig:ui:alert-dialog:cancel variant="secondary">
+                            {{ confirm.label_cancel|trans({}, confirm.translation_domain) }}
+                        </twig:ui:alert-dialog:cancel>
+
+                        {% set confirm_button_attr = {
+                            variant: dialog_confirm_button_variant
+                        }|merge(confirm_button_attr|default({})) %}
+
+                        <twig:ui:alert-dialog:action {{ ...confirm_button_attr }}>
+                            {{ confirm.label_confirm|trans({}, confirm.translation_domain) }}
+                        </twig:ui:alert-dialog:action>
+                    </twig:ui:alert-dialog:footer>
+                </twig:ui:alert-dialog:content>
+            </twig:ui:alert-dialog:root>
+        {% endwith %}
+    {% endwith %}
+{% endblock %}
+
+{% block action_value_icon %}
+    {{ ux_icon(icon_attr.name, icon_attr) }}
+{% endblock %}
+
+{% block table_body_row_no_results %}
+    <twig:ui:table:row>
+        {% set attrs = {
+            colspan: column_count,
+            ...table_body_row_no_results_attr|default({ class: 'h-24 text-center' })
+        } %}
+
+        <twig:ui:table:cell {{ ...attrs }}>{{ 'No results found'|trans }}</twig:ui:table:cell>
+    </twig:ui:table:row>
+{% endblock %}
+
+{% block kreyu_data_table_filters_form %}
+    {{ form_start(form, { attr: { 'data-turbo-action': 'advance', 'hidden': 'hidden', 'data-controller': 'ui--autosubmit' } }) }}
+    {# This form should be empty - all its inputs should be on the outside, referenced using the "form" attribute #}
+    {{ form_end(form, { render_rest: false }) }}
+
+    {% if form.count > 0 %}
+        {{ block('filtration_widget', theme) }}
+    {% endif %}
+{% endblock %}
+
+{% block filtration_widget %}
+    {{ block('filtration_form', theme) }}
+{% endblock %}
+
+{% block filtration_form %}
+    {{ block('filtration_form_content', theme) }}
+{% endblock %}
+
+{% block filtration_form_content %}
+    {% for child in form %}
+        {{ block('filtration_form_row', theme) }}
+    {% endfor %}
+
+    {{ block('filtration_form_submit', theme) }}
+{% endblock %}
+
+{% block filtration_form_row %}
+    {{ form_row(child) }}
+{% endblock %}
+
+{% block filtration_form_submit %}
+    <twig:ui:button:root {{ ...attr|default({})|merge({ form: form.vars.id, 'data-turbo-action': 'advance', class: 'w-full mt-4' }) }}>
+        {{ 'Filter'|trans }}
+    </twig:ui:button:root>
+{% endblock %}
+
+{% block active_filters %}
+    <div class="md:block items-center sm:items-baseline lg:space-x-2 space-y-2 grid lg:flex">
+        {% for filter_name, filter_data in filtration_data.filters|default([])|filter(filter => filter.hasValue()) %}
+            {% with { filter: filters[filter_name] } %}
+                {{ block('filter_clear_button') }}
+            {% endwith %}
+        {% endfor %}
+
+        {% if has_active_filters %}
+            {{ block('filter_clear_all_button') }}
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block filter_clear_button_icon %}
+    <twig:ux:icon name="radix-icons:cross-2" class="ml-2 h-4 w-4"/>
+{% endblock %}
+
+{% block filter_clear_all_button_icon %}
+    <twig:ux:icon name="ph:trash" class="ml-2 h-5 w-5"/>
+{% endblock %}
+
+{% block filter_clear_all_button %}
+    {% set attr = {
+        'class': 'h-8 px-2 lg:px-3 sm:!ml-auto ml-0',
+        'href': data_table_filter_clear_url(data_table, filter),
+        'title': 'Clear all filters'|trans({}),
+        'data-turbo-action': 'advance',
+        'variant': 'ghost'
+    }|merge(attr|default({})) %}
+
+    {% with { icon: block('filter_clear_all_button_icon') } %}
+        <twig:ui:button:root {{ ...attr }}>
+            {{ 'Reset filters'|trans }}
+            {{ icon|raw }}
+        </twig:ui:button:root>
+    {% endwith %}
+{% endblock %}
+
+{% block filter_clear_button %}
+    {% with {icon: block('filter_clear_button_icon')} %}
+        <twig:ui:button:root
+                variant="outline"
+                size="sm"
+                class="h-8 border-dashed flex justify-between sm:inline-flex"
+                href="{{ data_table_filter_clear_url(data_table, filter) }}"
+                data-turbo-action="advance"
+                title="{{ 'Clear filter'|trans({}) }}"
+        >
+            {% if filter.vars.label %}
+                {{ filter.vars.label|trans({}, filter.vars.translation_domain) }}
+
+                {% if filter.vars.operator_selectable %}
+                    <span class="text-muted">{{ filter.vars.data.operator.label|trans({}) }}</span>
+                {% endif %}
+            {% else %}
+                {{ 'Search'|trans }}
+            {% endif %}
+
+            <div data-orientation="vertical" role="none"
+                 class="hidden md:block shrink-0 bg-border w-[1px] mx-2 h-4"></div>
+
+            <div class="flex items-center space-x-1 ml-auto">
+                <b>{{ filter.vars.value|trans({}, filter.vars.translation_domain) }}</b>
+                {{ icon|raw }}
+            </div>
+        </twig:ui:button:root>
+    {% endwith %}
+{% endblock %}

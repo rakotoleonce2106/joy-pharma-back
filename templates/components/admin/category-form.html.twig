@@ -4,12 +4,16 @@
         'id': 'product-form'
     } }) }}
     {{ form_row(form.name) }}
+    {{ form_row(form.description) }}
+    {{ form_row(form.parent) }}
+    {{ form_row(form.svg)}}
+    {{ form_row(form.image) }}
 
     <div class="items-center justify-center gap-2 mt-6 hidden turbo-frame:flex">
         <twig:ui:button:root href="{{ path('admin_category') }}" variant="outline">
             {{ 'Discard'|trans }}
         </twig:ui:button:root>
-        <twig:ui:button:root formnovalidate>{{ 'Save Category'|trans }}</twig:ui:button:root>
+        <twig:ui:button:root formnovalidate>{{ 'Update Category'|trans }}</twig:ui:button:root>
     </div>
 
     {{ form_end(form) }}
