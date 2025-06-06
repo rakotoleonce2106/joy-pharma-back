@@ -3,9 +3,10 @@
 namespace App\Service;
 
 use App\Entity\Category;
+use App\Entity\MediaFile;
 use App\Repository\CategoryRepository;
 use Doctrine\ORM\EntityManagerInterface;
-
+use Symfony\Component\Form\FormInterface;
 
 
 readonly class CategoryService
@@ -62,6 +63,7 @@ readonly class CategoryService
         $this->manager->flush();
     }
 
+
     public function findByName(String $name): ?Category
     {
         return $this->manager->getRepository(Category::class)
@@ -76,8 +78,6 @@ readonly class CategoryService
 
     public function batchDeleteCategories(array $categoryIds): void
     {
-
-
         foreach ($categoryIds as $id) {
             $category = $this->categoryRepository->find($id);
             if ($category) {
@@ -85,8 +85,5 @@ readonly class CategoryService
 
             }
         }
-
-
-
     }
 }
