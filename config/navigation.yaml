@@ -13,6 +13,13 @@ admin_top_menu:
                 icon: "material-symbols:category-outline"
                 routes:
                     - "admin_category"
+        user:
+            label: "admin.menu.users"
+            route: "admin_user"
+            extras:
+                icon: "material-symbols:person-outline"
+                routes:
+                    - "admin_user"
 
 admin_bottom_menu:
     tree:

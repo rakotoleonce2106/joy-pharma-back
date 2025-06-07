@@ -1,82 +1,93 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Admin;
 
+use App\DataTable\Type\UserDataTableType;
 use App\Entity\User;
 use App\Form\UserType;
 use App\Repository\UserRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\UserService;
+use App\Traits\ToastTrait;
+use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/user')]
-final class UserController extends AbstractController
+class UserController extends AbstractController
 {
-    #[Route(name: 'app_user_index', methods: ['GET'])]
-    public function index(UserRepository $userRepository): Response
+    use DataTableFactoryAwareTrait;
+    use ToastTrait;
+
+    public  function __construct(
+        private  readonly UserRepository $userRepository,
+        private readonly UserService $userService,
+    ) {}
+    #[Route('/user', name: 'admin_user')]
+    public function index(Request $request): Response
     {
-        return $this->render('user/index.html.twig', [
-            'users' => $userRepository->findAll(),
+        $query = $this->userRepository->createQueryBuilder('user');
+
+        $datatable = $this->createNamedDataTable('users', UserDataTableType::class, $query);
+        $datatable->handleRequest($request);
+
+        return $this->render('admin/user/index.html.twig', [
+            'datatable' => $datatable->createView()
         ]);
     }
 
-    #[Route('/new', name: 'admin_user_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    #[Route('/user/{id}/edit', name: 'admin_user_edit', defaults: ['title' => 'Edit user'])]
+    public function editAction(Request $request, User $user): Response
     {
-        $user = new User();
-        $form = $this->createForm(UserType::class, $user);
+
+        $form = $this->createForm(UserType::class, $user, [
+            'action' => $this->generateUrl('admin_user_edit', ['id' => $user->getId()])
+        ]);
+        return $this->handleUserForm($request, $form, $user, 'edit');
+    }
+
+        #[Route('/user/{id}/delete', name: 'admin_user_delete', methods: ['POST'])]
+    public  function deleteAction(User $user): Response
+    {
+        $this->userService->deleteUser($user);
+        $this->addSuccessToast('User deleted!', 'The user has been successfully deleted.');
+        return $this->redirectToRoute('admin_user', status: Response::HTTP_SEE_OTHER);
+    }
+
+
+
+    private function handleUserForm(Request $request, $form, $user, string $action): Response
+    {
         $form->handleRequest($request);
-
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($user);
-            $entityManager->flush();
 
-            return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
+            if ($action === 'create') {
+                $this->userService->createUser($user);
+            } else {
+                $this->userService->updateUser($user);
+            }
+
+
+            $this->addSuccessToast(
+                $action === 'create' ? 'User created!' : 'User updated!',
+                "The user has been successfully {$action}d."
+            );
+
+            if ($request->headers->has('turbo-frame')) {
+                $stream = $this->renderBlockView("admin/user/{$action}.html.twig", 'stream_success', [
+                    'user' => $user
+                ]);
+                $this->addFlash('stream', $stream);
+            }
+
+            return $this->redirectToRoute('admin_user', status: Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render('user/new.html.twig', [
+        return $this->render("admin/user/{$action}.html.twig", [
             'user' => $user,
-            'form' => $form,
+            'form' => $form
         ]);
-    }
-
-    #[Route('/{id}', name: 'admin_user_show', methods: ['GET'])]
-    public function show(User $user): Response
-    {
-        return $this->render('user/show.html.twig', [
-            'user' => $user,
-        ]);
-    }
-
-    #[Route('/{id}/edit', name: 'admin_user_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, User $user, EntityManagerInterface $entityManager): Response
-    {
-        $form = $this->createForm(UserType::class, $user);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
-
-            return $this->redirectToRoute('admin_user_index', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->render('user/edit.html.twig', [
-            'user' => $user,
-            'form' => $form,
-        ]);
-    }
-
-    #[Route('/{id}', name: 'admin_user_delete', methods: ['POST'])]
-    public function delete(Request $request, User $user, EntityManagerInterface $entityManager): Response
-    {
-        if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->getPayload()->getString('_token'))) {
-            $entityManager->remove($user);
-            $entityManager->flush();
-        }
-
-        return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
     }
 }

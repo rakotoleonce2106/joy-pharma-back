@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\DataTable\Type;
 
-use App\Entity\Category;
+use App\Entity\User;
 use Kreyu\Bundle\DataTableBundle\Action\Type\FormActionType;
 use Kreyu\Bundle\DataTableBundle\Action\Type\LinkActionType;
 use Kreyu\Bundle\DataTableBundle\Bridge\Doctrine\Orm\Query\DoctrineOrmProxyQuery;
 use Kreyu\Bundle\DataTableBundle\Bridge\Doctrine\Orm\Filter\Type\StringFilterType;
-use Kreyu\Bundle\DataTableBundle\Column\Type\HtmlColumnType;
 use Kreyu\Bundle\DataTableBundle\Column\Type\TextColumnType;
 use Kreyu\Bundle\DataTableBundle\DataTableBuilderInterface;
 use Kreyu\Bundle\DataTableBundle\Pagination\PaginationData;
 use Kreyu\Bundle\DataTableBundle\Type\AbstractDataTableType;
+use Kreyu\Bundle\DataTableBundle\Column\Type\DateColumnType;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-class CategoryDataTableType extends AbstractDataTableType
+class UserDataTableType extends AbstractDataTableType
 {
     public function __construct(private readonly UrlGeneratorInterface $urlGenerator)
     {
@@ -27,30 +27,16 @@ class CategoryDataTableType extends AbstractDataTableType
         $builder->setDefaultPaginationData(new PaginationData(page: 1, perPage: 13));
         $builder->setSearchHandler($this->handleSearchFilter(...));
         
-        // Create action
-        $builder->addAction('create', LinkActionType::class, [
-            'label' => 'category.datatable.create_new',
-            'href' => $this->urlGenerator->generate('admin_category_new'),
-            'attr' => [
-                'variant' => 'default',
-                'data-turbo-frame' => 'dialog',
-                'target' => 'dialog',
-            ],
-            'icon_attr' => [
-                'name' => 'radix-icons:plus',
-                'class' => 'w-5 h-5 mr-2'
-            ]
-        ]);
-
         // Filters
         $builder
-            ->addFilter('id', StringFilterType::class, ['label' => 'category.datatable.id'])
-            ->addFilter('name', StringFilterType::class, ['label' => 'category.datatable.name']);
+            ->addFilter('id', StringFilterType::class, ['label' => 'user.datatable.id'])
+            ->addFilter('firstName', StringFilterType::class, ['label' => 'user.datatable.first_name']);
+            
 
         // Columns
         $builder
             ->addColumn('id', TextColumnType::class, [
-                'label' => 'category.datatable.id',
+                'label' => 'user.datatable.id',
                 'sort' => true,
                 'value_attr' => [
                     'class' => 'w-20 text-center'
@@ -59,20 +45,48 @@ class CategoryDataTableType extends AbstractDataTableType
                     'class' => 'text-center'
                 ]
             ])
-
-            ->addColumn('name', TextColumnType::class, [
-                'label' => 'category.datatable.name',
+            ->addColumn('email', TextColumnType::class, [
+                'label' => 'user.datatable.email',
                 'sort' => true,
                 'value_attr' => [
                     'class' => 'px-4'
                 ]
+            ])
+            ->addColumn('firstName', TextColumnType::class, [
+                'label' => 'user.datatable.first_name',
+                'sort' => true,
+                'value_attr' => [
+                    'class' => 'px-4'
+                ]
+            ])
+            ->addColumn('lastName', TextColumnType::class, [
+                'label' => 'user.datatable.last_name',
+                'sort' => true,
+                'value_attr' => [
+                    'class' => 'px-4'
+                ]
+            ])
+            ->addColumn('phone', TextColumnType::class, [
+                'label' => 'user.datatable.phone',
+                'sort' => true,
+                'value_attr' => [
+                    'class' => 'px-4'
+                ]
+            ])
+            ->addColumn('createdAt', DateColumnType::class, [
+                'label' => 'user.datatable.created_at',
+                'sort' => true,
+                'format' => 'd/m/Y',
+                'value_attr' => [
+                    'class' => 'w-[100px]'
+                ]
             ]);
 
-        // Row actions
+                    // Row actions
         $builder
             ->addRowAction('edit', LinkActionType::class, [
                 'label' => 'edit_datatable.edit',
-                'href' => fn (Category $category) => $this->urlGenerator->generate('admin_category_edit', ['id' => $category->getId()]),
+                'href' => fn (User $user) => $this->urlGenerator->generate('admin_user_edit', ['id' => $user->getId()]),
                 'attr' => [
                     'size' => 'sm',
                     'variant' => 'outline',
@@ -83,7 +97,7 @@ class CategoryDataTableType extends AbstractDataTableType
             ])
             ->addRowAction('delete', FormActionType::class, [
                 'label' => 'delete_datatable.delete',
-                'action' => fn (Category $category) => $this->urlGenerator->generate('admin_category_delete', ['id' => $category->getId()]),
+                'action' => fn (User $user) => $this->urlGenerator->generate('admin_user_delete', ['id' => $user->getId()]),
                 'confirmation' => [
                     'type' => 'danger',
                     'label_title' => 'delete_datatable.delete_confirmation_title',
@@ -100,26 +114,7 @@ class CategoryDataTableType extends AbstractDataTableType
                 ]
             ]);
 
-        // Batch actions
-        $builder
-            ->addBatchAction('delete', FormActionType::class, [
-                'label' => 'delete_datatable.delete_selected',
-                'action' => $this->urlGenerator->generate('admin_category_batch_delete'),
-                'confirmation' => [
-                    'type' => 'danger',
-                    'label_title' => 'delete_datatable.delete_selected_confirmation_title',
-                    'label_description' => 'delete_datatable.delete_selected_confirmation_description',
-                    'label_confirm' => 'delete_datatable.delete_selected_confirmation_confirm',
-                    'label_cancel' => 'delete_datatable.delete_selected_confirmation_cancel',
-                    'translation_domain' => 'messages',
-                ],
-                'method' => 'POST',
-                'button_attr' => [
-                    'variant' => 'destructive',
-                    'size' => 'sm'
-                ]
-            ]);
-    }
+ }
 
     private function handleSearchFilter(DoctrineOrmProxyQuery $query, string $search): void
     {
