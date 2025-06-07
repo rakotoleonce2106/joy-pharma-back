@@ -36,7 +36,6 @@ product:
         genres: 'Genres'
         director: 'Director'
         actors: 'Actors'
-        edit: 'Edit'
 
 # Category form translations
 category:
@@ -64,43 +63,28 @@ category:
         create_new: 'Create new category'
         id: 'ID'
         name: 'Name'
-        edit: 'Edit'
 
-# Genre form translations
-genre:
+# User form translations
+user:
     form:
-        name: 'Name'
-        name_placeholder: 'Enter name'
+        email: 'Email'
+        email_placeholder: 'Enter email'
+        first_name: 'First Name'
+        first_name_placeholder: 'Enter first name'
+        last_name: 'Last Name'
+        last_name_placeholder: 'Enter last name'
+        isActive: 'Status Active'
+        isActive_placeholder: 'Choose status'
 
-    #DataTable translations
+    # DataTable translations
     datatable:
-        create_new: 'Create new genre'
+        create_new: 'Create new user'
         id: 'ID'
-        name: 'Name'
-        edit: 'Edit'
-
-# Genre form translations
-advertisement:
-    form:
-        title: 'Title'
-        title_placeholder: 'Enter title'
-        description: 'Description'
-        description_placeholder: 'Enter description'
-        upload_image: 'Upload'
-        upload_placeholder: 'Upload image'
-        subtitle: 'Subtitle'
-        subtitle_placeholder: 'Enter subtitle'
-        price: 'Price'
-        price_placeholder: 'Enter price'
-
-    #DataTable translations
-    datatable:
-        create_new: 'Create new Advertisement'
-        id: 'ID'
-        title: 'Title'
-        subtitle: 'Subtitle'
-        price: 'Price'
-        edit: 'Edit'
+        email: 'Email'
+        first_name: 'First Name'
+        last_name: 'Last Name'
+        phone: 'Phone'
+        created_at: 'Created At'
 
 
 # Plan form translations
@@ -160,6 +144,9 @@ delete_datatable:
     delete_selected_confirmation_confirm: 'Delete'
     delete_selected_confirmation_cancel: 'Cancel'
 
+edit_datatable:
+    edit: 'Edit'
+
 # Toast messages
 toast:
     success: 'Success'
@@ -175,7 +162,7 @@ admin:
         plans: 'Plans'
         products: 'Products'
         category: 'Category'
-        genre: 'Genre'
+        users: 'Users'
         advertisement: 'Advertisement'
         home: 'Home'
         settings: 'Settings'
@@ -223,7 +210,7 @@ year: Yearly
 'Back': 'Back'
 'Plans': 'Plans'
 'Category': 'Category'
-'Genre': 'Genre'
+'Users': 'Users'
 'Products': 'Products'
 'Advertisement':  'Advertisement'
 'Discard': 'Discard'
