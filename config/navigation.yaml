@@ -6,13 +6,6 @@ admin_top_menu:
             extras:
                 icon: "lucide:activity"
 
-        category:
-            label: "admin.menu.category"
-            route: "admin_category"
-            extras:
-                icon: "material-symbols:category-outline"
-                routes:
-                    - "admin_category"
         user:
             label: "admin.menu.users"
             route: "admin_user"
@@ -20,6 +13,22 @@ admin_top_menu:
                 icon: "material-symbols:person-outline"
                 routes:
                     - "admin_user"
+
+        category:
+            label: "admin.menu.category"
+            route: "admin_category"
+            extras:
+                icon: "material-symbols:category-outline"
+                routes:
+                    - "admin_category"
+        brand:
+            label: "admin.menu.brand"
+            route: "admin_brand"
+            extras:
+                icon: "material-symbols:local-mall-outline"
+                routes:
+                    - "admin_brand"
+
 
 admin_bottom_menu:
     tree:
