@@ -9,7 +9,6 @@ use Kreyu\Bundle\DataTableBundle\Action\Type\FormActionType;
 use Kreyu\Bundle\DataTableBundle\Action\Type\LinkActionType;
 use Kreyu\Bundle\DataTableBundle\Bridge\Doctrine\Orm\Query\DoctrineOrmProxyQuery;
 use Kreyu\Bundle\DataTableBundle\Bridge\Doctrine\Orm\Filter\Type\StringFilterType;
-use Kreyu\Bundle\DataTableBundle\Column\Type\HtmlColumnType;
 use Kreyu\Bundle\DataTableBundle\Column\Type\TextColumnType;
 use Kreyu\Bundle\DataTableBundle\DataTableBuilderInterface;
 use Kreyu\Bundle\DataTableBundle\Pagination\PaginationData;
