@@ -64,6 +64,23 @@ category:
         id: 'ID'
         name: 'Name'
 
+brand:
+    form:
+        name: 'Name'
+        name_placeholder: 'Enter brand name'
+        description: 'Description'
+        description_placeholder: 'Enter brand description'
+        image: 'Image'
+        image_placeholder: 'Upload image'
+        upload_image: 'Upload'
+
+    # DataTable translations
+    datatable:
+        create_new: 'Create new brand'
+        id: 'ID'
+        name: 'Name'
+        description: 'Description'
+
 # User form translations
 user:
     form:
@@ -73,6 +90,10 @@ user:
         first_name_placeholder: 'Enter first name'
         last_name: 'Last Name'
         last_name_placeholder: 'Enter last name'
+        phone: 'Phone'
+        phone_placeholder: 'Enter phone'
+        image: 'Image'
+        image_placeholder: 'Upload image'
         isActive: 'Status Active'
         isActive_placeholder: 'Choose status'
 
@@ -162,6 +183,7 @@ admin:
         plans: 'Plans'
         products: 'Products'
         category: 'Category'
+        brand: 'Brand'
         users: 'Users'
         advertisement: 'Advertisement'
         home: 'Home'
