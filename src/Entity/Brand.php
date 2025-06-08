@@ -55,7 +55,6 @@ class Brand
     public function setImage(?MediaFile $image): static
     {
         $this->image = $image;
-
         return $this;
     }
 

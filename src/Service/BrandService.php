@@ -52,7 +52,7 @@ readonly class BrandService
             ->findAll();
     }
 
-    public function batchDeleteCategories(array $brandIds): void
+    public function batchDeleteBrands(array $brandIds): void
     {
 
 
