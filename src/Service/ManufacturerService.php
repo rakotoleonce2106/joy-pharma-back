@@ -46,7 +46,7 @@ readonly class ManufacturerService
             ->findOneBy(['name' => $name]);
     }
 
-    public function batchDeleteCategories(array $manufacturerIds): void
+    public function batchDeleteManufacturers(array $manufacturerIds): void
     {
 
 

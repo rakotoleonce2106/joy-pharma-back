@@ -28,6 +28,13 @@ admin_top_menu:
                 icon: "material-symbols:local-mall-outline"
                 routes:
                     - "admin_brand"
+        manufacturer:
+            label: "admin.menu.manufacturer"
+            route: "admin_manufacturer"
+            extras:
+                icon: "material-symbols:factory-outline"
+                routes:
+                    - "admin_manufacturer"
 
 
 admin_bottom_menu:

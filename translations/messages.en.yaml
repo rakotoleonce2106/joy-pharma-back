@@ -81,6 +81,22 @@ brand:
         name: 'Name'
         description: 'Description'
 
+manufacturer:
+    form:
+        name: 'Name'
+        name_placeholder: 'Enter manufacturer name'
+        description: 'Description'
+        description_placeholder: 'Enter manufacturer description'
+        image: 'Image'
+        image_placeholder: 'Upload image'
+        upload_image: 'Upload'
+
+    # DataTable translations
+    datatable:
+        create_new: 'Create new manufacturer'
+        id: 'ID'
+        name: 'Name'
+        description: 'Description'
 # User form translations
 user:
     form:
@@ -184,6 +200,7 @@ admin:
         products: 'Products'
         category: 'Category'
         brand: 'Brand'
+        manufacturer: 'Manufacturer'
         users: 'Users'
         advertisement: 'Advertisement'
         home: 'Home'
