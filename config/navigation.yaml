@@ -35,6 +35,13 @@ admin_top_menu:
                 icon: "material-symbols:factory-outline"
                 routes:
                     - "admin_manufacturer"
+        form:
+            label: "admin.menu.form"
+            route: "admin_form"
+            extras:
+                icon: "lucide:package"
+                routes:
+                    - "admin_form"
 
 
 admin_bottom_menu:

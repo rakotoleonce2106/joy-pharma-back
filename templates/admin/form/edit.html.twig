@@ -1,24 +1,24 @@
 {% extends 'admin/dialog-layout.html.twig' %}
 
-{% block title %}{{ 'Create Category'|trans }}{% endblock %}
+{% block title %}{{ 'Edit Form'|trans }}{% endblock %}
 
 {% block content %}
     {% if not app.request.headers.has('turbo-frame') %}
         <main class="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 w-[50rem]">
             <div class="mx-auto grid lg:max-w-[85rem] w-full flex-1 auto-rows-max gap-4">
                 <div class="flex items-center gap-4">
-                    <twig:ui:button:root href="{{ path('admin_category') }}" variant="outline" size="icon" class="h-7 w-7">
+                    <twig:ui:button:root href="{{ path('admin_form') }}" variant="outline" size="icon" class="h-7 w-7">
                         <twig:ux:icon name="radix-icons:chevron-left" class="h-4 w-4"/>
                         <span class="sr-only">{{ 'Back'|trans }}</span>
                     </twig:ui:button:root>
                     <h1 class="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-                        {{ 'Category'|trans }}
+                        {{ 'Edit Form'|trans }}
                     </h1>
                     <div class="hidden items-center gap-2 md:ml-auto md:flex">
-                        <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_category') }}">
+                        <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_form') }}">
                             {{ 'Discard'|trans }}
                         </twig:ui:button:root>
-                        <twig:ui:button:root formnovalidate type="submit" form="category-form" size="sm">{{ 'Save Category'|trans }}
+                        <twig:ui:button:root formnovalidate type="submit" form="form-form" size="sm">{{ 'Update Form'|trans }}
                         </twig:ui:button:root>
                     </div>
                 </div>
@@ -35,7 +35,7 @@
                     <twig:ui:button:root variant="outline" size="sm">
                         {{ 'Discard'|trans }}
                     </twig:ui:button:root>
-                    <twig:ui:button:root formnovalidate type="submit" form="category-form" size="sm">{{ 'Save Category'|trans }}</twig:ui:button:root>
+                    <twig:ui:button:root formnovalidate type="submit" form="form-form" size="sm">{{ 'Update Form'|trans }}</twig:ui:button:root>
                 </div>
             </div>
         </main>
@@ -46,13 +46,13 @@
 
 {% block form %}
     <twig:ui:card:header class="turbo-frame:p-0">
-        <twig:ui:card:title>{{ 'Category information'|trans }}</twig:ui:card:title>
+        <twig:ui:card:title>{{ 'Edit Form'|trans }}</twig:ui:card:title>
         <twig:ui:card:description>
-            {{ 'Fill in the form below to create a new category.'|trans }}
+            {{ 'Update the form information below.'|trans }}
         </twig:ui:card:description>
     </twig:ui:card:header>
     <twig:ui:card:content class="turbo-frame:p-0 turbo-frame:pt-6">
-        <twig:admin:category-form :initialFormData="category" :form="form"/>
+        <twig:admin:form-form :initialFormData="form" :form="form"/>
     </twig:ui:card:content>
 {% endblock %}
 

@@ -46,7 +46,7 @@ readonly class FormService
             ->findOneBy(['name' => $name]);
     }
 
-    public function batchDeleteCategories(array $formIds): void
+    public function batchDeleteForms(array $formIds): void
     {
 
 
