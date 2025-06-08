@@ -51,7 +51,7 @@ readonly class UnitService
         $this->manager->flush();
     }
 
-    public function batchDeleteCategories(array $unitIds): void
+    public function batchDeleteUnits(array $unitIds): void
     {
 
 
