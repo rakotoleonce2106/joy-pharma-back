@@ -24,25 +24,15 @@ class UserType extends AbstractType
                 ],
             ])
             ->add('firstName', TextType::class, [
-                'label' => 'user.form.firstName',
+                'label' => 'user.form.first_name',
                 'attr' => [
-                    'placeholder' => 'user.form.firstName_placeholder',
+                    'placeholder' => 'user.form.first_name_placeholder',
                 ],
             ])
             ->add('lastName', TextType::class, [
-                'label' => 'user.form.lastName',
+                'label' => 'user.form.last_name',
                 'attr' => [
-                    'placeholder' => 'user.form.lastName_placeholder',
-                ],
-            ])
-            ->add('roles', EntityType::class, [
-                'label' => 'user.form.roles',
-                'class' => 'App\Entity\Role',
-                'choice_label' => 'name',
-                'multiple' => true,
-                'expanded' => true,
-                'attr' => [
-                    'class' => 'form-check-input',
+                    'placeholder' => 'user.form.last_name_placeholder',
                 ],
             ])
             ->add('phone', TextType::class, [

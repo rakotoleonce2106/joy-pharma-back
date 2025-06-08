@@ -38,7 +38,7 @@ class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/user/{id}/edit', name: 'admin_user_edit', defaults: ['title' => 'Edit user'])]
+    #[Route('/user/{id}/edit', name: 'admin_user_edit')]
     public function editAction(Request $request, User $user): Response
     {
 
