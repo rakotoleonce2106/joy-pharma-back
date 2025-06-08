@@ -97,6 +97,19 @@ manufacturer:
         id: 'ID'
         name: 'Name'
         description: 'Description'
+
+form:
+    form:
+        label: 'Label'
+        label_placeholder: 'Enter form label'
+
+
+    # DataTable translations
+    datatable:
+        create_new: 'Create new form'
+        id: 'ID'
+        label: 'Label'
+        
 # User form translations
 user:
     form:
@@ -201,6 +214,7 @@ admin:
         category: 'Category'
         brand: 'Brand'
         manufacturer: 'Manufacturer'
+        form: 'Form'
         users: 'Users'
         advertisement: 'Advertisement'
         home: 'Home'
