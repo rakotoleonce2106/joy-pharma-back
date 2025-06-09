@@ -1,24 +1,31 @@
 # Product form translations
 product:
     form:
-        title: 'Title'
-        title_placeholder: 'Enter title'
-        date: 'Date'
-        date_placeholder: 'Enter date'
+        name: 'Name'
+        name_placeholder: 'Enter name'
         description: 'Description'
         description_placeholder: 'Enter description'
-        rating: 'Rating'
-        rating_placeholder: 'Enter rating'
-        isActive: 'Status Active'
-        isActive_placeholder: 'Choose status'
+        code: 'Code'
+        code_placeholder: 'Enter code'
+        price: 'Price'
+        price_placeholder: 'Enter price'
         category: 'Category'
         category_placeholder: 'Select category'
-        genres: 'Genres'
-        genres_placeholder: 'Select genres'
-        director: 'Director'
-        director_placeholder: 'Enter director'
-        actors: 'Actors'
-        actors_placeholder: 'Enter actors'
+        brand: 'Brand'
+        brand_placeholder: 'Select brand'
+        manufacturer: 'Manufacturer'
+        manufacturer_placeholder: 'Select manufacturer'
+        unit: 'Unit'
+        unit_placeholder: 'Select unit'
+        form: 'Form'
+        form_placeholder: 'Select form'
+        images: 'Images'
+        images_placeholder: 'Upload images'
+        upload_images: 'Upload'
+        upload_images_placeholder: 'Upload images'
+        is_active: 'Status Active'
+        is_active_placeholder: 'Choose status'
+
 
 
     #DataTable translations
@@ -27,15 +34,15 @@ product:
         upload_Pharma_json: 'Upload Pharma Json'
         upload_serie_json: 'Upload Serie Json'
         id: 'ID'
-        title: 'Title'
+        name: 'Name'
         description: 'Description'
-        date: 'Date'
-        rating: 'Rating'
-        isActive: 'Status Active'
+        code: 'Code'
+        price: 'Price'
         category: 'Category'
-        genres: 'Genres'
-        director: 'Director'
-        actors: 'Actors'
+        brand: 'Brand'
+        manufacturer: 'Manufacturer'
+        unit: 'Unit'
+        form: 'Form'
 
 # Category form translations
 category:
@@ -63,6 +70,11 @@ category:
         create_new: 'Create new category'
         id: 'ID'
         name: 'Name'
+        image: 'Image'
+        svg: 'SVG'
+        description: 'Description'
+        parent: 'Parent Category'
+        isActive: 'Status Active'
 
 brand:
     form:
@@ -109,7 +121,18 @@ form:
         create_new: 'Create new form'
         id: 'ID'
         label: 'Label'
-        
+
+unit:
+    form:
+        label: 'Label'
+        label_placeholder: 'Enter unit label'
+
+    # DataTable translations
+    datatable:
+        create_new: 'Create new unit'
+        id: 'ID'
+        label: 'Label'
+
 # User form translations
 user:
     form:
@@ -210,11 +233,12 @@ admin:
         dashboard: 'Dashboard'
         subscriptions: 'Subscriptions'
         plans: 'Plans'
-        products: 'Products'
+        product: 'Product'
         category: 'Category'
         brand: 'Brand'
         manufacturer: 'Manufacturer'
         form: 'Form'
+        unit: 'Unit'
         users: 'Users'
         advertisement: 'Advertisement'
         home: 'Home'
