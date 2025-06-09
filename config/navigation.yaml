@@ -42,6 +42,20 @@ admin_top_menu:
                 icon: "lucide:package"
                 routes:
                     - "admin_form"
+        unit:
+            label: "admin.menu.unit"
+            route: "admin_unit"
+            extras:
+                icon: "material-symbols:scale-outline"
+                routes:
+                    - "admin_unit"
+        product:
+            label: "admin.menu.product"
+            route: "admin_product"
+            extras:
+                icon: "material-symbols:inventory-2-outline"
+                routes:
+                    - "admin_product"
 
 
 admin_bottom_menu:
