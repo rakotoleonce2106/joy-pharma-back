@@ -65,6 +65,36 @@ class CategoryDataTableType extends AbstractDataTableType
                 'value_attr' => [
                     'class' => 'px-4'
                 ]
+            ])
+             ->addColumn('parent', TextColumnType::class, [
+                'label' => 'category.datatable.parent',
+                'getter' => fn (Category $category) => $category->getParent() ? $category->getParent()->getName() : null,
+                'value_attr' => [
+                    'class' => 'px-4'
+                ],
+               'value_attr' => [
+                    'class' => 'px-4'
+                ]
+            ])
+            ->addColumn('image', TextColumnType::class, [
+                'label' => 'category.datatable.image',
+                'getter' => fn (Category $category) => $category->getImage() ? $category->getImage()->getName() : null,
+                'value_attr' => [
+                    'class' => 'px-4'
+                ],
+                'value_attr' => [
+                    'class' => 'px-4'
+                ]
+            ])
+            ->addColumn('svg', TextColumnType::class, [
+                'label' => 'category.datatable.svg',
+                'getter' => fn (Category $category) => $category->getSvg() ? $category->getSvg()->getName() : null,
+                'value_attr' => [
+                    'class' => 'px-4'
+                ],
+                'value_attr' => [
+                    'class' => 'px-4'
+                ]
             ]);
 
         // Row actions
