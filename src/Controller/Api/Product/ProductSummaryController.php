@@ -16,9 +16,7 @@ class ProductSummaryController extends AbstractController
         private readonly ProductService  $productService,
         private readonly CategoryService $categoryService,
         private readonly BrandService    $brandService
-    )
-    {
-    }
+    ) {}
 
     public function __invoke(): JsonResponse
     {
@@ -39,14 +37,15 @@ class ProductSummaryController extends AbstractController
         $topSells = $this->productService->fetchTopSellProducts();
         $brands = $this->brandService->findAll();
 
-        return $this->json([
-            'categories' => $categories,
-            'topSells' => $topSells,
-            'items' => $items,
-            'brands' => $brands
-        ],
+        return $this->json(
+            [
+                'categories' => $categories,
+                'topSells' => $topSells,
+                'items' => $items,
+                'brands' => $brands
+            ],
             context: [
-                'groups' =>  [ 'id:read','category:read' ,'product:read','image:read','brand:read' ]
+                'groups' =>  ['id:read', 'category:read', 'product:read', 'image:read', 'brand:read']
             ]
         );
     }
