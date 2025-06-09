@@ -159,7 +159,7 @@ readonly class  ProductService
 
     }
 
-    public function batchDeleteProduts(array $productIds): array
+    public function batchDeleteProducts(array $productIds): array
     {
         $successCount = 0;
         $failureCount = 0;
