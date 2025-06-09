@@ -28,6 +28,7 @@ class CategoryController extends AbstractController
         private readonly CategoryService $categoryService,
         private readonly MediaFileService $mediaFileService
     ) {}
+    
     #[Route('/category', name: 'admin_category')]
     public function index(Request $request): Response
     {
@@ -52,7 +53,6 @@ class CategoryController extends AbstractController
     #[Route('/category/{id}/edit', name: 'admin_category_edit', defaults: ['title' => 'Edit category'])]
     public function editAction(Request $request, Category $category): Response
     {
-
         $form = $this->createForm(CategoryType::class, $category, [
             'action' => $this->generateUrl('admin_category_edit', ['id' => $category->getId()])
         ]);
@@ -71,56 +71,71 @@ class CategoryController extends AbstractController
     public function batchDeleteAction(Request $request): Response
     {
         $categoryIds = $request->request->all('id');
-        $this->categoryService->batchDeleteCategories(
-            $categoryIds
-        );
+        $this->categoryService->batchDeleteCategories($categoryIds);
 
         $this->addSuccessToast("Categories deleted!", "The categories has been successfully deleted.");
         return $this->redirectToRoute('admin_category');
     }
-
 
     private function handleCategoryForm(Request $request, $form, $category, string $action): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
-            if ($action === 'create') {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/category/');
+            // Gestion de l'image
+            /** @var UploadedFile|null $image */
+            $image = $form->get('image')->getData();
+            if ($image) {
+                if ($action === 'create') {
+                    // Création d'un nouveau MediaFile pour une nouvelle catégorie
+                    $mediaFile = $this->mediaFileService->createMediaByFile($image, '/images/category/');
                     $category->setImage($mediaFile);
+                } else {
+                    // Mise à jour : on met à jour le MediaFile existant ou on en crée un nouveau
+                    $existingMediaFile = $category->getImage();
+                    if ($existingMediaFile) {
+                        // Mettre à jour le MediaFile existant
+                         $this->mediaFileService->updateMediaFileFromFile($existingMediaFile, $image, '/images/category/');
+                    } else {
+                        // Créer un nouveau MediaFile si aucun n'existait
+                        $mediaFile = $this->mediaFileService->createMediaByFile($image, '/images/category/');
+                        $category->setImage($mediaFile);
+                    }
                 }
-                /** @var UploadedFile|null $uploadedFile */
-                $svg = $form->get('svg')->getData();
+            }
 
-                if ($svg) {
-                    $svgFile = $this->mediaFileService->createMediaByFile($svg, 'icons/category/');
+            // Gestion du SVG
+            /** @var UploadedFile|null $svg */
+            $svg = $form->get('svg')->getData();
+            if ($svg) {
+                if ($action === 'create') {
+                    // Création d'un nouveau MediaFile pour une nouvelle catégorie
+                    $svgFile = $this->mediaFileService->createMediaByFile($svg, '/icons/category/');
                     $category->setSvg($svgFile);
+                } else {
+                    // Mise à jour : on met à jour le MediaFile existant ou on en crée un nouveau
+                    $existingSvgFile = $category->getSvg();
+                    if ($existingSvgFile) {
+                        // Mettre à jour le MediaFile existant
+                        $this->mediaFileService->updateMediaFileFromFile($existingSvgFile, $svg, '/icons/category/');
+                    } else {
+                        // Créer un nouveau MediaFile si aucun n'existait
+                        $svgFile = $this->mediaFileService->createMediaByFile($svg, '/icons/category/');
+                        $category->setSvg($svgFile);
+                    }
                 }
+            }
+
+            // Persister/mettre à jour la catégorie
+            if ($action === 'create') {
                 $this->categoryService->createCategory($category);
             } else {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->updateMediaFileFromFile($category->getImage(), $image, 'images/category/');
-                    $category->setImage($mediaFile);
-                }
-                /** @var UploadedFile|null $uploadedFile */
-                $svg = $form->get('svg')->getData();
-
-                if ($svg) {
-                    $svgFile = $this->mediaFileService->updateMediaFileFromFile($category->getSvg(), $svg, 'icons/category/');
-                    $category->setSvg($svgFile);
-                }
                 $this->categoryService->updateCategory($category);
             }
 
-
             $this->addSuccessToast(
-                $action === 'create' ? 'Product created!' : 'Product updated!',
-                "The product has been successfully {$action}d."
+                $action === 'create' ? 'Category created!' : 'Category updated!',
+                "The category has been successfully {$action}d."
             );
 
             if ($request->headers->has('turbo-frame')) {
