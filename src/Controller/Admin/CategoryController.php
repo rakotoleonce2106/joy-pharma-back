@@ -88,17 +88,17 @@ class CategoryController extends AbstractController
             if ($image) {
                 if ($action === 'create') {
                     // Création d'un nouveau MediaFile pour une nouvelle catégorie
-                    $mediaFile = $this->mediaFileService->createMediaByFile($image, '/images/category/');
+                    $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/category/');
                     $category->setImage($mediaFile);
                 } else {
                     // Mise à jour : on met à jour le MediaFile existant ou on en crée un nouveau
                     $existingMediaFile = $category->getImage();
                     if ($existingMediaFile) {
                         // Mettre à jour le MediaFile existant
-                         $this->mediaFileService->updateMediaFileFromFile($existingMediaFile, $image, '/images/category/');
+                         $this->mediaFileService->updateMediaFileFromFile($existingMediaFile, $image, 'images/category/');
                     } else {
                         // Créer un nouveau MediaFile si aucun n'existait
-                        $mediaFile = $this->mediaFileService->createMediaByFile($image, '/images/category/');
+                        $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/category/');
                         $category->setImage($mediaFile);
                     }
                 }
@@ -110,17 +110,17 @@ class CategoryController extends AbstractController
             if ($svg) {
                 if ($action === 'create') {
                     // Création d'un nouveau MediaFile pour une nouvelle catégorie
-                    $svgFile = $this->mediaFileService->createMediaByFile($svg, '/icons/category/');
+                    $svgFile = $this->mediaFileService->createMediaByFile($svg, 'icons/category/');
                     $category->setSvg($svgFile);
                 } else {
                     // Mise à jour : on met à jour le MediaFile existant ou on en crée un nouveau
                     $existingSvgFile = $category->getSvg();
                     if ($existingSvgFile) {
                         // Mettre à jour le MediaFile existant
-                        $this->mediaFileService->updateMediaFileFromFile($existingSvgFile, $svg, '/icons/category/');
+                        $this->mediaFileService->updateMediaFileFromFile($existingSvgFile, $svg, 'icons/category/');
                     } else {
                         // Créer un nouveau MediaFile si aucun n'existait
-                        $svgFile = $this->mediaFileService->createMediaByFile($svg, '/icons/category/');
+                        $svgFile = $this->mediaFileService->createMediaByFile($svg, 'icons/category/');
                         $category->setSvg($svgFile);
                     }
                 }

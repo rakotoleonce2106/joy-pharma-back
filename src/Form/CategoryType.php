@@ -31,6 +31,12 @@ class CategoryType extends AbstractType
                     'rows' => 3,
                 ],
             ])
+            ->add('color', TextType::class, [
+                'label' => 'category.form.color',
+                'attr' => [
+                    'placeholder' => 'category.form.color_placeholder',
+                ],
+            ])
             ->add('parent', EntityType::class, [
                 'class' => Category::class,
                 'required' => false,

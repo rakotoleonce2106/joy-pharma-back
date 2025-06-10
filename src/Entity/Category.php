@@ -60,7 +60,9 @@ class Category
     #[ORM\ManyToMany(targetEntity: Product::class, mappedBy: 'category')]
     private Collection $products;
 
-
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['category:read'])]
+    private ?string $color = null;
 
     public function __construct()
     {
@@ -213,6 +215,18 @@ class Category
     public function setImage(?MediaFile $image): static
     {
         $this->image = $image;
+
+        return $this;
+    }
+
+    public function getColor(): ?string
+    {
+        return $this->color;
+    }
+
+    public function setColor(?string $color): static
+    {
+        $this->color = $color;
 
         return $this;
     }

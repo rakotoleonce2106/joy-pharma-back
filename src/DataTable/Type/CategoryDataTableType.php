@@ -17,15 +17,13 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class CategoryDataTableType extends AbstractDataTableType
 {
-    public function __construct(private readonly UrlGeneratorInterface $urlGenerator)
-    {
-    }
+    public function __construct(private readonly UrlGeneratorInterface $urlGenerator) {}
 
     public function buildDataTable(DataTableBuilderInterface $builder, array $options): void
     {
         $builder->setDefaultPaginationData(new PaginationData(page: 1, perPage: 13));
         $builder->setSearchHandler($this->handleSearchFilter(...));
-        
+
         // Create action
         $builder->addAction('create', LinkActionType::class, [
             'label' => 'category.datatable.create_new',
@@ -66,19 +64,25 @@ class CategoryDataTableType extends AbstractDataTableType
                     'class' => 'px-4'
                 ]
             ])
-             ->addColumn('parent', TextColumnType::class, [
+            ->addColumn('parent', TextColumnType::class, [
                 'label' => 'category.datatable.parent',
-                'getter' => fn (Category $category) => $category->getParent() ? $category->getParent()->getName() : null,
+                'getter' => fn(Category $category) => $category->getParent() ? $category->getParent()->getName() : null,
                 'value_attr' => [
                     'class' => 'px-4'
                 ],
-               'value_attr' => [
+                'value_attr' => [
                     'class' => 'px-4'
                 ]
             ])
+            ->addColumn('color', TextColumnType::class, [
+                'label' => 'category.datatable.color',
+                'value_attr' => [
+                    'class' => 'px-4'
+                ],
+            ])
             ->addColumn('image', TextColumnType::class, [
                 'label' => 'category.datatable.image',
-                'getter' => fn (Category $category) => $category->getImage() ? $category->getImage()->getName() : null,
+                'getter' => fn(Category $category) => $category->getImage() ? $category->getImage()->getName() : null,
                 'value_attr' => [
                     'class' => 'px-4'
                 ],
@@ -88,7 +92,7 @@ class CategoryDataTableType extends AbstractDataTableType
             ])
             ->addColumn('svg', TextColumnType::class, [
                 'label' => 'category.datatable.svg',
-                'getter' => fn (Category $category) => $category->getSvg() ? $category->getSvg()->getName() : null,
+                'getter' => fn(Category $category) => $category->getSvg() ? $category->getSvg()->getName() : null,
                 'value_attr' => [
                     'class' => 'px-4'
                 ],
@@ -101,7 +105,7 @@ class CategoryDataTableType extends AbstractDataTableType
         $builder
             ->addRowAction('edit', LinkActionType::class, [
                 'label' => 'edit_datatable.edit',
-                'href' => fn (Category $category) => $this->urlGenerator->generate('admin_category_edit', ['id' => $category->getId()]),
+                'href' => fn(Category $category) => $this->urlGenerator->generate('admin_category_edit', ['id' => $category->getId()]),
                 'attr' => [
                     'size' => 'sm',
                     'variant' => 'outline',
@@ -112,7 +116,7 @@ class CategoryDataTableType extends AbstractDataTableType
             ])
             ->addRowAction('delete', FormActionType::class, [
                 'label' => 'delete_datatable.delete',
-                'action' => fn (Category $category) => $this->urlGenerator->generate('admin_category_delete', ['id' => $category->getId()]),
+                'action' => fn(Category $category) => $this->urlGenerator->generate('admin_category_delete', ['id' => $category->getId()]),
                 'confirmation' => [
                     'type' => 'danger',
                     'label_title' => 'delete_datatable.delete_confirmation_title',

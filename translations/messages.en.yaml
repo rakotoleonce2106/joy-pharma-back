@@ -51,6 +51,8 @@ category:
         name_placeholder: 'Enter name'
         description: 'Description'
         description_placeholder: 'Enter description'
+        color: 'Color'
+        color_placeholder: 'Enter color'
         isActive: 'Status Active'
         isActive_placeholder: 'Choose status'
         image: 'Image'
@@ -73,6 +75,7 @@ category:
         image: 'Image'
         svg: 'SVG'
         description: 'Description'
+        color: 'Color'
         parent: 'Parent Category'
         isActive: 'Status Active'
 
