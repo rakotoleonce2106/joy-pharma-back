@@ -49,7 +49,7 @@ readonly class MediaFileService
         $mediaFile = new MediaFile();
         $mediaFile->setName($filename);
         $mediaFile->setMimeType($mimeType);
-        $mediaFile->setUrl($path . $filename);
+        $mediaFile->setUrl('/' . $path . $filename);
 
         // Move the file to the uploads directory
         $file->move($path, $filename);
@@ -72,7 +72,7 @@ readonly class MediaFileService
         // Update media file properties
         $mediaFile->setName($filename);
         $mediaFile->setMimeType($mimeType);
-        $mediaFile->setUrl($path . $filename);
+        $mediaFile->setUrl('/' . $path . $filename);
 
         // Move the new file to the uploads directory
         $file->move($path, $filename);
