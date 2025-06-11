@@ -78,6 +78,16 @@ class ProductDataTableType extends AbstractDataTableType
             //         'class' => 'px-4'
             //     ]
             // ])
+            ->addColumn('category', TextColumnType::class, [
+                'label' => 'product.datatable.category',
+                'sort' => false,
+                'formatter' => fn($value, Product $product) => implode(', ', $product->getCategory()->map(
+                    fn($category) => $category->getName()
+                )->toArray()),
+                'value_attr' => [
+                    'class' => 'px-4 whitespace-nowrap'
+                ]
+            ])
 
             ->addColumn('price', TextColumnType::class, [
                 'label' => 'product.datatable.price',
