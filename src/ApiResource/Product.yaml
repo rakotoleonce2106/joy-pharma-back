@@ -30,6 +30,7 @@ App\Entity\Product:
             uriTemplate: '/products'
             normalizationContext:
                 groups:  ['id:read','product:read','image:read']
+            format: 'json'
             openapi:
                 summary: 'Get all products'
                 description: 'Get all products'
