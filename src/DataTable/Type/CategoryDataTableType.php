@@ -64,12 +64,12 @@ class CategoryDataTableType extends AbstractDataTableType
                     'class' => 'px-4'
                 ]
             ])
-            ->addColumn('parent', TextColumnType::class, [
-                'label' => 'category.datatable.parent',
-                'getter' => fn(Category $category) => $category->getParent() ? $category->getParent()->getName() : null,
-                'value_attr' => [
-                    'class' => 'px-4'
-                ],
+            ->addColumn('categories', TextColumnType::class, [
+                'label' => 'product.datatable.category',
+                'sort' => false,
+                'formatter' => fn($value, Category $category) => implode(', ', $category->getCategories()->map(
+                    fn($category) => $category->getName()
+                )->toArray()),
                 'value_attr' => [
                     'class' => 'px-4'
                 ]
