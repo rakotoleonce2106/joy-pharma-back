@@ -44,15 +44,10 @@ class Category
     /**
      * @var Collection<int, self>
      */
+    #[Groups(['category:read','product:read'])]
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
     private Collection $categories;
 
-    /**
-     * @var Collection<int, self>
-     */
-    #[ORM\ManyToMany(targetEntity: self::class, inversedBy: 'categories')]
-    #[Groups(['category:read'])]
-    private Collection $children;
 
     /**
      * @var Collection<int, Product>
@@ -67,7 +62,6 @@ class Category
     public function __construct()
     {
         $this->categories = new ArrayCollection();
-        $this->children = new ArrayCollection();
         $this->products = new ArrayCollection();
     }
 
@@ -128,30 +122,6 @@ class Category
                 $category->setParent(null);
             }
         }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, self>
-     */
-    public function getChildren(): Collection
-    {
-        return $this->children;
-    }
-
-    public function addChild(self $child): static
-    {
-        if (!$this->children->contains($child)) {
-            $this->children->add($child);
-        }
-
-        return $this;
-    }
-
-    public function removeChild(self $child): static
-    {
-        $this->children->removeElement($child);
 
         return $this;
     }
