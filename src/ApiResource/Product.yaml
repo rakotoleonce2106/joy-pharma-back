@@ -40,6 +40,8 @@ App\Entity\Product:
             class: ApiPlatform\Metadata\GetCollection
             controller: 'App\Controller\Api\Product\ProductSummaryController'
             uriTemplate: '/products/home'
+            normalizationContext:
+                groups:  ['id:read','category:read','product:read','image:read']
             openapi:
                 summary: 'Get all products home'
                 description: 'Get all products home'
