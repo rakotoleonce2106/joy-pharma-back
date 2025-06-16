@@ -22,7 +22,7 @@ class ProductSummaryController extends AbstractController
     {
 
         $categories = $this->categoryService->findParentCategories();
-
+        
         $items = [];
         foreach ($categories as $category) {
             $products = $this->productService->fetchProductsByCat($category->getId());
@@ -45,7 +45,7 @@ class ProductSummaryController extends AbstractController
                 'brands' => $brands
             ],
             context: [
-                'groups' =>  ['id:read', 'category:read', 'product:read', 'image:read', 'brand:read']
+                'groups' =>  ['id:read','category:read', 'product:read', 'image:read', 'brand:read']
             ]
         );
     }
