@@ -14,19 +14,19 @@ class Quantity
 
     #[ORM\Column(nullable: true)]
     #[Groups(['product:read'])]
-    private ?float $count = null;
+    private ?int $count = null;
 
     #[ORM\ManyToOne]
     #[Groups(['product:read'])]
     private ?Unit $unit = null;
 
 
-    public function getCount(): ?float
+    public function getCount(): ?int
     {
         return $this->count;
     }
 
-    public function setCount(?float $count): static
+    public function setCount(?int $count): static
     {
         $this->count = $count;
 
