@@ -7,6 +7,7 @@ use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityStatusTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\ProductRepository;
+use App\AppFilter\CategoryFilter;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -15,10 +16,8 @@ use Symfony\Component\Serializer\Attribute\Groups;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
-#[ApiFilter(SearchFilter::class, properties: [
-    '$name' => 'ipartial',
-    'category.id' => 'exact',
-])]
+#[ApiFilter(CategoryFilter::class)]
+#[ApiFilter(SearchFilter::class, properties: ['name' => 'ipartial'])]
 class Product
 {
     use EntityIdTrait;
