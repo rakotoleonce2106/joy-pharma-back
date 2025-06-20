@@ -57,10 +57,6 @@ class Product
     #[Groups(['product:read'])]
     private ?Manufacturer $manufacturer = null;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
-    #[Groups(['product:read'])]
-    private ?Price $price = null;
-
     /**
      * @var Collection<int, Category>
      */
@@ -78,12 +74,37 @@ class Product
     #[Groups(['product:read'])]
     private ?bool $isActive = null;
 
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['product:read'])]
+    private ?int $quantity = null;
+
+    #[ORM\ManyToOne]
+    #[Groups(['product:read'])]
+    private ?Unit $unit = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['product:read'])]
+    private ?float $unitPrice = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['product:read'])]
+    private ?float $totalPrice = null;
+
+    #[ORM\ManyToOne(cascade: ['persist', 'remove'])]
+    #[Groups(['product:read'])]
+    private ?Currency $currency = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $stock = null;
+
+
     #[ORM\Column(type: Types::ARRAY, nullable: true)]
     #[Groups(['product:read'])]
     private ?array $variants = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?int $salesCount = null;
+
+
 
     public function __construct()
     {
@@ -195,18 +216,6 @@ class Product
         return $this;
     }
 
-    public function getPrice(): ?Price
-    {
-        return $this->price;
-    }
-
-    public function setPrice(?Price $price): static
-    {
-        $this->price = $price;
-
-        return $this;
-    }
-
     /**
      * @return Collection<int, Category>
      */
@@ -279,14 +288,75 @@ class Product
         return $this;
     }
 
-    public function getSalesCount(): ?int
+
+    public function getUnit(): ?Unit
     {
-        return $this->salesCount;
+        return $this->unit;
     }
 
-    public function setSalesCount(?int $salesCount): static
+    public function setUnit(?Unit $unit): static
     {
-        $this->salesCount = $salesCount;
+        $this->unit = $unit;
+
+        return $this;
+    }
+
+    public function getUnitPrice(): ?float
+    {
+        return $this->unitPrice;
+    }
+
+    public function setUnitPrice(?float $unitPrice): static
+    {
+        $this->unitPrice = $unitPrice;
+
+        return $this;
+    }
+
+    public function getTotalPrice(): ?float
+    {
+        return $this->totalPrice;
+    }
+
+    public function setTotalPrice(?float $totalPrice): static
+    {
+        $this->totalPrice = $totalPrice;
+
+        return $this;
+    }
+
+    public function getQuantity(): ?int
+    {
+        return $this->quantity;
+    }
+
+    public function setQuantity(?int $quantity): static
+    {
+        $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    public function getCurrency(): ?Currency
+    {
+        return $this->currency;
+    }
+
+    public function setCurrency(?Currency $currency): static
+    {
+        $this->currency = $currency;
+
+        return $this;
+    }
+
+    public function getStock(): ?int
+    {
+        return $this->stock;
+    }
+
+    public function setStock(?int $stock): static
+    {
+        $this->stock = $stock;
 
         return $this;
     }
