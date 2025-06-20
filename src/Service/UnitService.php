@@ -16,9 +16,16 @@ readonly class UnitService
     ) {
     }
 
-    public function createUnit(Unit $unit): void
+    public function getOrCreateUnit(String $label): ?Unit
     {
+        $unit = $this->unitRepository->findOneBy(['label' => $label]);
+        if ($unit) {
+            return null;
+        }
+        $unit = new Unit();
+        $unit->setLabel($label);
         $this->manager->persist($unit);
+        return $unit;
     }
 
 
