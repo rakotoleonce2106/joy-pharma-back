@@ -4,6 +4,7 @@ namespace App\Service;
 
 
 use App\Entity\Category;
+use App\Entity\Currency;
 use App\Entity\Price;
 use App\Entity\Product;
 use App\Entity\Quantity;
@@ -23,18 +24,13 @@ readonly class  ProductService
         private BrandService           $brandService,
         private ManufacturerService    $manufacturerService,
         private UnitService            $unitService,
-        private PriceService           $priceService,
-        private QuantityService        $quantityService,
-    )
-    {
-
-    }
+        private CurrencyService           $currencyService,
+    ) {}
 
     public function createProduct(Product $product): void
     {
         $this->manager->persist($product);
         $this->manager->flush();
-
     }
 
     /**
@@ -71,7 +67,6 @@ readonly class  ProductService
                 $mediaFile = $this->fileService->createMediaFileByUrl($elt);
                 $product->addImage($mediaFile);
             }
-
         }
 
         if (array_key_exists('details', $productData) && $productData['details']) {
@@ -96,41 +91,42 @@ readonly class  ProductService
         // Handle Image
         // Handle Image
         if (array_key_exists('price', $productData) && $productData['price']) {
-            $unit = new Unit();
-            $quantity = new Quantity();
-            $price = new Price();
-
-            // Check if 'quantity' exists and is not empty
-            if (isset($productData['price']['quantity']) && preg_match('/(\d+)\s*x\s*(\d+)\s*(.+)/u', $productData['price']['quantity'], $matches)) {
-                if (isset($matches[3], $matches[2])) {
-                    $unit->setLabel(trim($matches[3]));
-                    $quantity->setUnit($unit);
-                    $totalCount = (float)$matches[1] * (float)$matches[2]; // Calcul 2x45 = 90
-                    $quantity->setCount($totalCount);
-                    $this->unitService->createUnit($unit);
-                    $this->quantityService->createQuantity($quantity);
+            
+            if (isset($productData['price']['quantity'])) {
+                
+                $quantityString = $productData['price']['quantity'];
+                // Exemple : "2 x 45 pc(s)"
+                if (preg_match('/(\d+)\s*x\s*(\d+)\s*(.+)/u', $quantityString, $matches)) {
+                    $unitLabel = trim($matches[3]);
+                    $unit = $this->unitService->getOrCreateUnit($unitLabel);
+                    $product->setUnit($unit);
+                    $count = (float)$matches[1] * (float)$matches[2];
+                    $product->setQuantity($count);
                 }
+                // Exemple : "12 pc(s)"
+                elseif (preg_match('/(\d+)\s*(.+)/u', $quantityString, $matches)) {
+                    $unitLabel = trim($matches[2]);
+                    $unit= $this->unitService->getOrCreateUnit($unitLabel);
+                    $$product->setUnit($unit);
+                    $product->setQuantity((float)$matches[1]);
+                } 
+            }
+            
+            if (
+                isset($productData['price']['unitPrice']) &&
+                preg_match('/([\d,]+)\s*€\s*\/\s*([\d]+)\s*(.+)/u', $productData['price']['unitPrice'], $matches)
+            ) {
+                $unitPriceValue = (float)str_replace(',', '.', $matches[1]);
+                $product->setUnitPrice($unitPriceValue);
             }
 
-            $price->setQuantity($quantity);
-
-            // Check if 'unitPrice' exists and is not empty
-            if (isset($productData['price']['unitPrice']) && preg_match('/(\d+,\d+)\s*€\s*\/\s*(\d+)\s*(.+)/u', $productData['price']['unitPrice'], $matches)) {
-                if (isset($matches[1])) {
-                    $price->setUnitPrice((float)str_replace(',', '.', $matches[1]));
-                }
-            }
-
-            // Check if 'totalPrice' exists and is not empty
             if (isset($productData['price']['totalPrice']) && preg_match('/€\s*([\d,\.]+)/u', $productData['price']['totalPrice'], $matches)) {
                 if (isset($matches[1])) {
-                    $price->setTotalPrice((float)str_replace(',', '.', $matches[1]));
-                    $price->setCurrency('€');
+                    $product->setTotalPrice((float)str_replace(',', '.', $matches[1]));
+                    $currency= $this->currencyService->getOrCreateCurrency('€');
+                    $product->setCurrency($currency);
                 }
             }
-
-            $product->setPrice($price);
-            $this->priceService->createPrice($price);
         }
 
         $urls = array_column($productData['variants'], 'url');
@@ -142,21 +138,18 @@ readonly class  ProductService
 
     public function fetchTopSellProducts(): array
     {
-       return $this->productRepository->findTopSells();
-
+        return $this->productRepository->findTopSells();
     }
 
     public function fetchProductsByCat(int $id): array
     {
         return $this->productRepository->findByCategory($id);
-
     }
 
 
     public function updateProduct(): void
     {
         $this->manager->flush();
-
     }
 
     public function batchDeleteProducts(array $productIds): array
@@ -175,15 +168,11 @@ readonly class  ProductService
             'success_count' => $successCount,
             'failure_count' => $failureCount
         ];
-
     }
 
     public function deleteProduct(Product $product): void
     {
         $this->manager->remove($product);
         $this->manager->flush();
-
     }
-
-
 }
