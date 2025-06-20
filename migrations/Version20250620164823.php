@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250510023310 extends AbstractMigration
+final class Version20250620164823 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -21,25 +21,19 @@ final class Version20250510023310 extends AbstractMigration
     {
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql(<<<'SQL'
-            ALTER TABLE category ADD svg_id INT DEFAULT NULL
+            ALTER TABLE category_category DROP CONSTRAINT fk_b1369dba4987e587
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category ADD image_id INT DEFAULT NULL
+            ALTER TABLE category_category DROP CONSTRAINT fk_b1369dba5062b508
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category ADD description VARCHAR(255) DEFAULT NULL
+            DROP TABLE category_category
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category ADD CONSTRAINT FK_64C19C17517183B FOREIGN KEY (svg_id) REFERENCES media_file (id) NOT DEFERRABLE INITIALLY IMMEDIATE
+            ALTER TABLE category ADD color VARCHAR(255) DEFAULT NULL
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category ADD CONSTRAINT FK_64C19C13DA5256D FOREIGN KEY (image_id) REFERENCES media_file (id) NOT DEFERRABLE INITIALLY IMMEDIATE
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE UNIQUE INDEX UNIQ_64C19C17517183B ON category (svg_id)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE UNIQUE INDEX UNIQ_64C19C13DA5256D ON category (image_id)
+            ALTER TABLE quantity ALTER count TYPE INT
         SQL);
     }
 
@@ -50,25 +44,25 @@ final class Version20250510023310 extends AbstractMigration
             CREATE SCHEMA public
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category DROP CONSTRAINT FK_64C19C17517183B
+            CREATE TABLE category_category (category_source INT NOT NULL, category_target INT NOT NULL, PRIMARY KEY(category_source, category_target))
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category DROP CONSTRAINT FK_64C19C13DA5256D
+            CREATE INDEX idx_b1369dba4987e587 ON category_category (category_target)
         SQL);
         $this->addSql(<<<'SQL'
-            DROP INDEX UNIQ_64C19C17517183B
+            CREATE INDEX idx_b1369dba5062b508 ON category_category (category_source)
         SQL);
         $this->addSql(<<<'SQL'
-            DROP INDEX UNIQ_64C19C13DA5256D
+            ALTER TABLE category_category ADD CONSTRAINT fk_b1369dba4987e587 FOREIGN KEY (category_target) REFERENCES category (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category DROP svg_id
+            ALTER TABLE category_category ADD CONSTRAINT fk_b1369dba5062b508 FOREIGN KEY (category_source) REFERENCES category (id) ON DELETE CASCADE NOT DEFERRABLE INITIALLY IMMEDIATE
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category DROP image_id
+            ALTER TABLE category DROP color
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE category DROP description
+            ALTER TABLE quantity ALTER count TYPE DOUBLE PRECISION
         SQL);
     }
 }
