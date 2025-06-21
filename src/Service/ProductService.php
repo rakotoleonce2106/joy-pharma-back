@@ -89,45 +89,47 @@ readonly class  ProductService
         }
 
         // Handle Image
-        // Handle Image
-        if (array_key_exists('price', $productData) && $productData['price']) {
-            
-            if (isset($productData['price']['quantity'])) {
-                
+        // Handle Price
+        if (!empty($productData['price']) && is_array($productData['price'])) {
+
+            // Quantity: e.g. "7 pc(s)"
+            if (!empty($productData['price']['quantity'])) {
                 $quantityString = $productData['price']['quantity'];
-                // Exemple : "2 x 45 pc(s)"
-                if (preg_match('/(\d+)\s*x\s*(\d+)\s*(.+)/u', $quantityString, $matches)) {
-                    $unitLabel = trim($matches[3]);
-                    $unit = $this->unitService->getOrCreateUnit($unitLabel);
-                    $product->setUnit($unit);
-                    $count = (float)$matches[1] * (float)$matches[2];
-                    $product->setQuantity($count);
-                }
-                // Exemple : "12 pc(s)"
-                elseif (preg_match('/(\d+)\s*(.+)/u', $quantityString, $matches)) {
+
+                if (preg_match('/(\d+)\s*(.+)/u', $quantityString, $matches)) {
+                    $quantity = (float) $matches[1];
                     $unitLabel = trim($matches[2]);
-                    $unit= $this->unitService->getOrCreateUnit($unitLabel);
-                    $$product->setUnit($unit);
-                    $product->setQuantity((float)$matches[1]);
-                } 
-            }
-            
-            if (
-                isset($productData['price']['unitPrice']) &&
-                preg_match('/([\d,]+)\s*€\s*\/\s*([\d]+)\s*(.+)/u', $productData['price']['unitPrice'], $matches)
-            ) {
-                $unitPriceValue = (float)str_replace(',', '.', $matches[1]);
-                $product->setUnitPrice($unitPriceValue);
+
+                    $unit = $this->unitService->getOrCreateUnit($unitLabel);
+                    $product->setQuantity($quantity);
+                    $product->setUnit($unit);
+                }
             }
 
-            if (isset($productData['price']['totalPrice']) && preg_match('/€\s*([\d,\.]+)/u', $productData['price']['totalPrice'], $matches)) {
-                if (isset($matches[1])) {
-                    $product->setTotalPrice((float)str_replace(',', '.', $matches[1]));
-                    $currency= $this->currencyService->getOrCreateCurrency('€');
+            // Unit Price: e.g. "0,28 € / 1 pc(s)"
+            if (!empty($productData['price']['unitPrice'])) {
+                $unitPriceString = $productData['price']['unitPrice'];
+
+                if (preg_match('/([\d,.]+)\s*€\s*\/\s*[\d]+\s*(.+)/u', $unitPriceString, $matches)) {
+                    $unitPrice = (float) str_replace(',', '.', str_replace(' ', '', $matches[1])); // remove non-breaking space
+                    $product->setUnitPrice($unitPrice);
+                }
+            }
+
+            // Total Price: e.g. "€ 1,99"
+            if (!empty($productData['price']['totalPrice'])) {
+                $totalPriceString = $productData['price']['totalPrice'];
+
+                if (preg_match('/€\s*([\d,\.]+)/u', $totalPriceString, $matches)) {
+                    $totalPrice = (float) str_replace(',', '.', str_replace(' ', '', $matches[1]));
+                    $product->setTotalPrice($totalPrice);
+
+                    $currency = $this->currencyService->getOrCreateCurrency('€');
                     $product->setCurrency($currency);
                 }
             }
         }
+
 
         $urls = array_column($productData['variants'], 'url');
         $product->setVariants($urls);
