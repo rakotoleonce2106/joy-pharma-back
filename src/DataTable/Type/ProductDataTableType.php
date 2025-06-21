@@ -89,10 +89,9 @@ class ProductDataTableType extends AbstractDataTableType
                 ]
             ])
 
-            ->addColumn('price', TextColumnType::class, [
+            ->addColumn('totalPrice', TextColumnType::class, [
                 'label' => 'product.datatable.price',
                 'sort' => true,
-                'property_path' => 'price.totalPrice',
                 'value_attr' => [
                     'class' => 'px-4'
                 ]
