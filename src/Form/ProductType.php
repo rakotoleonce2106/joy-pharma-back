@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\Brand;
 use App\Entity\Category;
+use App\Entity\Currency;
 use App\Entity\Form;
 use App\Entity\Manufacturer;
 use App\Entity\Product;
@@ -11,6 +12,7 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -84,10 +86,43 @@ class ProductType extends AbstractType
                         ->orderBy('c.name', 'ASC');
                 },
             ])
-            ->add('price', PriceType::class, [
-                'label' => false, // or 'label' => 'Price Details',
+            ->add('unitPrice', TextType::class, [
+                'label' => 'product.form.unitPrice',
+                'required' => false,
+                'attr' => [
+                    'placeholder' => 'product.form.unitPrice_placeholder',
+                ],
+            ])
+            ->add('totalPrice', TextType::class, [
+                'label' => 'product.form.code',
+                'required' => false,
+                'attr' => [
+                    'placeholder' => 'product.form.code_placeholder',
+                ],
+            ])
+            ->add('currency', CurrencyType::class, [
+                'label' => false,
                 'required' => false,
             ])
+            ->add('quantity', IntegerType::class, [
+                'label' => 'product.form.quantity',
+                'required' => false,
+                'attr' => [
+                    'placeholder' => 'product.form.code_placeholder',
+                ],
+            ])
+            ->add(
+                'unit',
+                UnitType::class,
+                [
+                    'label' => 'product.form.unit',
+                    'required' => false,
+                    'attr' => [
+                        'placeholder' => 'product.form.code_placeholder',
+                    ],
+                ]
+            )
+            
             ->add('form', EntityType::class, [
                 'class' => Form::class,
                 'choice_label' => 'label',
