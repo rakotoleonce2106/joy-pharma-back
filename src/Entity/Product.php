@@ -146,6 +146,7 @@ class Product
         return $this->images;
     }
 
+
     public function addImage(MediaFile $image): static
     {
         if (!$this->images->contains($image)) {
