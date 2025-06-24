@@ -38,6 +38,10 @@ readonly class  ProductService
      */
     public function createProductFromJson($productData): void
     {
+        $temp= $this->productRepository->findOneBy(['name' => $productData['title']]);
+        if ($temp) {
+            return;
+        }   
         $product = new Product();
         $product->setName($productData['title']);
         $product->setDescription($productData['description']);
