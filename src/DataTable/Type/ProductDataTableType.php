@@ -88,6 +88,14 @@ class ProductDataTableType extends AbstractDataTableType
                     'class' => 'px-4 whitespace-nowrap'
                 ]
             ])
+             ->addColumn('unitPrice', TextColumnType::class, [
+                'label' => 'product.datatable.price',
+                'sort' => true,
+                'value_attr' => [
+                    'class' => 'px-4'
+                ]
+            ])
+
 
             ->addColumn('totalPrice', TextColumnType::class, [
                 'label' => 'product.datatable.price',
