@@ -5,20 +5,24 @@ namespace App\Entity;
 use App\Entity\Traits\EntityIdTrait;
 use App\Repository\OrderItemRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: OrderItemRepository::class)]
 class OrderItem
 {
-    
+
     use EntityIdTrait;
 
     #[ORM\ManyToOne(inversedBy: 'orderItems')]
+    #[Groups(['order:create','order:read'])]
     private ?Product $product = null;
 
     #[ORM\Column]
+    #[Groups(['order:create','order:read'])]
     private ?int $quantity = null;
 
     #[ORM\Column]
+    #[Groups(['order:read'])]
     private ?float $totalPrice = null;
 
     #[ORM\ManyToOne(inversedBy: 'items')]
