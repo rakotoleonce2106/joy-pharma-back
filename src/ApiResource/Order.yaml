@@ -1,0 +1,42 @@
+App\Entity\Order:
+    operations:
+        post_order:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: "/order"
+            validationContext:
+                groups: ['order:create' ]
+            normalizationContext:
+                groups: [ 'id:read',"order:read" ]
+            openapi:
+                summary: 'Post a order'
+                parameters:
+
+                
+        get_order:
+            method: 'GET'
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/order/{id}'
+            normalizationContext:
+                groups: ['order:read']
+            openapi:
+                summary: 'Get a order'
+                description: 'Get a order by id'
+                parameters:
+                    - name: 'id'
+                      in: 'path'
+                      description:  'The id of the order'
+
+        get_categories:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/orders'
+            normalizationContext:
+                groups: ['id:read','order:read']
+            openapi:
+                summary: 'Get all ordes'
+                description: 'Get all orders'
+                
+
+    normalizationContext:
+        groups: ['id:read','order:read']
+                      
