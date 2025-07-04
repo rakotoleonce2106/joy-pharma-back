@@ -5,6 +5,7 @@ api_platform:
         max_joins: 50  # Increase the number based on your needs
     description: 'Joy-Pharma API'
     formats:
+        jsonld: ['application/ld+json']
         json: ['application/json']
         multipart: [ 'multipart/form-data' ]
         html: ['text/html']  # Add HTML support
