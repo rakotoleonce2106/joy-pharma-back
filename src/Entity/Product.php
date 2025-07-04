@@ -83,11 +83,11 @@ class Product
     #[Groups(['product:read'])]
     private ?Unit $unit = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(nullable: true,type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Groups(['product:read'])]
     private ?float $unitPrice = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(nullable: true,type: Types::DECIMAL, precision: 10, scale: 2)]
     #[Groups(['product:read'])]
     private ?float $totalPrice = null;
 
