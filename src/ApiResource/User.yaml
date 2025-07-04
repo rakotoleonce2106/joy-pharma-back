@@ -23,20 +23,41 @@ App\Entity\User:
                 security:
                     -   JWT: [ 'ROLE_ADMIN' ]
 
-        put:
-            class: ApiPlatform\Metadata\Put
-            processor: App\State\UserPasswordHasher
-
         patch:
-            class: ApiPlatform\Metadata\Patch
-            processor: App\State\UserPasswordHasher
-            input_formats:
-                multipart: [ 'multipart/form-data' ]
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: "/user/update"
             validationContext:
-                groups: [ 'Default', 'user:update' ]
+                groups: ['user:update' ]
             normalizationContext:
                 groups: ['id:read', "user:read" ]
             security: "is_granted('ROLE_USER')"
+            input_formats:
+                multipart: [ 'multipart/form-data' ]
+            processor: App\State\UserUpdateProcessor
+            
+            
+
+        facebook_login:
+            method: "POST"
+            class: ApiPlatform\Metadata\Post
+            controller: 'App\Controller\Api\FacebookAuthController'
+            input: 'App\Dto\SocialInput'
+            public: true
+            uriTemplate: "/facebook_login"
+            openapi:
+                summary: "Facebook login"
+                description: "Facebook login."
+
+        google_login:
+            method: "POST"
+            class: ApiPlatform\Metadata\Post
+            controller: 'App\Controller\Api\GoogleAuthController'
+            public: true
+            input: 'App\Dto\SocialInput'
+            uriTemplate: "/google_login"
+            openapi:
+                summary: "Google login"
+                description: "Google login."
             
 
         delete:
