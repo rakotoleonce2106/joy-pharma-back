@@ -26,7 +26,7 @@ class OrderItem
     private ?float $totalPrice = null;
 
     #[ORM\ManyToOne(inversedBy: 'items')]
-    private ?Order $items = null;
+    private ?Order $order = null;
 
     public function getId(): ?int
     {
@@ -69,14 +69,14 @@ class OrderItem
         return $this;
     }
 
-    public function getItems(): ?Order
+    public function getOrder(): ?Order
     {
-        return $this->items;
+        return $this->order;
     }
 
-    public function setItems(?Order $items): static
+    public function setOrder(?Order $order): static
     {
-        $this->items = $items;
+        $this->order = $order;
 
         return $this;
     }

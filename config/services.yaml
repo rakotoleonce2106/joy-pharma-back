@@ -51,5 +51,10 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\EventSubscriber\MvolaCallbackSubscriber:
+        tags:
+            - { name: kernel.event_subscriber, priority: 100 }
+
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

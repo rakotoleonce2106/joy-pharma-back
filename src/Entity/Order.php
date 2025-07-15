@@ -7,8 +7,27 @@ use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\OrderRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+
+enum OrderStatus :string
+{
+    case STATUS_PENDING = 'pending';
+    case STATUS_CONFIRMED = 'confirmed';
+    case STATUS_PROCESSING = 'processing';
+    case STATUS_SHIPPED = 'shipped';
+    case STATUS_DELIVERED = 'delivered';
+    case STATUS_CANCELLED = 'cancelled';
+}
+
+enum PriorityType : string
+{
+     case PRIORITY_URGENT = 'urgent';
+     case PRIORITY_STANDARD = 'standard';
+     case PRIORITY_LOW = 'low';
+
+}
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: '`order`')]
@@ -24,15 +43,52 @@ class Order
     /**
      * @var Collection<int, OrderItem>
      */
-    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'items')]
+    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'order', cascade: ['persist'], orphanRemoval: true)]
     #[Groups(['order:create','order:read'])]
     private Collection $items;
 
+    #[ORM\ManyToOne(inversedBy: 'orders')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Location $location = null;
 
-    public function __construct()
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $scheduledDate = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $notes = null;
+
+    #[ORM\Column(type: 'string', length: 20, enumType: OrderStatus::class)]
+    private OrderStatus $status;
+
+    #[ORM\Column(type: 'string', length: 20, enumType: PriorityType::class)]
+    private PriorityType $priority;
+
+
+
+    #[ORM\Column]
+    private ?float $totalAmount = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $reference = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $phone = null;
+
+    #[ORM\ManyToOne(inversedBy: 'orders')]
+    private ?Payment $payment = null;
+
+
+
+     public function __construct()
     {
+        $this->status = OrderStatus::STATUS_PENDING;
+        $this->priority = PriorityType::PRIORITY_STANDARD;
+        $this->createdAt = new \DateTime();
         $this->items = new ArrayCollection();
     }
+
+
+
 
     public function getId(): ?int
     {
@@ -63,7 +119,7 @@ class Order
     {
         if (!$this->items->contains($item)) {
             $this->items->add($item);
-            $item->setItems($this);
+            $item->setOrder($this);
         }
 
         return $this;
@@ -73,12 +129,121 @@ class Order
     {
         if ($this->items->removeElement($item)) {
             // set the owning side to null (unless already changed)
-            if ($item->getItems() === $this) {
-                $item->setItems(null);
+            if ($item->getOrder() === $this) {
+                $item->setOrder(null);
             }
         }
 
         return $this;
     }
+
+    public function getLocation(): ?Location
+    {
+        return $this->location;
+    }
+
+    public function setLocation(?Location $location): static
+    {
+        $this->location = $location;
+
+        return $this;
+    }
+
+    public function getScheduledDate(): ?\DateTimeInterface
+    {
+        return $this->scheduledDate;
+    }
+
+    public function setScheduledDate(\DateTime $scheduledDate): static
+    {
+        $this->scheduledDate = $scheduledDate;
+
+        return $this;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function setNotes(?string $notes): static
+    {
+        $this->notes = $notes;
+
+        return $this;
+    }
+
+    public function getTotalAmount(): ?float
+    {
+        return $this->totalAmount;
+    }
+
+    public function setTotalAmount(float $totalAmount): static
+    {
+        $this->totalAmount = $totalAmount;
+
+        return $this;
+    }
+
+    public function getReference(): ?string
+    {
+        return $this->reference;
+    }
+
+    public function setReference(string $reference): static
+    {
+        $this->reference = $reference;
+
+        return $this;
+    }
+
+    public function getStatus(): OrderStatus
+    {
+        return $this->status;
+    }
+
+    public function setStatus(OrderStatus $status): self
+    {
+        $this->status = $status;
+        $this->updatedAt = new \DateTime();
+        return $this;
+    }
+
+    public function getPriority(): PriorityType
+    {
+        return $this->priority;
+    }
+
+    public function setPriority(PriorityType $priority): self
+    {
+        $this->priority = $priority;
+        $this->updatedAt = new \DateTime();
+        return $this;
+    }
+
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+
+    public function setPhone(string $phone): static
+    {
+        $this->phone = $phone;
+
+        return $this;
+    }
+
+    public function getPayment(): ?Payment
+    {
+        return $this->payment;
+    }
+
+    public function setPayment(?Payment $payment): static
+    {
+        $this->payment = $payment;
+
+        return $this;
+    }
+
 
 }

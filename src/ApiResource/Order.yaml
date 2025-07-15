@@ -3,13 +3,14 @@ App\Entity\Order:
         post_order:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/order"
+            controller: App\Controller\Api\Product\CreateOrderPaymentIntent
             validationContext:
                 groups: ['order:create' ]
             normalizationContext:
                 groups: [ 'id:read',"order:read" ]
             openapi:
-                summary: 'Post a order'
-                parameters:
+                summary: 'Create a order'
+                description: 'Create a order'
 
                 
         get_order:
