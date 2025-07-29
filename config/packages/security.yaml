@@ -10,7 +10,7 @@ security:
             memory:
                 users:
                     johndoe@mailinator.com:
-                        password: '$2y$13$NsUTDnHURiTT9sQh5cnXz.DEvm93QaCBUPAXJshNDoImxYNTRaKRq'
+                        password: '$2y$13$.oaFkWoNsnlqjifcLQXXyul8V/3lzR4D7SbfjiEpS1tPAeXm/wQZO'
                         roles: [ 'ROLE_USER', 'ROLE_ADMIN' ]
     
     firewalls:
