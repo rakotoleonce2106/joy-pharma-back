@@ -25,7 +25,7 @@ enum PriorityType : string
 {
      case PRIORITY_URGENT = 'urgent';
      case PRIORITY_STANDARD = 'standard';
-     case PRIORITY_LOW = 'low';
+     case PRIORITY_PLANIFIED = 'planified';
 
 }
 
@@ -38,44 +38,56 @@ class Order
     use EntityTimestampTrait;
 
     #[ORM\ManyToOne(inversedBy: 'orders')]
+    #[Groups(['order:create','order:read'])]
     private ?User $owner = null;
+
+    #[ORM\ManyToOne(inversedBy: 'orders', cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['order:create','order:read'])]
+    private ?Location $location = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:create','order:read'])]
+    private ?\DateTimeInterface $scheduledDate = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['order:create','order:read'])]
+    private ?string $notes = null;
+
+    #[ORM\Column(type: 'string', length: 20, enumType: OrderStatus::class)]
+    #[Groups(['order:create','order:read'])]
+    private OrderStatus $status;
+
+    #[ORM\Column(type: 'string', length: 20, enumType: PriorityType::class)]
+    #[Groups(['order:create','order:read'])]
+    private PriorityType $priority;
 
     /**
      * @var Collection<int, OrderItem>
      */
-    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'order', cascade: ['persist'], orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'orderParent')]
     #[Groups(['order:create','order:read'])]
     private Collection $items;
-
-    #[ORM\ManyToOne(inversedBy: 'orders')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?Location $location = null;
-
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $scheduledDate = null;
-
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
-    private ?string $notes = null;
-
-    #[ORM\Column(type: 'string', length: 20, enumType: OrderStatus::class)]
-    private OrderStatus $status;
-
-    #[ORM\Column(type: 'string', length: 20, enumType: PriorityType::class)]
-    private PriorityType $priority;
 
 
 
     #[ORM\Column]
+    #[Groups(['order:read'])]
     private ?float $totalAmount = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['order:read'])]
     private ?string $reference = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['order:read'])]
     private ?string $phone = null;
 
-    #[ORM\ManyToOne(inversedBy: 'orders')]
+    #[ORM\ManyToOne(inversedBy: 'orders', cascade: ['persist', 'remove'])]
+    #[Groups(['order:read'])]
     private ?Payment $payment = null;
+
+
 
 
 
@@ -84,6 +96,7 @@ class Order
         $this->status = OrderStatus::STATUS_PENDING;
         $this->priority = PriorityType::PRIORITY_STANDARD;
         $this->createdAt = new \DateTime();
+        $this->reference = $this->generateReference();
         $this->items = new ArrayCollection();
     }
 
@@ -107,35 +120,6 @@ class Order
         return $this;
     }
 
-    /**
-     * @return Collection<int, OrderItem>
-     */
-    public function getItems(): Collection
-    {
-        return $this->items;
-    }
-
-    public function addItem(OrderItem $item): static
-    {
-        if (!$this->items->contains($item)) {
-            $this->items->add($item);
-            $item->setOrder($this);
-        }
-
-        return $this;
-    }
-
-    public function removeItem(OrderItem $item): static
-    {
-        if ($this->items->removeElement($item)) {
-            // set the owning side to null (unless already changed)
-            if ($item->getOrder() === $this) {
-                $item->setOrder(null);
-            }
-        }
-
-        return $this;
-    }
 
     public function getLocation(): ?Location
     {
@@ -245,5 +229,39 @@ class Order
         return $this;
     }
 
+    private function generateReference(): string
+    {
+        return 'ORD-' . date('Y') . '-' . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * @return Collection<int, OrderItem>
+     */
+    public function getItems(): Collection
+    {
+        return $this->items;
+    }
+
+    public function addItem(OrderItem $item): static
+    {
+        if (!$this->items->contains($item)) {
+            $this->items->add($item);
+            $item->setOrderParent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeItem(OrderItem $item): static
+    {
+        if ($this->items->removeElement($item)) {
+            // set the owning side to null (unless already changed)
+            if ($item->getOrderParent() === $this) {
+                $item->setOrderParent(null);
+            }
+        }
+
+        return $this;
+    }
 
 }

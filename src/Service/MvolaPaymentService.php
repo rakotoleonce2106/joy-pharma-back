@@ -2,7 +2,7 @@
 
 namespace App\Service;
 
-use App\Entity\Order;
+use App\Entity\Payment;
 use App\Entity\User;
 use DahRomy\MVola\Model\TransactionRequest;
 use Psr\Log\LoggerInterface;
@@ -20,9 +20,9 @@ final readonly class MvolaPaymentService
     {
     }
 
-    public function createPaymentIntent(User $user, Order $order): array
+    public function createPaymentIntent(User $user, Payment $payment): array
     {
-        $transactionRequest = $this->createTransactionRequest($user, $order);
+        $transactionRequest = $this->createTransactionRequest($user, $payment);
 
         try {
             $result = $this->mvolaService->initiateTransaction($transactionRequest);
@@ -47,16 +47,16 @@ final readonly class MvolaPaymentService
     }
 
 
-    private function createTransactionRequest(User $user, Order $order): TransactionRequest
+    private function createTransactionRequest(User $user, Payment $payment,string $amount,string $currency): TransactionRequest
     {
         $transactionRequest = new TransactionRequest();
-        $transactionRequest->setAmount($order->getTotalAmount());
-        $transactionRequest->setCurrency('Ar');
+        $transactionRequest->setAmount($amount);
+        $transactionRequest->setCurrency($currency);
         $transactionRequest->setDescriptionText("Subscription payment for {$user->getFullName()}");
         $transactionRequest->setRequestingOrganisationTransactionReference(uniqid('payment_intent',false));
         $transactionRequest->setRequestDate(new \DateTime());
-        $transactionRequest->setOriginalTransactionReference($order->getReference());
-        $transactionRequest->setDebitParty([['key' => 'msisdn', 'value' => $order->getPayment()->getPhoneNumber()]]);
+        $transactionRequest->setOriginalTransactionReference($payment->getReference());
+        $transactionRequest->setDebitParty([['key' => 'msisdn', 'value' => $payment->getPhoneNumber()]]);
         $transactionRequest->setCreditParty([['key' => 'msisdn', 'value' => $this->params->get('mvola.merchant_number')]]);
         $transactionRequest->setMetadata([
             ['key' => 'partnerName', 'value' => $this->params->get('mvola.company_name')],
@@ -65,7 +65,7 @@ final readonly class MvolaPaymentService
         ]);
         $transactionRequest->setCallbackData([
             'userId' => $user->getId(),
-            'reference' => $order->getReference()
+            'reference' => $payment->getReference()
         ]);
 
         return $transactionRequest;

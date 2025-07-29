@@ -118,6 +118,7 @@ class Product
         $this->category = new ArrayCollection();
         $this->restricted = new ArrayCollection();
         $this->orderItems = new ArrayCollection();
+        $this->createdAt = new \DateTime();
     }
 
 
@@ -321,12 +322,12 @@ class Product
         return $this;
     }
 
-    public function getTotalPrice(): ?float
+    public function getPrice(): ?float
     {
         return $this->totalPrice;
     }
 
-    public function setTotalPrice(?float $totalPrice): static
+    public function setPrice(?float $totalPrice): static
     {
         $this->totalPrice = $totalPrice;
 

@@ -1,44 +1,59 @@
 <?php
 // api/src/State/OrderCreateProcessor.php
 
-namespace App\State\Products;
+namespace App\State;
 
 use ApiPlatform\Metadata\Operation;
-use ApiPlatform\Metadata\Post;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Order;
-use Symfony\Bundle\SecurityBundle\Security;
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class OrderCreateProcessor implements ProcessorInterface
 {
     public function __construct(
-        private ProcessorInterface $processor,
-        private Security $security,
+        private EntityManagerInterface $entityManager,
+        private TokenStorageInterface $tokenStorage,
         private ValidatorInterface $validator,
-    ) {}
+        private RequestStack $requestStack
+    ) {
+    }
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Order
     {
-        if (!$data instanceof Order || !$operation instanceof Post) {
-            return $this->processor->process($data, $operation, $uriVariables, $context);
+        $request = $this->requestStack->getCurrentRequest();
+        
+        if (!$request) {
+            throw new BadRequestHttpException('No request found');
         }
 
-        $user = $this->security->getUser();
-
-        $violations = $this->validator->validate($user, null, ['Default', 'order:create']);
-        if (count($violations) > 0) {
-            throw new BadRequestHttpException('Validation failed: ' . (string) $violations);
+        // Get the current authenticated user
+        $token = $this->tokenStorage->getToken();
+        if (!$token || !$token->getUser() instanceof User) {
+            throw new BadRequestHttpException('User not authenticated');
         }
 
+        $user = $token->getUser();
         $data->setOwner($user);
-
+        $totalAmount = 0;
         foreach ($data->getItems() as $item) {
-            $item->setOrder($data);
-            $item->setTotalPrice($item->getProduct()->getTotalPrice() * $item->getQuantity());
+            $totalPrice = $item->getProduct()->getPrice() * $item->getQuantity();
+            $item->setTotalPrice($totalPrice);
+            $totalAmount += $totalPrice;
         }
+        $data->setTotalAmount($totalAmount);
 
-        return $this->processor->process($data, $operation, $uriVariables, $context);
+        // Persist the changes
+        $this->entityManager->persist($data);
+        $this->entityManager->flush();
+
+        return $data;
     }
+
+    
 }

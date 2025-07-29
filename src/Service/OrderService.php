@@ -22,6 +22,12 @@ readonly class OrderService
         $this->manager->flush();
     }
 
+    public function findByReference(String $reference): ?Order
+    {
+        return $this->manager->getRepository(Order::class)
+            ->findOneBy(['reference' => $reference]);
+    }
+
 
 
     public function updateOrder(Order $order): void

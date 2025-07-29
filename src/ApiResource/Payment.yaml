@@ -1,0 +1,13 @@
+App\Entity\Payment:
+    operations:
+        create_payment_intent:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: "/create-payment-intent"
+            controller: App\Controller\Api\CreatePaymentIntent
+            validationContext:
+                groups: ['payment:create' ]
+            normalizationContext:
+                groups: [ 'id:read',"payment:read" ]
+            openapi:
+                summary: 'Create payment intent'
+                description: 'Create payment intent'

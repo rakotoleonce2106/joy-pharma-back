@@ -15,18 +15,18 @@ class OrderItem
 
     #[ORM\ManyToOne(inversedBy: 'orderItems')]
     #[Groups(['order:create','order:read'])]
-    private ?Product $product = null;
+    private Product $product;
 
     #[ORM\Column]
     #[Groups(['order:create','order:read'])]
     private ?int $quantity = null;
 
     #[ORM\Column]
-    #[Groups(['order:read'])]
+    #[Groups(['order:create','order:read'])]
     private ?float $totalPrice = null;
 
     #[ORM\ManyToOne(inversedBy: 'items')]
-    private ?Order $order = null;
+    private ?Order $orderParent = null;
 
     public function getId(): ?int
     {
@@ -69,15 +69,16 @@ class OrderItem
         return $this;
     }
 
-    public function getOrder(): ?Order
+    public function getOrderParent(): ?Order
     {
-        return $this->order;
+        return $this->orderParent;
     }
 
-    public function setOrder(?Order $order): static
+    public function setOrderParent(?Order $orderParent): static
     {
-        $this->order = $order;
+        $this->orderParent = $orderParent;
 
         return $this;
     }
+
 }

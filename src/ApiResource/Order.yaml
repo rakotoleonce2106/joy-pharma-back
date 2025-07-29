@@ -3,7 +3,7 @@ App\Entity\Order:
         post_order:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/order"
-            controller: App\Controller\Api\Product\CreateOrderPaymentIntent
+            processor: App\State\OrderCreateProcessor
             validationContext:
                 groups: ['order:create' ]
             normalizationContext:
@@ -27,7 +27,7 @@ App\Entity\Order:
                       in: 'path'
                       description:  'The id of the order'
 
-        get_categories:
+        get_orders:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/orders'

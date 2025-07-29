@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 // Payment Status Enum
 enum PaymentStatus: string
@@ -37,18 +38,27 @@ class Payment
     private ?int $id = null;
 
     #[ORM\Column(length: 255, unique: true)]
+    #[Groups(['payment:read'])]
     private ?string $transactionId = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    private ?string $amount = null;
+    #[Groups(['payment:read'])]
+    private float $amount = 0;
 
     #[ORM\Column(length: 20, enumType: PaymentMethod::class)]
+    #[Groups(['payment:create', 'payment:read'])]
     private ?PaymentMethod $method = null;
+        
+    #[Groups(['payment:create'])]
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $phoneNumber = null;
 
     #[ORM\Column(length: 20, enumType: PaymentStatus::class)]
+    #[Groups(['payment:read'])]
     private PaymentStatus $status;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(['payment:read'])]
     private ?\DateTimeInterface $createdAt = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
@@ -57,18 +67,19 @@ class Payment
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $gatewayResponse = null;
 
-    #[ORM\OneToOne(inversedBy: 'payment')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\OneToOne(inversedBy: 'payment', cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Order $order = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $phoneNumber = null;
 
     /**
      * @var Collection<int, Order>
      */
     #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'payment')]
     private Collection $orders;
+
+    #[ORM\Column(length: 255)]
+    private ?string $reference = null;
 
     public function __construct()
     {
@@ -327,6 +338,18 @@ class Payment
                 $order->setPayment(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getReference(): ?string
+    {
+        return $this->reference;
+    }
+
+    public function setReference(string $reference): static
+    {
+        $this->reference = $reference;
 
         return $this;
     }
