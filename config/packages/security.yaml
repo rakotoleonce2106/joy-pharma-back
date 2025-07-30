@@ -32,22 +32,22 @@ security:
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-        admin:
-            pattern: ^/
+        main:
+            lazy: true
             provider: admin_users
             custom_authenticator: App\Security\AdminAuthenticator
             logout:
                 path: app_logout
-                target: app_home
+                target: /login # Redirect after logout
 
 
     access_control:
+       - { path: ^/login, roles: PUBLIC_ACCESS }
        - { path: ^/admin, roles: ROLE_ADMIN }
        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
        - { path: ^/api/register, roles: PUBLIC_ACCESS }
        - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
        - { path: ^/api/products ,roles: PUBLIC_ACCESS }
-    # - { path: ^/profile, roles: ROLE_USER }
 
 when@test:
     security:
