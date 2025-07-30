@@ -33,6 +33,9 @@ class MediaFile
     #[ORM\ManyToOne(targetEntity: Product::class, cascade: ['persist'], inversedBy: 'images')]
     private ?Product $product = null;
 
+    #[ORM\ManyToOne(inversedBy: 'image')]
+    private ?Store $store = null;
+
 
     public function getName(): ?string
     {
@@ -90,6 +93,18 @@ class MediaFile
     public function setProduct(?Product $product): static
     {
         $this->product = $product;
+
+        return $this;
+    }
+
+    public function getStore(): ?Store
+    {
+        return $this->store;
+    }
+
+    public function setStore(?Store $store): static
+    {
+        $this->store = $store;
 
         return $this;
     }
