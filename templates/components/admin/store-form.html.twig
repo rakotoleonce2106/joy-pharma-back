@@ -1,0 +1,23 @@
+<div {{ attributes }}>
+    {{ form_start(form, { attr: {
+        class: 'space-y-4',
+        'id': 'store-form'
+    } }) }}
+    {{ form_row(form.name) }}
+    {{ form_row(form.description) }}
+
+    {{ form_row(form.contact) }}
+    {{ form_row(form.location) }}
+
+    {{ form_row(form.image) }}
+
+
+    <div class="items-center justify-center gap-2 mt-6 hidden turbo-frame:flex">
+        <twig:ui:button:root href="{{ path('admin_store') }}" variant="outline">
+            {{ 'Discard'|trans }}
+        </twig:ui:button:root>
+        <twig:ui:button:root formnovalidate>{{ 'Update Store'|trans }}</twig:ui:button:root>
+    </div>
+
+    {{ form_end(form) }}
+</div>

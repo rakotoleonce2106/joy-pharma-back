@@ -141,6 +141,48 @@ unit:
         create_new: 'Create new unit'
         id: 'ID'
         label: 'Label'
+store:
+    form:
+        name: 'Name'
+        name_placeholder: 'Enter store name'
+        description: 'Description'
+        description_placeholder: 'Enter store description'
+        image: 'Image'
+        image_placeholder: 'Upload image'
+        upload_image: 'Upload'
+        contact: 'Contact'
+        location: 'Location'
+location:
+    form:
+        latitude: 'Latitude'
+        latitude_placeholder: 'Enter latitude'
+        longitude: 'Longitude'
+        longitude_placeholder: 'Enter longitude'
+        address: 'Address'
+        address_placeholder: 'Enter address'
+        city: 'City'
+        city_placeholder: 'Enter city'
+        state: 'State'
+        state_placeholder: 'Enter state'
+        country: 'Country'
+        country_placeholder: 'Enter country'
+        postal_code: 'Postal Code'
+        postal_code_placeholder: 'Enter postal code'
+        
+contact:
+    form:
+        email: 'Email'
+        email_placeholder: 'Enter email'
+        phone: 'Phone'
+        phone_placeholder: 'Enter phone'
+
+
+    # DataTable translations
+    datatable:
+        create_new: 'Create new store'
+        id: 'ID'
+        name: 'Name'
+        description: 'Description'
 
 # User form translations
 user:
@@ -250,6 +292,7 @@ admin:
         unit: 'Unit'
         users: 'Users'
         advertisement: 'Advertisement'
+        store: 'Store'
         home: 'Home'
         settings: 'Settings'
         logout: 'Logout'

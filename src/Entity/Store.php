@@ -58,12 +58,6 @@ class Store
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    /**
-     * @var Collection<int, User>
-     */
-    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'store')]
-    private Collection $owner;
-
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
@@ -74,8 +68,22 @@ class Store
     #[ORM\OneToMany(targetEntity: MediaFile::class, mappedBy: 'store')]
     private Collection $image;
 
+    /**
+     * @var Collection<int, User>
+     */
+    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'store')]
+    private Collection $owner;
+
+
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     private ?StoreSetting $setting = null;
+
+
+    #[ORM\OneToOne(inversedBy: 'store', cascade: ['persist', 'remove'])]
+    private ?ContactInfo $contact = null;
+
+    #[ORM\OneToOne(inversedBy: 'store', cascade: ['persist', 'remove'])]
+    private ?Location $location = null;
 
     public function __construct()
     {
@@ -181,6 +189,32 @@ class Store
     public function setSetting(?StoreSetting $setting): static
     {
         $this->setting = $setting;
+
+        return $this;
+    }
+
+   
+
+    public function getContact(): ?ContactInfo
+    {
+        return $this->contact;
+    }
+
+    public function setContact(?ContactInfo $contact): static
+    {
+        $this->contact = $contact;
+
+        return $this;
+    }
+
+    public function getLocation(): ?Location
+    {
+        return $this->location;
+    }
+
+    public function setLocation(?Location $location): static
+    {
+        $this->location = $location;
 
         return $this;
     }

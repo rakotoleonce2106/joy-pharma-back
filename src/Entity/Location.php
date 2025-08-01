@@ -24,11 +24,27 @@ class Location
     #[ORM\Column]
     private ?float $longitude = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $city = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $state = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $country = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $postalCode = null;
+
+    #[ORM\OneToOne(mappedBy: 'location', cascade: ['persist', 'remove'])]
+    private ?Store $store = null;
+
     /**
      * @var Collection<int, Order>
      */
     #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'location')]
     private Collection $orders;
+
 
     public function __construct()
     {
@@ -102,6 +118,77 @@ class Location
                 $order->setLocation(null);
             }
         }
+
+        return $this;
+    }
+
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): static
+    {
+        $this->city = $city;
+
+        return $this;
+    }
+
+    public function getState(): ?string
+    {
+        return $this->state;
+    }
+
+    public function setState(string $state): static
+    {
+        $this->state = $state;
+
+        return $this;
+    }
+
+    public function getCountry(): ?string
+    {
+        return $this->country;
+    }
+
+    public function setCountry(?string $country): static
+    {
+        $this->country = $country;
+
+        return $this;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function setPostalCode(string $postalCode): static
+    {
+        $this->postalCode = $postalCode;
+
+        return $this;
+    }
+
+    public function getStore(): ?Store
+    {
+        return $this->store;
+    }
+
+    public function setStore(?Store $store): static
+    {
+        // unset the owning side of the relation if necessary
+        if ($store === null && $this->store !== null) {
+            $this->store->setLocation(null);
+        }
+
+        // set the owning side of the relation if necessary
+        if ($store !== null && $store->getLocation() !== $this) {
+            $store->setLocation($this);
+        }
+
+        $this->store = $store;
 
         return $this;
     }

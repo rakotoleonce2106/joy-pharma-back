@@ -56,6 +56,13 @@ admin_top_menu:
                 icon: "material-symbols:inventory-2-outline"
                 routes:
                     - "admin_product"
+        store:
+            label: "admin.menu.store"
+            route: "admin_store"
+            extras:
+                icon: "material-symbols:storefront-outline"
+                routes:
+                    - "admin_store"
 
 
 admin_bottom_menu:

@@ -11,18 +11,11 @@ class StoreSetting
 {
     use EntityIdTrait;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
-    private ?ContactInfo $contact = null;
-
+    #[ORM\ManyToOne(inversedBy: 'monday')]
+    private ?BusinessHours $mondayHours = null;
 
     #[ORM\ManyToOne(inversedBy: 'tuesday')]
     private ?BusinessHours $tuesdayHours = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $clear = null;
-
-    #[ORM\ManyToOne(inversedBy: 'monday')]
-    private ?BusinessHours $mondayHours = null;
 
     #[ORM\ManyToOne(inversedBy: 'wednesday')]
     private ?BusinessHours $wednesdayHours = null;
@@ -39,19 +32,9 @@ class StoreSetting
     #[ORM\ManyToOne(inversedBy: 'sunday')]
     private ?BusinessHours $sundayHours = null;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
-    private ?Location $location = null;
-
-    public function getContact(): ?ContactInfo
+     public function __construct()
     {
-        return $this->contact;
-    }
-
-    public function setContact(?ContactInfo $contact): static
-    {
-        $this->contact = $contact;
-
-        return $this;
+        $this->initializeDefaults();
     }
 
         private function initializeDefaults(): void
@@ -65,9 +48,8 @@ class StoreSetting
         $this->saturdayHours = new BusinessHours('10:00', '16:00');
         $this->sundayHours = new BusinessHours(null, null, true); // Closed
 
+
     }
-
-
 
 
     public function getTuesdayHours(): ?BusinessHours
@@ -78,18 +60,6 @@ class StoreSetting
     public function setTuesdayHours(?BusinessHours $tuesdayHours): static
     {
         $this->tuesdayHours = $tuesdayHours;
-
-        return $this;
-    }
-
-    public function getClear(): ?string
-    {
-        return $this->clear;
-    }
-
-    public function setClear(string $clear): static
-    {
-        $this->clear = $clear;
 
         return $this;
     }
@@ -166,18 +136,6 @@ class StoreSetting
         return $this;
     }
 
-    public function getLocation(): ?Location
-    {
-        return $this->location;
-    }
-
-    public function setLocation(?Location $location): static
-    {
-        $this->location = $location;
-
-        return $this;
-    }
-  
 
 }
 
