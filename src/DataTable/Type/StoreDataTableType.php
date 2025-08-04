@@ -17,15 +17,13 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class StoreDataTableType extends AbstractDataTableType
 {
-    public function __construct(private readonly UrlGeneratorInterface $urlGenerator)
-    {
-    }
+    public function __construct(private readonly UrlGeneratorInterface $urlGenerator) {}
 
     public function buildDataTable(DataTableBuilderInterface $builder, array $options): void
     {
         $builder->setDefaultPaginationData(new PaginationData(page: 1, perPage: 13));
         $builder->setSearchHandler($this->handleSearchFilter(...));
-        
+
         // Create action
         $builder->addAction('create', LinkActionType::class, [
             'label' => 'store.datatable.create_new',
@@ -46,6 +44,7 @@ class StoreDataTableType extends AbstractDataTableType
             ->addFilter('id', StringFilterType::class, ['label' => 'store.datatable.id'])
             ->addFilter('name', StringFilterType::class, ['label' => 'store.datatable.name']);
 
+
         // Columns
         $builder
             ->addColumn('id', TextColumnType::class, [
@@ -65,13 +64,42 @@ class StoreDataTableType extends AbstractDataTableType
                 'value_attr' => [
                     'class' => 'px-4'
                 ]
-            ]);
+            ])
+
+            ->addColumn('address', TextColumnType::class, [
+                'label' => 'store.datatable.address',
+                'sort' => true,
+                'property_path' => 'location.address',
+                'value_attr' => [
+
+                    'class' => 'px-4'
+                ]
+            ])
+
+            ->addColumn('phone', TextColumnType::class, [
+                'label' => 'store.datatable.phone',
+                'sort' => true,
+                'property_path' => 'contact.phone',
+                'value_attr' => [
+                    'class' => 'px-4'
+                ]
+            ])
+            ->addColumn('email', TextColumnType::class, [
+                'label' => 'store.datatable.email',
+                'sort' => true,
+                'property_path' => 'contact.email',
+                'value_attr' => [
+                    'class' => 'px-4'
+                ]
+            ])
+
+        ;
 
         // Row actions
         $builder
             ->addRowAction('edit', LinkActionType::class, [
                 'label' => 'edit_datatable.edit',
-                'href' => fn (Store $store) => $this->urlGenerator->generate('admin_store_edit', ['id' => $store->getId()]),
+                'href' => fn(Store $store) => $this->urlGenerator->generate('admin_store_edit', ['id' => $store->getId()]),
                 'attr' => [
                     'size' => 'sm',
                     'variant' => 'outline',
@@ -82,7 +110,7 @@ class StoreDataTableType extends AbstractDataTableType
             ])
             ->addRowAction('delete', FormActionType::class, [
                 'label' => 'delete_datatable.delete',
-                'action' => fn (Store $store) => $this->urlGenerator->generate('admin_store_delete', ['id' => $store->getId()]),
+                'action' => fn(Store $store) => $this->urlGenerator->generate('admin_store_delete', ['id' => $store->getId()]),
                 'confirmation' => [
                     'type' => 'danger',
                     'label_title' => 'delete_datatable.delete_confirmation_title',

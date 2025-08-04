@@ -6,10 +6,12 @@ namespace App\Controller\Admin;
 
 use App\DataTable\Type\StoreDataTableType;
 use App\Entity\Store;
+use App\Entity\User;
 use App\Form\StoreType;
 use App\Repository\StoreRepository;
 use App\Service\StoreService;
 use App\Service\MediaFileService;
+use App\Service\UserService;
 use App\Traits\ToastTrait;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,7 +28,8 @@ class StoreController extends AbstractController
     public  function __construct(
         private  readonly StoreRepository $StoreRepository,
         private readonly StoreService $storeService,
-        private readonly MediaFileService $mediaFileService
+        private readonly MediaFileService $mediaFileService,
+        private readonly UserService $userService,
     ) {}
     #[Route('/store', name: 'admin_store')]
     public function index(Request $request): Response
@@ -79,7 +82,7 @@ class StoreController extends AbstractController
     }
 
 
-    private function handleStoreForm(Request $request, $form, $store, string $action): Response
+    private function handleStoreForm(Request $request, $form,Store $store, string $action): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -89,30 +92,33 @@ class StoreController extends AbstractController
                 $image = $form->get('image')->getData();
                 if ($image) {
                     $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
-                    $store->setImage($mediaFile);
+                    $store->addImage($mediaFile);
                 }
-                /** @var UploadedFile|null $uploadedFile */
-                $svg = $form->get('svg')->getData();
 
-                if ($svg) {
-                    $svgFile = $this->mediaFileService->createMediaByFile($svg, 'icons/store/');
-                    $store->setSvg($svgFile);
+                $userTemp = $this->userService->getUserByEmail($store->getContact()->getEmail());
+                if(!$userTemp){
+                    $user= new User();
+                    $user->setEmail($store->getContact()->getEmail());
+                    $user->setFirstName($store->getName());
+                    $user->setLastName($store->getName());
+                    $user->setRoles(['ROLE_STORE']);
+                    $user->setPassword('JoyPharma2025!');
+                    
+                // Create a new user entity
+                
+                $userWithPassword = $this->userService->hashPassword($user);
+                $this->userService->persistUser($userWithPassword);
                 }
+               
                 $this->storeService->createStore($store);
             } else {
                 /** @var UploadedFile|null $uploadedFile */
                 $image = $form->get('image')->getData();
                 if ($image) {
-                    $mediaFile = $this->mediaFileService->updateMediaFileFromFile($store->getImage(), $image, 'images/store/');
-                    $store->setImage($mediaFile);
+                     $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
+                    $store->addImage($mediaFile);
                 }
-                /** @var UploadedFile|null $uploadedFile */
-                $svg = $form->get('svg')->getData();
 
-                if ($svg) {
-                    $svgFile = $this->mediaFileService->updateMediaFileFromFile($store->getSvg(), $svg, 'icons/store/');
-                    $store->setSvg($svgFile);
-                }
                 $this->storeService->updateStore($store);
             }
 

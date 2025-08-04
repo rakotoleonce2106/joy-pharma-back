@@ -18,6 +18,7 @@ readonly class StoreService
 
     public function createStore(Store $store): void
     {
+        
         $this->manager->persist($store);
         $this->manager->flush();
     }

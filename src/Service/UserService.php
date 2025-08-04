@@ -24,6 +24,10 @@ readonly class UserService
         $this->manager->flush();
     }
 
+    public function persistUser(User $user){
+        $this->manager->persist($user);
+    }
+
 
     public function hashPassword(User $user, string $password = null): User
     {
@@ -31,6 +35,17 @@ readonly class UserService
         $hashedPassword = $this->passwordHasher->hashPassword($user, $password ?? $user->getPlainPassword() ?? 'JoyPharma2025');
         $user->setPassword($hashedPassword);
         return $user;
+    }
+
+    public function generatePassword(): string
+    {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < 8; $i++) {
+            $randomString .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return $randomString;
     }
 
     public function saveUser(User $user): void

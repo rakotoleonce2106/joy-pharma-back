@@ -152,6 +152,15 @@ store:
         upload_image: 'Upload'
         contact: 'Contact'
         location: 'Location'
+        # DataTable translations
+    datatable:
+        create_new: 'Create new store'
+        id: 'ID'
+        name: 'Name'
+        email: 'Email'
+        phone: 'Phone'
+        address: 'Address'
+
 location:
     form:
         latitude: 'Latitude'
@@ -177,12 +186,7 @@ contact:
         phone_placeholder: 'Enter phone'
 
 
-    # DataTable translations
-    datatable:
-        create_new: 'Create new store'
-        id: 'ID'
-        name: 'Name'
-        description: 'Description'
+
 
 # User form translations
 user:

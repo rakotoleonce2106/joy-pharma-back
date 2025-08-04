@@ -19,13 +19,11 @@ class ContactInfoType extends AbstractType
     {
         $builder
             ->add('phone', TextType::class, [
-                'label' => 'contact.form.phone',
                 'attr' => [
                     'placeholder' => 'contact.form.phone_placeholder',
                 ],
             ])
-            ->add('email', TextareaType::class, [
-                'label' => 'contact.form.email',
+            ->add('email', TextType::class, [
                 'attr' => [
                     'placeholder' => 'contact.form.email_placeholder',
 

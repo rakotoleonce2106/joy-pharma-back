@@ -68,13 +68,6 @@ class Store
     #[ORM\OneToMany(targetEntity: MediaFile::class, mappedBy: 'store')]
     private Collection $image;
 
-    /**
-     * @var Collection<int, User>
-     */
-    #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'store')]
-    private Collection $owner;
-
-
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     private ?StoreSetting $setting = null;
 
@@ -85,10 +78,14 @@ class Store
     #[ORM\OneToOne(inversedBy: 'store', cascade: ['persist', 'remove'])]
     private ?Location $location = null;
 
+    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    private ?User $owner = null;
+
     public function __construct()
     {
-        $this->owner = new ArrayCollection();
         $this->image = new ArrayCollection();
+        $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -107,37 +104,6 @@ class Store
 
         return $this;
     }
-
-    /**
-     * @return Collection<int, User>
-     */
-    public function getOwner(): Collection
-    {
-        return $this->owner;
-    }
-
-    public function addOwner(User $owner): static
-    {
-        if (!$this->owner->contains($owner)) {
-            $this->owner->add($owner);
-            $owner->setStore($this);
-        }
-
-        return $this;
-    }
-
-    public function removeOwner(User $owner): static
-    {
-        if ($this->owner->removeElement($owner)) {
-            // set the owning side to null (unless already changed)
-            if ($owner->getStore() === $this) {
-                $owner->setStore(null);
-            }
-        }
-
-        return $this;
-    }
-
 
     public function getDescription(): ?string
     {
@@ -215,6 +181,18 @@ class Store
     public function setLocation(?Location $location): static
     {
         $this->location = $location;
+
+        return $this;
+    }
+
+    public function getOwner(): ?User
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?User $owner): static
+    {
+        $this->owner = $owner;
 
         return $this;
     }
