@@ -2,34 +2,36 @@
 
 namespace App\Form;
 
-use App\Entity\ContactInfo;
+use App\Entity\StoreCategory;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
-class ContactInfoType extends AbstractType
+class StoreCategoryType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('phone', TextType::class, [
+            ->add('label', TextType::class, [
+                'label' => 'storeCategory.form.label',
                 'attr' => [
-                    'placeholder' => 'contact.form.phone_placeholder',
+                    'placeholder' => 'storeCategory.form.label_placeholder',
                 ],
             ])
-            ->add('email', TextType::class, [
+            ->add('description', TextType::class, [
+                'label' => 'storeCategory.form.description',
                 'attr' => [
-                    'placeholder' => 'contact.form.email_placeholder',
-
+                    'placeholder' => 'storeCategory.form.description_placeholder',
                 ],
-            ]);
+            ])
+            ;
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => ContactInfo::class,
+            'data_class' => StoreCategory::class,
         ]);
     }
 }
