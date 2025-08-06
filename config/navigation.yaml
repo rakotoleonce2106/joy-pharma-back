@@ -57,13 +57,7 @@ admin_top_menu:
                 routes:
                     - "admin_product"
 
-        storeCategory:
-            label: "admin.menu.store_category"
-            route: "admin_store_category"
-            extras:
-                icon: "material-symbols:category-outline"
-                routes:
-                    - "admin_store_category"
+
         store:
             label: "admin.menu.store"
             route: "admin_store"

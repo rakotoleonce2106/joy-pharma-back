@@ -61,6 +61,7 @@ class Product
      * @var Collection<int, Category>
      */
     #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'products')]
+    #[Groups(['product:read'])]
     private Collection $category;
 
     /**
@@ -109,6 +110,12 @@ class Product
     #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'product')]
     private Collection $orderItems;
 
+    /**
+     * @var Collection<int, StoreProduct>
+     */
+    #[ORM\OneToMany(targetEntity: StoreProduct::class, mappedBy: 'product')]
+    private Collection $storeProducts;
+
 
 
 
@@ -119,6 +126,7 @@ class Product
         $this->restricted = new ArrayCollection();
         $this->orderItems = new ArrayCollection();
         $this->createdAt = new \DateTime();
+        $this->storeProducts = new ArrayCollection();
     }
 
 
@@ -394,6 +402,36 @@ class Product
             // set the owning side to null (unless already changed)
             if ($orderItem->getProduct() === $this) {
                 $orderItem->setProduct(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, StoreProduct>
+     */
+    public function getStoreProducts(): Collection
+    {
+        return $this->storeProducts;
+    }
+
+    public function addStoreProduct(StoreProduct $storeProduct): static
+    {
+        if (!$this->storeProducts->contains($storeProduct)) {
+            $this->storeProducts->add($storeProduct);
+            $storeProduct->setProduct($this);
+        }
+
+        return $this;
+    }
+
+    public function removeStoreProduct(StoreProduct $storeProduct): static
+    {
+        if ($this->storeProducts->removeElement($storeProduct)) {
+            // set the owning side to null (unless already changed)
+            if ($storeProduct->getProduct() === $this) {
+                $storeProduct->setProduct(null);
             }
         }
 

@@ -81,11 +81,25 @@ class Store
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     private ?User $owner = null;
 
+    /**
+     * @var Collection<int, Category>
+     */
+    #[ORM\ManyToMany(targetEntity: Category::class)]
+    private Collection $categories;
+
+    /**
+     * @var Collection<int, StoreProduct>
+     */
+    #[ORM\OneToMany(targetEntity: StoreProduct::class, mappedBy: 'store')]
+    private Collection $storeProducts;
+
     public function __construct()
     {
         $this->image = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->categories = new ArrayCollection();
+        $this->storeProducts = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -193,6 +207,60 @@ class Store
     public function setOwner(?User $owner): static
     {
         $this->owner = $owner;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Category>
+     */
+    public function getCategories(): Collection
+    {
+        return $this->categories;
+    }
+
+    public function addCategory(Category $category): static
+    {
+        if (!$this->categories->contains($category)) {
+            $this->categories->add($category);
+        }
+
+        return $this;
+    }
+
+    public function removeCategory(Category $category): static
+    {
+        $this->categories->removeElement($category);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, StoreProduct>
+     */
+    public function getStoreProducts(): Collection
+    {
+        return $this->storeProducts;
+    }
+
+    public function addStoreProduct(StoreProduct $storeProduct): static
+    {
+        if (!$this->storeProducts->contains($storeProduct)) {
+            $this->storeProducts->add($storeProduct);
+            $storeProduct->setStore($this);
+        }
+
+        return $this;
+    }
+
+    public function removeStoreProduct(StoreProduct $storeProduct): static
+    {
+        if ($this->storeProducts->removeElement($storeProduct)) {
+            // set the owning side to null (unless already changed)
+            if ($storeProduct->getStore() === $this) {
+                $storeProduct->setStore(null);
+            }
+        }
 
         return $this;
     }

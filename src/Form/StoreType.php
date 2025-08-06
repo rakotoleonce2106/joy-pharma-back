@@ -2,7 +2,9 @@
 
 namespace App\Form;
 
+use App\Entity\Category;
 use App\Entity\Store;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -10,6 +12,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\File;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class StoreType extends AbstractType
 {
@@ -22,7 +25,17 @@ class StoreType extends AbstractType
                     'placeholder' => 'store.form.name_placeholder',
                 ],
             ])
-            
+            ->add('categories', EntityType::class, [
+                'class' => Category::class,
+                'choice_label' => 'name',
+                'required' => true,
+                'multiple' => true,
+                'label' => 'product.form.category',
+                'placeholder' => 'product.form.category_placeholder',
+                'query_builder' => function ($repository) {
+                    return $repository->createQueryBuilder('c');
+                },
+            ])
             ->add('description', TextareaType::class, [
                 'label' => 'store.form.description',
                 'required' => false,

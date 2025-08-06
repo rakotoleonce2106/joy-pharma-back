@@ -44,7 +44,7 @@ class Category
     /**
      * @var Collection<int, self>
      */
-    #[Groups(['category:read','product:read'])]
+    #[Groups(['category:read'])]
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
     private Collection $categories;
 

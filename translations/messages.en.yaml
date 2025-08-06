@@ -142,19 +142,6 @@ unit:
         id: 'ID'
         label: 'Label'
 
-storeCategory:
-    form:
-        label: 'Label'
-        label_placeholder: 'Enter store category label'
-        description: 'Description'
-        description_placeholder: 'Enter store category description'
-
-    # DataTable translations
-    datatable:
-        create_new: 'Create new store category'
-        id: 'ID'
-        label: 'Label'
-
 
 store:
     form:
@@ -311,7 +298,6 @@ admin:
         unit: 'Unit'
         users: 'Users'
         advertisement: 'Advertisement'
-        store_category: 'Store Category'
         store: 'Store'
         home: 'Home'
         settings: 'Settings'

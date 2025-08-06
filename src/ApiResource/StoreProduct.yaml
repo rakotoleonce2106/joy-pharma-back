@@ -1,0 +1,16 @@
+App\Entity\StoreProduct:
+    operations:
+        get_store_products:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            normalizationContext:
+                groups:  ['id:read','store-product:read', 'product:read']
+            format: 'json'
+            openapi:
+                summary: 'Get all store products'
+                description: 'Get all store products'
+                
+
+    normalizationContext:
+        groups: ['id:read','store-product:read','product:read']
+                      
