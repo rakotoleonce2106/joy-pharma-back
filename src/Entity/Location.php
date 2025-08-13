@@ -2,26 +2,28 @@
 
 namespace App\Entity;
 
+use App\Entity\Traits\EntityIdTrait;
 use App\Repository\LocationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: LocationRepository::class)]
 class Location
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
-
+    use EntityIdTrait;
+    
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['location:read'])]
     private ?string $address = null;
 
     #[ORM\Column]
+    #[Groups(['location:read'])]
     private ?float $latitude = null;
 
     #[ORM\Column]
+    #[Groups(['location:read'])]
     private ?float $longitude = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -51,10 +53,6 @@ class Location
         $this->orders = new ArrayCollection();
     }
 
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
 
     public function getAddress(): ?string
     {

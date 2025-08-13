@@ -69,8 +69,6 @@ class Order
     #[Groups(['order:create','order:read'])]
     private Collection $items;
 
-
-
     #[ORM\Column]
     #[Groups(['order:read'])]
     private ?float $totalAmount = null;
@@ -198,8 +196,19 @@ class Order
         return $this->priority;
     }
 
-    public function setPriority(PriorityType $priority): self
+    public function setPriority(String $priority): self
     {
+        switch ($priority) {
+            case 'urgent':
+                $priority = PriorityType::PRIORITY_URGENT;
+                break;
+            case 'standard':
+                $priority = PriorityType::PRIORITY_STANDARD;
+                break;
+            case 'planified':
+                $priority = PriorityType::PRIORITY_PLANIFIED;
+                break;
+        }
         $this->priority = $priority;
         $this->updatedAt = new \DateTime();
         return $this;

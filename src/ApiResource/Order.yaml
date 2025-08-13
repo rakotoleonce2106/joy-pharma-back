@@ -3,11 +3,11 @@ App\Entity\Order:
         post_order:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/order"
+            input: App\Dto\OrderInput
             processor: App\State\OrderCreateProcessor
-            validationContext:
-                groups: ['order:create' ]
+            format: 'json'
             normalizationContext:
-                groups: [ 'id:read',"order:read" ]
+                groups: ['id:read','order:read',location:read,"user:read","product:read",'image:read']
             openapi:
                 summary: 'Create a order'
                 description: 'Create a order'
@@ -18,7 +18,7 @@ App\Entity\Order:
             class: ApiPlatform\Metadata\Get
             uriTemplate: '/order/{id}'
             normalizationContext:
-                groups: ['order:read']
+                groups: ['order:read',location:read,"user:read","product:read",'image:read']
             openapi:
                 summary: 'Get a order'
                 description: 'Get a order by id'
@@ -32,7 +32,7 @@ App\Entity\Order:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/orders'
             normalizationContext:
-                groups: ['id:read','order:read']
+                groups: ['id:read','order:read',location:read,"user:read","product:read",'image:read']
             openapi:
                 summary: 'Get all ordes'
                 description: 'Get all orders'

@@ -17,30 +17,30 @@ class CategoryProvider implements ProviderInterface
         private Security $security,
         private StoreRepository $storeRepository,
         private CategoryRepository $categoryRepository
-    ) {
-    }
+    ) {}
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): array|object|null
     {
         $user = $this->security->getUser();
-        
+
         if ($user instanceof User && $this->security->isGranted('ROLE_STORE')) {
             $store = $this->storeRepository->findOneBy(['owner' => $user]);
-            
-            if ($store) {
-                $categories = $store->getCategories();
-                
-                if ($categories instanceof \Doctrine\Common\Collections\Collection) {
-                    $categoryIds = [];
-                    foreach ($categories as $category) {
-                        $categoryIds[] = $category->getId();
-                    }
-                    return $this->categoryRepository->findBy(['id' => $categoryIds]);
-                }
 
-                return [];
+            if ($store) {
+                $storeCategories = $store->getCategories();
+
+                $parentIds = array_map(fn($cat) => $cat->getId(), $storeCategories->toArray());
+
+                $qb = $this->categoryRepository->createQueryBuilder('c')
+                    ->where('c.parent IN (:parentIds)')
+                    ->setParameter('parentIds', $parentIds);
+
+                $categories = $qb->getQuery()->getResult();
+
+                return $categories;
             }
         }
+
 
         return $this->categoryRepository->findAll();
     }

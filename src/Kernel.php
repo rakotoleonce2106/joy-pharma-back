@@ -11,10 +11,10 @@ class Kernel extends BaseKernel
 {
     use MicroKernelTrait;
 
+
     protected function build(ContainerBuilder $container): void
     {
         parent::build($container);
-
         $container->addCompilerPass(new ToastServiceCompilerPass());
     }
 }

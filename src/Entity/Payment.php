@@ -121,8 +121,25 @@ class Payment
         return $this->method;
     }
 
-    public function setMethod(PaymentMethod $method): static
+    public function setMethod(String $method): static
     {
+        switch ($method) {
+            case 'mvola':
+                $method = PaymentMethod::METHODE_MVOLA;
+                break;
+            case 'airtel_money':
+                $method = PaymentMethod::METHODE_AIRTEL_MONEY;
+                break;
+            case 'orange_money':
+                $method = PaymentMethod::METHODE_ORANGE_MONEY;
+                break;
+            case 'paypal':
+                $method = PaymentMethod::METHOD_PAYPAL;
+                break;
+            case 'stripe':
+                $method = PaymentMethod::METHOD_STRIPE;
+                break;
+        }
         $this->method = $method;
         return $this;
     }
