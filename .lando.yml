@@ -1,66 +1,82 @@
 name: joy-pharma
 recipe: symfony
 config:
-    webroot: public
-    php: 8.3
-    via: nginx
-    xdebug: false
-    database: postgres:14
+  webroot: public  # Changed from '.' to 'public'
+  php: 8.3
+  via: nginx
+  xdebug: false
+  database: postgres:14
 services:
-    appserver:
-        overrides:
-            environment:
-                XDEBUG_MODE: "debug,develop"
-                PHP_IDE_CONFIG: "serverName=appserver"
-                XDEBUG_CONFIG: "discover_client_host=0 client_host=host.docker.internal"
-                XDEBUG_SESSION_START: lando
-        build_as_root:
-            - curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh' | bash
-            - apt install symfony-cli
-    pgadmin:
-        type: compose
-        app_mount: false
-        ssl: false
-        overrides:
-            environment:
-                PGADMIN_DEFAULT_EMAIL: "joy-pharma@mailinator.com"
-                PGADMIN_DEFAULT_PASSWORD: "joy-pharma"
-        services:
-            image: dpage/pgadmin4
-            command: /entrypoint.sh
-            restart: always
-            ports:
-                - :80
-    database:
-        portforward: 5433
-    mailhog:
-        type: mailhog
-        portforward: false
-        hogfrom:
-            - appserver
+  appserver:
+    overrides:
+      environment:
+        XDEBUG_MODE: debug,develop
+        PHP_IDE_CONFIG: serverName=appserver
+        XDEBUG_CONFIG: discover_client_host=0 client_host=host.docker.internal
+        XDEBUG_SESSION_START: lando
+    build_as_root:
+      - apt update
+      - >-
+        curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh'
+        | bash
+      - apt install symfony-cli
+    build:
+      - composer install --optimize-autoloader --no-scripts
+  pgadmin:
+    type: compose
+    app_mount: false
+    ssl: false
+    overrides:
+      environment:
+        PGADMIN_DEFAULT_EMAIL: joy-pharma@mailinator.com
+        PGADMIN_DEFAULT_PASSWORD: joy-pharma
+    services:
+      image: dpage/pgadmin4
+      command: /entrypoint.sh
+      restart: always
+      ports:
+        - ":80"
+  database:
+    portforward: 5433
+  mailhog:
+    type: mailhog
+    portforward: false
+    hogfrom:
+      - appserver
 proxy:
-    appserver_nginx:
-        - joy-pharma.loc
-    mailhog:
-        - mail.joy-pharma.loc
-    pgadmin:
-        - pgadmin.joy-pharma.loc
+  appserver_nginx:
+    - joy-pharma.loc
+  mailhog:
+    - mail.joy-pharma.loc
+  pgadmin:
+    - pgladmin.joy-pharma.loc
 tooling:
-    xdebug-on:
-        service: appserver
-        description: Enable Xdebug.
-        user: root
-        cmd:
-            - docker-php-ext-enable xdebug && kill -USR2 $(pgrep -o php-fpm) > /dev/null || /etc/init.d/apache2 reload
-            - tput setaf 2 && echo "Xdebug On" && tput sgr 0 && echo
-
-    xdebug-off:
-        service: appserver
-        description: Disable Xdebug.
-        user: root
-        cmd:
-            - rm /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && kill -USR2 $(pgrep -o php-fpm) > /dev/null || /etc/init.d/apache2 reload
-            - tput setaf 1 && echo "Xdebug Off" && tput sgr 0 && echo
+  # Add custom console command
+  console:
+    service: appserver
+    cmd: php bin/console
+  # Post-start script to run after services are up
+  post-start:
+    service: appserver
+    cmd: composer run-script auto-scripts
+  xdebug-on:
+    service: appserver
+    description: Enable Xdebug.
+    user: root
+    cmd:
+      - >-
+        docker-php-ext-enable xdebug && kill -USR2 $(pgrep -o php-fpm) >
+        /dev/null || /etc/init.d/apache2 reload
+      - tput setaf 2 && echo "Xdebug On" && tput sgr 0 && echo
+  xdebug-off:
+    service: appserver
+    description: Disable Xdebug.
+    user: root
+    cmd:
+      - >-
+        rm /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini && kill -USR2
+        $(pgrep -o php-fpm) > /dev/null || /etc/init.d/apache2 reload
+      - tput setaf 1 && echo "Xdebug Off" && tput sgr 0 && echo
 excludes:
-    - vendor
-    - assets/vendor
+  - vendor
+  - assets/vendor

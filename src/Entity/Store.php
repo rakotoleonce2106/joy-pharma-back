@@ -93,6 +93,9 @@ class Store
     #[ORM\OneToMany(targetEntity: StoreProduct::class, mappedBy: 'store')]
     private Collection $storeProducts;
 
+    #[ORM\ManyToOne(inversedBy: 'store')]
+    private ?OrderItem $orderItem = null;
+
     public function __construct()
     {
         $this->image = new ArrayCollection();
@@ -261,6 +264,18 @@ class Store
                 $storeProduct->setStore(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getOrderItem(): ?OrderItem
+    {
+        return $this->orderItem;
+    }
+
+    public function setOrderItem(?OrderItem $orderItem): static
+    {
+        $this->orderItem = $orderItem;
 
         return $this;
     }

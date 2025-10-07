@@ -42,7 +42,7 @@ readonly class OrderService
             ->findAll();
     }
 
-    public function batchDeleteOrder(array $orderIds): void
+    public function batchDeleteOrders(array $orderIds): void
     {
 
 

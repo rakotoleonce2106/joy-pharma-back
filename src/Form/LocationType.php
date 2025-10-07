@@ -33,27 +33,6 @@ class LocationType extends AbstractType
                     'placeholder' => 'location.form.longitude_placeholder',
                 ]
             ])
-            ->add('city', TextType::class, [
-                'attr' => [
-                    'placeholder' => 'location.form.city_placeholder',
-                ]
-            ])
-            ->add('state', TextType::class, [
-                'attr' => [
-                    'placeholder' => 'location.form.state_placeholder',
-                ]
-            ])
-            ->add('country', TextType::class, [
-                'attr' => [
-                    'placeholder' => 'location.form.country_placeholder',
-                ]
-            ])
-            ->add('postalCode', TextType::class, [
-                'attr' => [
-                    'placeholder' => 'location.form.postal_code_placeholder',
-                ]
-            ])
-
         ;
     }
 

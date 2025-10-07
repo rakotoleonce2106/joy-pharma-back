@@ -64,6 +64,7 @@ class Order
 
     /**
      * @var Collection<int, OrderItem>
+     * 
      */
     #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'orderParent')]
     #[Groups(['order:create','order:read'])]
@@ -85,6 +86,9 @@ class Order
     #[Groups(['order:read'])]
     private ?Payment $payment = null;
 
+    #[ORM\ManyToOne(inversedBy: 'deliverOrders')]
+    #[Groups(['order:create','order:read'])]
+    private ?User $deliver = null;
 
 
 
@@ -269,6 +273,18 @@ class Order
                 $item->setOrderParent(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getDeliver(): ?User
+    {
+        return $this->deliver;
+    }
+
+    public function setDeliver(?User $deliver): static
+    {
+        $this->deliver = $deliver;
 
         return $this;
     }

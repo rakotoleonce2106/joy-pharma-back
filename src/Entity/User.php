@@ -85,12 +85,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToOne(inversedBy: 'owner')]
     private ?Store $store = null;
 
+    /**
+     * @var Collection<int, Order>
+     */
+    #[ORM\OneToMany(targetEntity: Order::class, mappedBy: 'deliver')]
+    private Collection $deliverOrders;
+
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->image = new EmbeddedFile();
         $this->orders = new ArrayCollection();
+        $this->deliverOrders = new ArrayCollection();
     }
 
     public function getEmail(): ?string
@@ -317,6 +324,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setStore(?Store $store): static
     {
         $this->store = $store;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Order>
+     */
+    public function getDeliverOrders(): Collection
+    {
+        return $this->deliverOrders;
+    }
+
+    public function addDeliverOrder(Order $deliverOrder): static
+    {
+        if (!$this->deliverOrders->contains($deliverOrder)) {
+            $this->deliverOrders->add($deliverOrder);
+            $deliverOrder->setDeliver($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDeliverOrder(Order $deliverOrder): static
+    {
+        if ($this->deliverOrders->removeElement($deliverOrder)) {
+            // set the owning side to null (unless already changed)
+            if ($deliverOrder->getDeliver() === $this) {
+                $deliverOrder->setDeliver(null);
+            }
+        }
 
         return $this;
     }

@@ -65,6 +65,13 @@ admin_top_menu:
                 icon: "material-symbols:storefront-outline"
                 routes:
                     - "admin_store"
+        order:
+            label: "admin.menu.order"
+            route: "admin_order"
+            extras:
+                icon: "material-symbols:shopping-cart-outline"
+                routes:
+                    - "admin_order"
 
 
 admin_bottom_menu:

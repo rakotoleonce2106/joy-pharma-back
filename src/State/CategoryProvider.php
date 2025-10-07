@@ -4,8 +4,6 @@ namespace App\State;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
-use App\Entity\Category;
-use App\Entity\Store;
 use App\Entity\User;
 use App\Repository\CategoryRepository;
 use App\Repository\StoreRepository;
@@ -39,6 +37,24 @@ class CategoryProvider implements ProviderInterface
 
                 return $categories;
             }
+        }
+        $filters = $context['filters'] ?? [];
+
+        if (array_key_exists('parent', $filters)) {
+            $parentValue = $filters['parent'];
+
+            // Parent null
+            if ($parentValue === false || $parentValue === null || $parentValue === '') {
+                return $this->categoryRepository->findBy(['parent' => null]);
+            }
+
+            // Parent avec ID spécifique
+            if (is_numeric($parentValue)) {
+                return $this->categoryRepository->findBy(['parent' => (int)$parentValue]);
+            }
+
+            // Valeur invalide
+            throw new \InvalidArgumentException('Invalid parent filter value');
         }
 
 

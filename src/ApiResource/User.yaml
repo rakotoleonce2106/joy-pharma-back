@@ -72,7 +72,7 @@ App\Entity\User:
             securityMessage: 'Only authenticated users can get current user.'
             method: GET
             uriTemplate: "/me"
-            controller: App\Controller\Api\MeController
+            processor: App\State\CurrentUserProvider
             normalizationContext:
                 groups: ['id:read', "user:read" ]
             read: false
@@ -84,6 +84,8 @@ App\Entity\User:
             openapi:
                 security:
                     -   JWT: [ 'ROLE_USER' ]
+                summary: "Get  current user."
+                description: "Get  current user."
 
     normalizationContext:
         groups: ['id:read','user:read']

@@ -1,0 +1,42 @@
+<div {{ attributes }}>
+    {{ form_start(form, { attr: {
+        class: 'space-y-4',
+        'id': 'order-form',
+        'data-controller': 'form-collection'
+    } }) }}
+    {{ form_row(form.reference) }}
+    {{ form_row(form.totalAmount) }}
+    {{ form_row(form.scheduledDate) }}
+    {{ form_row(form.phone) }}
+    {{ form_row(form.status) }}
+    {{ form_row(form.priority) }}
+    {{ form_row(form.location) }}
+
+    <div class="items">
+        <h3>{{ 'order.form.items'|trans }}</h3>
+        <div data-form-collection-target="container">
+            {% for item in form.items %}
+                <div class="item flex space-x-4 mb-2" data-form-collection-target="item">
+                    {{ form_row(item.quantity, {'attr': {'class': 'w-1/3'}}) }}
+                    {{ form_row(item.product, {'attr': {'class': 'w-1/3'}}) }}
+                    {{ form_row(item.store, {'attr': {'class': 'w-1/3'}}) }}
+                    <button type="button" data-action="form-collection#removeItem" class="text-red-500">
+                        {{ 'Remove'|trans }}
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+        <button type="button" data-action="form-collection#addItem" data-prototype="{{ form_widget(form.items.vars.prototype)|e('html_attr') }}">
+            {{ 'Add Item'|trans }}
+        </button>
+    </div>
+
+    {{ form_row(form.notes) }}
+    <div class="items-center justify-center gap-2 mt-6 hidden turbo-frame:flex">
+        <twig:ui:button:root href="{{ path('admin_order') }}" variant="outline">
+            {{ 'Discard'|trans }}
+        </twig:ui:button:root>
+        <twig:ui:button:root formnovalidate>{{ 'Save Order'|trans }}</twig:ui:button:root>
+    </div>
+    {{ form_end(form) }}
+</div>

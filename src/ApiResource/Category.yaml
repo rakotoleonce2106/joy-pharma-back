@@ -5,7 +5,7 @@ App\Entity\Category:
             class: ApiPlatform\Metadata\Get
             uriTemplate: '/category/{id}'
             normalizationContext:
-                groups: ['category:read']
+                groups: ['category:read','image:read']
             openapi:
                 summary: 'Get a category'
                 description: 'Get a category by id'
@@ -14,12 +14,14 @@ App\Entity\Category:
                       in: 'path'
                       description:  'The id of the category'
 
+
         get_categories:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/category'
+            provider: App\State\CategoryProvider
             normalizationContext:
-                groups: ['id:read','category:read']
+                groups: ['id:read','category:read','image:read']
             openapi:
                 summary: 'Get all categories'
                 description: 'Get all categories'

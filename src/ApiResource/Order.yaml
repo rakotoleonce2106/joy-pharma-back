@@ -32,11 +32,12 @@ App\Entity\Order:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/orders'
             normalizationContext:
-                groups: ['id:read','order:read',location:read,"user:read","product:read",'image:read']
+                groups: ['order:read',location:read,"user:read","product:read",'image:read']
             openapi:
-                summary: 'Get all ordes'
+                summary: 'Get all orders'
                 description: 'Get all orders'
-                
+                security:
+                    -   JWT: [ 'ROLE_ADMIN','ROLE_USER','ROLE_STORE','ROLE_DELIVER' ]                
 
     normalizationContext:
         groups: ['id:read','order:read']

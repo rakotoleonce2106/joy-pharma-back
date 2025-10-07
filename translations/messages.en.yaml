@@ -37,8 +37,6 @@ product:
     #DataTable translations
     datatable:
         create_new: 'Create new product'
-        upload_Pharma_json: 'Upload Pharma Json'
-        upload_serie_json: 'Upload Serie Json'
         id: 'ID'
         name: 'Name'
         description: 'Description'
@@ -179,6 +177,45 @@ location:
         country_placeholder: 'Enter country'
         postal_code: 'Postal Code'
         postal_code_placeholder: 'Enter postal code'
+
+order:
+    form:
+        name: 'TotalAmount'
+        name_placeholder: 'Enter totalAmount'
+        reference: 'Reference'
+        reference_placeholder: 'Enter reference'
+        phone: 'Phone'
+        phone_placeholder: 'Enter Phone'
+        location: 'Location'
+        location_placeholder: 'Enter location'
+        total_price: 'Total Price'
+        total_price_placeholder: 'Enter price'
+        scheduled_date: 'Scheduled Date'
+        priority: 'priority'
+        priority_placeholder: 'Choose priority'
+        status: 'Status'
+        status_placeholder: 'Choose status'
+        notes: 'Notes'
+        notes_placeholder: 'Enter notes'
+        items: 'Items'
+        
+
+
+
+    #DataTable translations
+    datatable:
+        id: 'ID'
+        create_new: 'Create new order'
+        owner: 'Client'
+        location: 'Location'
+        reference: 'Reference'
+        date: 'Date'
+        priority: 'Priority'
+        status: 'Status'
+        manufacturer: 'Manufacturer'
+        totalAmount: 'TotalAmount'
+        phone: 'Phone'
+
         
 contact:
     form:
@@ -299,6 +336,7 @@ admin:
         users: 'Users'
         advertisement: 'Advertisement'
         store: 'Store'
+        order: 'Order'
         home: 'Home'
         settings: 'Settings'
         logout: 'Logout'

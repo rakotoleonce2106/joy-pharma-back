@@ -28,6 +28,9 @@ class OrderItem
     #[ORM\ManyToOne(inversedBy: 'items')]
     private ?Order $orderParent = null;
 
+    #[ORM\ManyToOne]
+    private ?Store $store = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -77,6 +80,18 @@ class OrderItem
     public function setOrderParent(?Order $orderParent): static
     {
         $this->orderParent = $orderParent;
+
+        return $this;
+    }
+
+    public function getStore(): ?Store
+    {
+        return $this->store;
+    }
+
+    public function setStore(?Store $store): static
+    {
+        $this->store = $store;
 
         return $this;
     }

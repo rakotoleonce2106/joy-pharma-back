@@ -35,11 +35,11 @@ App\Entity\Product:
                 summary: 'Get all products'
                 description: 'Get all products'
                 
-        get_products_summary:
+        get_products_suggestion:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
-            controller: 'App\Controller\Api\Product\ProductSummaryController'
-            uriTemplate: '/products/home'
+            uriTemplate: '/products/suggestion'
+            provider: 'App\State\SuggestionProductsProvider'
             normalizationContext:
                 groups:  ['id:read','category:read','product:read','image:read']
             openapi:

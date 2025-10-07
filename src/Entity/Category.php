@@ -11,11 +11,10 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
-#[ApiFilter(SearchFilter::class, properties: [
-    'parent' => 'exact',
-])]
+#[ApiFilter(SearchFilter::class, properties: ['parent' => 'exact'])]
 class Category
 {
     use EntityIdTrait;
