@@ -14,7 +14,7 @@ class Kernel extends BaseKernel
 
     protected function build(ContainerBuilder $container): void
     {
-        parent::build($container);
+        parent::build($container); 
         $container->addCompilerPass(new ToastServiceCompilerPass());
     }
 }

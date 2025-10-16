@@ -1,0 +1,53 @@
+App\Entity\Favorite:
+  operations:
+    get_favorite:
+      method: 'GET'
+      class: ApiPlatform\Metadata\Get
+      uriTemplate: '/favorites/{id}'
+      normalizationContext:
+        groups: ['favorite:read', 'id:read','product:read','image:read']
+      openapi:
+        summary: 'Get a favorite'
+        description: 'Get a favorite by id'
+        parameters:
+          - name: 'id'
+            in: 'path'
+            description:  'The id of the favorite'
+
+    get_favorites:
+      method: 'GET'
+      class: ApiPlatform\Metadata\GetCollection
+      uriTemplate: '/favorites'
+      normalizationContext:
+        groups: ['favorite:read', 'id:read','product:read','image:read']
+      openapi:
+        summary: 'Get all favorite'
+        description: 'Get all favorite'
+
+    post_favorite:
+        method: 'POST'
+        class: ApiPlatform\Metadata\Post
+        uriTemplate: '/favorites'
+        normalizationContext:
+          groups: ['favorite:read', 'id:read','product:read','image:read']
+        processor: App\State\FavoriteProcessor
+        input: 'App\Dto\FavoriteInput'
+        openapi:
+            summary: 'Create a favorite'
+            description: 'Create a favorite'
+
+    delete_favorite:
+      method: 'DELETE'
+      class: ApiPlatform\Metadata\Delete
+      uriTemplate: '/favorites/{id}'
+      openapi:
+        summary: 'Delete a favorite'
+        description: 'Delete a favorite by id'
+        parameters:
+          - name: 'id'
+            in: 'path'
+            description: 'The id of the favorite'
+
+  normalizationContext:
+    groups: ['favorite:read']
+
