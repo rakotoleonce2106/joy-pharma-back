@@ -17,12 +17,6 @@ App\Entity\User:
             input_formats:
                 multipart: [ 'multipart/form-data' ]
 
-        get:
-            class: ApiPlatform\Metadata\Get
-            openapi:
-                security:
-                    -   JWT: [ 'ROLE_ADMIN' ]
-
         patch:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/user/update"
@@ -72,18 +66,15 @@ App\Entity\User:
             securityMessage: 'Only authenticated users can get current user.'
             method: GET
             uriTemplate: "/me"
-            processor: App\State\CurrentUserProvider
+            provider: App\State\CurrentUserProvider
             normalizationContext:
-                groups: ['id:read', "user:read" ]
-            read: false
+                groups: ['id:read', "user:read" ,"image:read"]
             uriVariables: []
             openapiContext:
                 summary: Retrieves the current user resource.
                 description: >
                     Retrieves the current user resource.
             openapi:
-                security:
-                    -   JWT: [ 'ROLE_USER' ]
                 summary: "Get  current user."
                 description: "Get  current user."
 
