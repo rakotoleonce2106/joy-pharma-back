@@ -19,7 +19,7 @@ class ContactInfo
     #[ORM\Column(length: 255)]
     private ?string $email = null;
 
-    #[ORM\OneToOne(mappedBy: 'contact', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(mappedBy: 'contact')]
     private ?Store $store = null;
 
     public function getId(): ?int

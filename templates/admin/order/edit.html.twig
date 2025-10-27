@@ -17,7 +17,7 @@
                     <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_order') }}">
                         {{ 'Cancel'|trans }}
                     </twig:ui:button:root>
-                    <twig:ui:button:root type="submit" form="order-form" size="sm">
+                    <twig:ui:button:root type="submit" form="order-form" size="sm" data-turbo-submits-with="Updating...">
                         {{ 'Update Order'|trans }}
                     </twig:ui:button:root>
                 </div>
@@ -84,7 +84,7 @@
                 <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_order') }}">
                     {{ 'Cancel'|trans }}
                 </twig:ui:button:root>
-                <twig:ui:button:root type="submit" form="order-form" size="sm">
+                <twig:ui:button:root type="submit" form="order-form" size="sm" data-turbo-submits-with="Updating...">
                     {{ 'Update Order'|trans }}
                 </twig:ui:button:root>
             </div>

@@ -153,7 +153,7 @@ readonly class  ProductService
     }
 
 
-    public function updateProduct(): void
+    public function updateProduct(Product $product): void
     {
         $this->manager->flush();
     }

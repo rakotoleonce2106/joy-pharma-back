@@ -38,7 +38,7 @@ class Location
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $postalCode = null;
 
-    #[ORM\OneToOne(mappedBy: 'location', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(mappedBy: 'location')]
     private ?Store $store = null;
 
     /**

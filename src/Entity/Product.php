@@ -349,7 +349,7 @@ class Product
         return $this->totalPrice;
     }
 
-    public function setPrice(?float $totalPrice): static
+    public function setTotalPrice(?float $totalPrice): static
     {
         $this->totalPrice = $totalPrice;
 
