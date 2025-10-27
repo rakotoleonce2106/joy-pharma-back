@@ -59,6 +59,14 @@ class OrderController extends AbstractController
         ]);
     }
 
+    #[Route('/order/{id}', name: 'admin_order_view', defaults: ['title' => 'View order'])]
+    public function viewAction(Order $order): Response
+    {
+        return $this->render('admin/order/view.html.twig', [
+            'order' => $order
+        ]);
+    }
+
     #[Route('/order/{id}/edit', name: 'admin_order_edit', defaults: ['title' => 'Edit order'])]
     public function editAction(Request $request, Order $order): Response
     {

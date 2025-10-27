@@ -1,57 +1,95 @@
 {% extends 'admin/layout.html.twig' %}
 
+{% block title %}{{ 'Edit Order'|trans }}{% endblock %}
+
 {% block content %}
-    {% if not app.request.headers.has('turbo-frame') %}
-        <main class="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 w-[50rem]">
-            <div class="mx-auto grid lg:max-w-[85rem] w-full flex-1 auto-rows-max gap-4">
-                <div class="flex items-center gap-4">
-                    <twig:ui:button:root href="{{ path('admin_order') }}" variant="outline" size="icon" class="h-7 w-7">
-                        <twig:ux:icon name="radix-icons:chevron-left" class="h-4 w-4"/>
-                        <span class="sr-only">{{ 'Back'|trans }}</span>
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
+        <div class="mx-auto grid w-full max-w-6xl gap-6">
+            <div class="flex items-center gap-4">
+                <twig:ui:button:root href="{{ path('admin_order') }}" variant="outline" size="icon" class="h-8 w-8">
+                    <twig:ux:icon name="radix-icons:chevron-left" class="h-4 w-4"/>
+                    <span class="sr-only">{{ 'Back'|trans }}</span>
+                </twig:ui:button:root>
+                <h1 class="flex-1 text-3xl font-bold tracking-tight">
+                    {{ 'Edit Order'|trans }} - {{ order.reference }}
+                </h1>
+                <div class="hidden items-center gap-2 md:flex">
+                    <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_order') }}">
+                        {{ 'Cancel'|trans }}
                     </twig:ui:button:root>
-                    <h1 class="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-                        {{ 'Edit Order'|trans }}
-                    </h1>
-                    <div class="hidden items-center gap-2 md:ml-auto md:flex">
-                        <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_order') }}">
-                            {{ 'Discard'|trans }}
-                        </twig:ui:button:root>
-                        <twig:ui:button:root formnovalidate type="submit" form="order-form" size="sm">{{ 'Update Order'|trans }}
-                        </twig:ui:button:root>
-                    </div>
-                </div>
-                <div class="grid gap-4 lg:gap-8">
-                    <div class="grid auto-rows-max items-start gap-4 lg:col-span-2 lg:gap-8">
-                        {% with {_form: block('form')} %}
-                            <twig:ui:card:root>
-                                {{ _form|raw }}
-                            </twig:ui:card:root>
-                        {% endwith %}
-                    </div>
-                </div>
-                <div class="flex items-center justify-center gap-2 md:hidden">
-                    <twig:ui:button:root variant="outline" size="sm">
-                        {{ 'Discard'|trans }}
+                    <twig:ui:button:root type="submit" form="order-form" size="sm">
+                        {{ 'Update Order'|trans }}
                     </twig:ui:button:root>
-                    <twig:ui:button:root formnovalidate type="submit" form="order-form" size="sm">{{ 'Update Order'|trans }}</twig:ui:button:root>
                 </div>
             </div>
-        </main>
-    {% else %}
-        {{ block('form') }}
-    {% endif %}
-{% endblock %}
 
-{% block form %}
-    <twig:ui:card:header class="turbo-frame:p-0">
-        <twig:ui:card:title>{{ 'Edit Order'|trans }}</twig:ui:card:title>
-        <twig:ui:card:description>
-            {{ 'Update the form information below.'|trans }}
-        </twig:ui:card:description>
-    </twig:ui:card:header>
-    <twig:ui:card:content class="turbo-frame:p-0 turbo-frame:pt-6">
-        <twig:admin:order-form :initialFormData="order" :form="form"/>
-    </twig:ui:card:content>
+            <div class="grid gap-6 lg:grid-cols-3">
+                {# Order Details Card #}
+                <twig:ui:card:root class="lg:col-span-2">
+                    <twig:ui:card:header>
+                        <twig:ui:card:title>{{ 'Order Information'|trans }}</twig:ui:card:title>
+                        <twig:ui:card:description>
+                            {{ 'Update the order information below.'|trans }}
+                        </twig:ui:card:description>
+                    </twig:ui:card:header>
+                    <twig:ui:card:content>
+                        <twig:admin:order-form :initialFormData="order" :form="form"/>
+                    </twig:ui:card:content>
+                </twig:ui:card:root>
+
+                {# Order Summary Card #}
+                <twig:ui:card:root>
+                    <twig:ui:card:header>
+                        <twig:ui:card:title>{{ 'Order Summary'|trans }}</twig:ui:card:title>
+                    </twig:ui:card:header>
+                    <twig:ui:card:content class="grid gap-4">
+                        <div class="grid gap-2">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">{{ 'Reference'|trans }}</span>
+                                <span class="font-medium">{{ order.reference }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">{{ 'Status'|trans }}</span>
+                                {% set statusClass = order.status.value == 'delivered' ? 'bg-green-100 text-green-800' : (order.status.value == 'cancelled' ? 'bg-red-100 text-red-800' : (order.status.value == 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')) %}
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ statusClass }}">
+                                    {{ order.status.value|capitalize }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">{{ 'Total Amount'|trans }}</span>
+                                <span class="font-medium">{{ order.totalAmount|number_format(2, '.', ',') }} Ar</span>
+                            </div>
+                            {% if order.owner %}
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-muted-foreground">{{ 'Customer'|trans }}</span>
+                                    <span class="font-medium">{{ order.owner.fullName }}</span>
+                                </div>
+                            {% endif %}
+                            {% if order.deliver %}
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-muted-foreground">{{ 'Delivery Person'|trans }}</span>
+                                    <span class="font-medium">{{ order.deliver.fullName }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-muted-foreground">{{ 'Created'|trans }}</span>
+                                <span class="font-medium">{{ order.createdAt|date('Y-m-d H:i') }}</span>
+                            </div>
+                        </div>
+                    </twig:ui:card:content>
+                </twig:ui:card:root>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 md:hidden">
+                <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_order') }}">
+                    {{ 'Cancel'|trans }}
+                </twig:ui:button:root>
+                <twig:ui:button:root type="submit" form="order-form" size="sm">
+                    {{ 'Update Order'|trans }}
+                </twig:ui:button:root>
+            </div>
+        </div>
+    </main>
 {% endblock %}
 
 {% block stream_success %}

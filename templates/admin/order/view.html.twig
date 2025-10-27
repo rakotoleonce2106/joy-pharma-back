@@ -1,0 +1,249 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}{{ 'Order Details'|trans }}{% endblock %}
+
+{% block content %}
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
+        <div class="mx-auto grid w-full max-w-6xl gap-6">
+            <div class="flex items-center gap-4">
+                <twig:ui:button:root href="{{ path('admin_order') }}" variant="outline" size="icon" class="h-8 w-8">
+                    <twig:ux:icon name="radix-icons:chevron-left" class="h-4 w-4"/>
+                    <span class="sr-only">{{ 'Back'|trans }}</span>
+                </twig:ui:button:root>
+                <h1 class="flex-1 text-3xl font-bold tracking-tight">
+                    {{ 'Order'|trans }} #{{ order.reference }}
+                </h1>
+                <div class="hidden items-center gap-2 md:flex">
+                    <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_order_edit', {id: order.id}) }}">
+                        <twig:ux:icon name="lucide:edit" class="h-4 w-4 mr-2"/>
+                        {{ 'Edit'|trans }}
+                    </twig:ui:button:root>
+                </div>
+            </div>
+
+            <div class="grid gap-6 lg:grid-cols-3">
+                {# Order Details Card #}
+                <twig:ui:card:root class="lg:col-span-2">
+                    <twig:ui:card:header>
+                        <twig:ui:card:title>{{ 'Order Details'|trans }}</twig:ui:card:title>
+                        <twig:ui:card:description>
+                            {{ 'Created on'|trans }} {{ order.createdAt|date('F d, Y \a\t H:i') }}
+                        </twig:ui:card:description>
+                    </twig:ui:card:header>
+                    <twig:ui:card:content class="grid gap-6">
+                        {# Status and Priority #}
+                        <div class="grid gap-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium">{{ 'Status'|trans }}</span>
+                                {% set statusClass = order.status.value == 'delivered' ? 'bg-green-100 text-green-800' : (order.status.value == 'cancelled' ? 'bg-red-100 text-red-800' : (order.status.value == 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')) %}
+                                <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium {{ statusClass }}">
+                                    {{ order.status.value|capitalize }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium">{{ 'Priority'|trans }}</span>
+                                {% set priorityClass = order.priority.value == 'urgent' ? 'bg-red-100 text-red-800' : (order.priority.value == 'planified' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800') %}
+                                <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium {{ priorityClass }}">
+                                    {{ order.priority.value|capitalize }}
+                                </span>
+                            </div>
+                        </div>
+
+                        {# Customer Information #}
+                        {% if order.owner %}
+                            <div class="border-t pt-4">
+                                <h3 class="font-semibold mb-3">{{ 'Customer Information'|trans }}</h3>
+                                <div class="grid gap-2 text-sm">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-muted-foreground">{{ 'Name'|trans }}</span>
+                                        <span class="font-medium">{{ order.owner.fullName }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-muted-foreground">{{ 'Email'|trans }}</span>
+                                        <span class="font-medium">{{ order.owner.email }}</span>
+                                    </div>
+                                    {% if order.phone %}
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-muted-foreground">{{ 'Phone'|trans }}</span>
+                                            <span class="font-medium">{{ order.phone }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {# Delivery Information #}
+                        <div class="border-t pt-4">
+                            <h3 class="font-semibold mb-3">{{ 'Delivery Information'|trans }}</h3>
+                            <div class="grid gap-2 text-sm">
+                                {% if order.deliver %}
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-muted-foreground">{{ 'Delivery Person'|trans }}</span>
+                                        <span class="font-medium">{{ order.deliver.fullName }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-muted-foreground">{{ 'Delivery Person'|trans }}</span>
+                                        <span class="text-yellow-600 font-medium">{{ 'Not Assigned'|trans }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if order.location %}
+                                    <div class="flex items-start justify-between">
+                                        <span class="text-muted-foreground">{{ 'Location'|trans }}</span>
+                                        <div class="text-right">
+                                            {% if order.location.address %}
+                                                <div class="font-medium">{{ order.location.address }}</div>
+                                            {% endif %}
+                                            {% if order.location.city %}
+                                                <div class="text-xs text-muted-foreground">{{ order.location.city }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if order.scheduledDate %}
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-muted-foreground">{{ 'Scheduled Date'|trans }}</span>
+                                        <span class="font-medium">{{ order.scheduledDate|date('Y-m-d H:i') }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if order.deliveryFee %}
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-muted-foreground">{{ 'Delivery Fee'|trans }}</span>
+                                        <span class="font-medium">{{ order.deliveryFee|number_format(2, '.', ',') }} Ar</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Order Items #}
+                        {% if order.items|length > 0 %}
+                            <div class="border-t pt-4">
+                                <h3 class="font-semibold mb-3">{{ 'Order Items'|trans }}</h3>
+                                <div class="space-y-3">
+                                    {% for item in order.items %}
+                                        <div class="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                            <div class="flex-1">
+                                                <div class="font-medium">{{ item.product ? item.product.name : 'N/A' }}</div>
+                                                <div class="text-sm text-muted-foreground">{{ 'Quantity'|trans }}: {{ item.quantity }}</div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-medium">{{ item.totalPrice|number_format(2, '.', ',') }} Ar</div>
+                                                <div class="text-xs text-muted-foreground">{{ item.unitPrice|number_format(2, '.', ',') }} Ar {{ 'each'|trans }}</div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {# Notes #}
+                        {% if order.notes %}
+                            <div class="border-t pt-4">
+                                <h3 class="font-semibold mb-2">{{ 'Notes'|trans }}</h3>
+                                <p class="text-sm text-muted-foreground">{{ order.notes }}</p>
+                            </div>
+                        {% endif %}
+
+                        {% if order.deliveryNotes %}
+                            <div class="border-t pt-4">
+                                <h3 class="font-semibold mb-2">{{ 'Delivery Notes'|trans }}</h3>
+                                <p class="text-sm text-muted-foreground">{{ order.deliveryNotes }}</p>
+                            </div>
+                        {% endif %}
+                    </twig:ui:card:content>
+                </twig:ui:card:root>
+
+                {# Order Summary Sidebar #}
+                <div class="grid gap-6 h-fit">
+                    <twig:ui:card:root>
+                        <twig:ui:card:header>
+                            <twig:ui:card:title>{{ 'Order Summary'|trans }}</twig:ui:card:title>
+                        </twig:ui:card:header>
+                        <twig:ui:card:content class="grid gap-4">
+                            <div class="flex items-center justify-between pb-2 border-b">
+                                <span class="text-sm text-muted-foreground">{{ 'Subtotal'|trans }}</span>
+                                <span class="font-medium">{{ order.totalAmount|number_format(2, '.', ',') }} Ar</span>
+                            </div>
+                            {% if order.deliveryFee %}
+                                <div class="flex items-center justify-between pb-2 border-b">
+                                    <span class="text-sm text-muted-foreground">{{ 'Delivery Fee'|trans }}</span>
+                                    <span class="font-medium">{{ order.deliveryFee|number_format(2, '.', ',') }} Ar</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold">{{ 'Total'|trans }}</span>
+                                <span class="text-xl font-bold">{{ (order.totalAmount + (order.deliveryFee ?? 0))|number_format(2, '.', ',') }} Ar</span>
+                            </div>
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
+
+                    {# Tracking Information #}
+                    <twig:ui:card:root>
+                        <twig:ui:card:header>
+                            <twig:ui:card:title>{{ 'Tracking'|trans }}</twig:ui:card:title>
+                        </twig:ui:card:header>
+                        <twig:ui:card:content class="grid gap-3 text-sm">
+                            {% if order.acceptedAt %}
+                                <div class="flex items-start gap-2">
+                                    <div class="h-2 w-2 rounded-full bg-green-500 mt-1.5"></div>
+                                    <div class="flex-1">
+                                        <div class="font-medium">{{ 'Accepted'|trans }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ order.acceptedAt|date('Y-m-d H:i') }}</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if order.pickedUpAt %}
+                                <div class="flex items-start gap-2">
+                                    <div class="h-2 w-2 rounded-full bg-blue-500 mt-1.5"></div>
+                                    <div class="flex-1">
+                                        <div class="font-medium">{{ 'Picked Up'|trans }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ order.pickedUpAt|date('Y-m-d H:i') }}</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if order.deliveredAt %}
+                                <div class="flex items-start gap-2">
+                                    <div class="h-2 w-2 rounded-full bg-green-500 mt-1.5"></div>
+                                    <div class="flex-1">
+                                        <div class="font-medium">{{ 'Delivered'|trans }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ order.deliveredAt|date('Y-m-d H:i') }}</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if order.qrCode %}
+                                <div class="border-t pt-3 mt-2">
+                                    <div class="font-medium mb-1">{{ 'QR Code'|trans }}</div>
+                                    <div class="text-xs text-muted-foreground break-all">{{ order.qrCode }}</div>
+                                    {% if order.qrCodeValidatedAt %}
+                                        <div class="text-xs text-green-600 mt-1">✓ {{ 'Validated'|trans }} {{ order.qrCodeValidatedAt|date('Y-m-d H:i') }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
+
+                    {# Actions #}
+                    <twig:ui:card:root>
+                        <twig:ui:card:header>
+                            <twig:ui:card:title>{{ 'Actions'|trans }}</twig:ui:card:title>
+                        </twig:ui:card:header>
+                        <twig:ui:card:content class="grid gap-2">
+                            <twig:ui:button:root href="{{ path('admin_order_edit', {id: order.id}) }}" variant="outline" class="w-full">
+                                <twig:ux:icon name="lucide:edit" class="h-4 w-4 mr-2"/>
+                                {{ 'Edit Order'|trans }}
+                            </twig:ui:button:root>
+                            <form method="post" action="{{ path('admin_order_delete', {id: order.id}) }}" onsubmit="return confirm('{{ 'Are you sure you want to delete this order?'|trans }}');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ order.id) }}">
+                                <twig:ui:button:root type="submit" variant="destructive" class="w-full">
+                                    <twig:ux:icon name="lucide:trash" class="h-4 w-4 mr-2"/>
+                                    {{ 'Delete Order'|trans }}
+                                </twig:ui:button:root>
+                            </form>
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}
+

@@ -6,17 +6,24 @@ use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\OrderStatus;
 use App\Entity\PriorityType;
+use App\Entity\User;
+use App\Repository\UserRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class OrderType extends AbstractType
 {
+    public function __construct(
+        private readonly UserRepository $userRepository
+    ) {}
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -67,6 +74,16 @@ class OrderType extends AbstractType
                 'label' => 'order.form.phone',
                 'required' => false,
             ])
+            ->add('deliver', EntityType::class, [
+                'class' => User::class,
+                'label' => 'order.form.delivery_person',
+                'required' => false,
+                'placeholder' => 'Select a delivery person',
+                'choices' => $this->userRepository->findByRole('ROLE_DELIVERY'),
+                'choice_label' => function(User $user) {
+                    return $user->getFullName() . ' - ' . $user->getEmail();
+                },
+            ])
             ->add('items', CollectionType::class, [
                 'entry_type' => OrderItemType::class,
                 'entry_options' => ['label' => false],
@@ -76,11 +93,19 @@ class OrderType extends AbstractType
                 'label' => 'order.form.items',
                 'prototype' => true, // Enable dynamic addition of items
             ])
-            ->add('notes', TextType::class, [
+            ->add('notes', TextareaType::class, [
                 'label' => 'order.form.notes',
                 'required' => false,
                 'attr' => [
                     'placeholder' => 'order.form.notes_placeholder',
+                    'rows' => 3,
+                ]
+            ])
+            ->add('deliveryNotes', TextareaType::class, [
+                'label' => 'order.form.delivery_notes',
+                'required' => false,
+                'attr' => [
+                    'placeholder' => 'Special delivery instructions',
                     'rows' => 3,
                 ]
             ])
