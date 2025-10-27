@@ -31,6 +31,7 @@ enum PriorityType : string
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
 #[ORM\Table(name: '`order`')]
+#[ORM\HasLifecycleCallbacks]
 class Order
 {
 
@@ -42,7 +43,7 @@ class Order
     private ?User $owner = null;
 
     #[ORM\ManyToOne(inversedBy: 'orders', cascade: ['persist', 'remove'])]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['order:create','order:read'])]
     private ?Location $location = null;
 
@@ -66,13 +67,13 @@ class Order
      * @var Collection<int, OrderItem>
      * 
      */
-    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'orderParent')]
+    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'orderParent', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[Groups(['order:create','order:read'])]
     private Collection $items;
 
     #[ORM\Column]
     #[Groups(['order:read'])]
-    private ?float $totalAmount = null;
+    private ?float $totalAmount = 0.0;
 
     #[ORM\Column(length: 255)]
     #[Groups(['order:read'])]
@@ -319,6 +320,35 @@ class Order
         }
 
         return $this;
+    }
+
+    /**
+     * Calculate and set total amount based on order items
+     */
+    public function calculateTotalAmount(): self
+    {
+        $total = 0.0;
+        
+        foreach ($this->items as $item) {
+            $itemTotal = $item->getTotalPrice();
+            if ($itemTotal !== null) {
+                $total += $itemTotal;
+            }
+        }
+        
+        $this->totalAmount = $total;
+        
+        return $this;
+    }
+
+    /**
+     * Auto-calculate total amount before persisting
+     */
+    #[ORM\PrePersist]
+    #[ORM\PreUpdate]
+    public function autoCalculateTotalAmount(): void
+    {
+        $this->calculateTotalAmount();
     }
 
     public function getDeliver(): ?User

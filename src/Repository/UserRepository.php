@@ -60,38 +60,26 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     /**
      * Find users with a specific role
-     * PostgreSQL and MySQL compatible method using native SQL
+     * Uses PHP filtering to avoid JSON operator issues with PostgreSQL
      * 
      * @param string $role The role to search for (e.g., 'ROLE_DELIVERY')
      * @return User[] Returns an array of User objects
      */
     public function findByRole(string $role): array
     {
-        $conn = $this->getEntityManager()->getConnection();
+        // Get all users and filter in PHP to avoid JSON operator issues
+        $allUsers = $this->findAll();
         
-        // Use native SQL that works with both PostgreSQL and MySQL
-        $sql = '
-            SELECT u.* 
-            FROM "user" u 
-            WHERE CAST(u.roles AS TEXT) LIKE :role
-            ORDER BY u.first_name ASC
-        ';
+        $usersWithRole = array_filter($allUsers, function(User $user) use ($role) {
+            return in_array($role, $user->getRoles());
+        });
         
-        $stmt = $conn->prepare($sql);
-        $resultSet = $stmt->executeQuery(['role' => '%' . $role . '%']);
+        // Sort by first name
+        usort($usersWithRole, function(User $a, User $b) {
+            return strcasecmp($a->getFirstName() ?? '', $b->getFirstName() ?? '');
+        });
         
-        $results = $resultSet->fetchAllAssociative();
-        
-        // Convert results to User entities
-        $users = [];
-        foreach ($results as $row) {
-            $user = $this->find($row['id']);
-            if ($user) {
-                $users[] = $user;
-            }
-        }
-        
-        return $users;
+        return array_values($usersWithRole);
     }
 
     /**

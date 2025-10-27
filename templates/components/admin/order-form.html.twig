@@ -2,7 +2,8 @@
     {{ form_start(form, { attr: {
         class: 'space-y-6',
         'id': 'order-form',
-        'data-controller': 'form-collection'
+        'data-controller': 'order-total form-collection',
+        'data-form-collection-index-value': form.items|length
     } }) }}
 
     {# Order Details Section #}
@@ -18,9 +19,38 @@
                 }) }}
             </div>
             <div>
-                {{ form_row(form.totalAmount, {
-                    'help': 'Total order amount in Ariary'
+                {{ form_row(form.owner, {
+                    'label': 'Customer',
+                    'help': 'Select the customer for this order'
                 }) }}
+            </div>
+            <div>
+                {{ form_row(form.totalAmount, {
+                    'attr': {
+                        'data-order-total-target': 'totalAmount',
+                        'readonly': true
+                    }
+                }) }}
+                <div class="mt-2 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800 rounded-lg shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600 dark:text-green-400">
+                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                            </svg>
+                            <span class="text-sm font-semibold text-green-900 dark:text-green-100">Total Amount:</span>
+                        </div>
+                        <span class="text-xl font-bold text-green-700 dark:text-green-300 transition-all duration-300" data-order-total-display>
+                            0 Ar
+                        </span>
+                    </div>
+                    <div class="mt-2 text-xs text-green-700 dark:text-green-400 opacity-75">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Auto-calculated from items
+                    </div>
+                </div>
             </div>
             <div>
                 {{ form_row(form.scheduledDate, {
@@ -91,9 +121,9 @@
             <twig:ux:icon name="lucide:map-pin" class="h-5 w-5 text-primary"/>
             <h3 class="text-lg font-semibold">Delivery Location</h3>
         </div>
-        <div class="bg-muted/50 rounded-lg p-4">
+        <div class="rounded-lg border bg-card p-6">
             {{ form_row(form.location, {
-                'help': 'Customer delivery address and coordinates'
+                'label': false
             }) }}
         </div>
     </div>
@@ -104,36 +134,52 @@
             <div class="flex items-center gap-2">
                 <twig:ux:icon name="lucide:shopping-cart" class="h-5 w-5 text-primary"/>
                 <h3 class="text-lg font-semibold">Order Items</h3>
+                <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-primary-foreground bg-primary rounded-full">
+                    {{ form.items|length }}
+                </span>
             </div>
             <button 
                 type="button" 
                 data-action="form-collection#addItem" 
-                data-prototype="{{ form_widget(form.items.vars.prototype)|e('html_attr') }}"
-                class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-md transition-colors"
+                data-prototype="{{ include('components/admin/order-item-prototype.html.twig', {item: form.items.vars.prototype})|e('html_attr') }}"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-all shadow-sm hover:shadow-md"
             >
                 <twig:ux:icon name="lucide:plus-circle" class="h-4 w-4"/>
                 Add Item
             </button>
         </div>
 
-        <div data-form-collection-target="container" class="space-y-3">
+        <div data-form-collection-target="container" data-order-total-target="itemsContainer" class="space-y-3">
             {% if form.items|length > 0 %}
                 {% for item in form.items %}
-                    <div class="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow" data-form-collection-target="item">
+                    <div class="border rounded-lg p-4 bg-card hover:shadow-md transition-all" data-form-collection-target="item">
                         <div class="grid gap-4 md:grid-cols-4">
                             <div>
                                 {{ form_row(item.quantity, {
-                                    'label': 'Quantity'
+                                    'label': 'Quantity',
+                                    'attr': {
+                                        'min': 1,
+                                        'placeholder': '1',
+                                        'data-action': 'change->order-total#itemChanged input->order-total#itemChanged'
+                                    }
                                 }) }}
                             </div>
                             <div class="md:col-span-2">
                                 {{ form_row(item.product, {
-                                    'label': 'Product'
+                                    'label': 'Product',
+                                    'attr': {
+                                        'class': 'select2-enable',
+                                        'data-action': 'change->order-total#itemChanged'
+                                    }
                                 }) }}
                             </div>
                             <div>
                                 {{ form_row(item.store, {
-                                    'label': 'Store'
+                                    'label': 'Store',
+                                    'attr': {
+                                        'class': 'select2-enable',
+                                        'data-action': 'change->order-total#itemChanged'
+                                    }
                                 }) }}
                             </div>
                         </div>
@@ -141,7 +187,7 @@
                             <button 
                                 type="button" 
                                 data-action="form-collection#removeItem" 
-                                class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                                class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-destructive hover:bg-destructive/90 rounded-md transition-all shadow-sm"
                             >
                                 <twig:ux:icon name="lucide:trash-2" class="h-4 w-4"/>
                                 Remove
@@ -150,10 +196,12 @@
                     </div>
                 {% endfor %}
             {% else %}
-                <div class="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
-            <twig:ux:icon name="lucide:upload" class="h-8 w-8 mx-auto mb-2 text-muted-foreground"/>
-                    <p class="text-sm font-medium">No items added yet</p>
-                    <p class="text-xs mt-1">Click "Add Item" to add products to this order</p>
+                <div class="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors bg-muted/30 empty-state-placeholder">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                        <twig:ux:icon name="lucide:shopping-bag" class="h-8 w-8 text-primary"/>
+                    </div>
+                    <p class="text-sm font-semibold mb-1">No items added yet</p>
+                    <p class="text-xs text-muted-foreground">Click "Add Item" button above to add products to this order</p>
                 </div>
             {% endif %}
         </div>

@@ -2,180 +2,315 @@
 
 {% block title %}Dashboard{% endblock %}
 
+{% block head %}
+    {{ parent() }}
+    {# Leaflet CSS for maps #}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+    <style>
+        #dashboard-map {
+            height: 600px;
+            border-radius: 0.75rem;
+            z-index: 1;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
+            }
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+        .leaflet-popup-tip {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
+    <main class="flex flex-1 flex-col gap-6 p-4 md:gap-8 md:p-8 w-[85rem]">
+        {# Header with Page Title and Real-time Indicator #}
         <div class="flex items-center justify-between">
-            <h1 class="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">Dashboard</h1>
+                <p class="text-muted-foreground">Welcome back! Here's what's happening today.</p>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-2 bg-card border rounded-lg">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-sm font-medium">Live</span>
+            </div>
         </div>
 
-        {# Statistics Cards #}
-        <div class="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+        {# Top Statistics Cards #}
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {# Today's Revenue #}
             <twig:ui:card:root>
                 <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <twig:ui:card:title class="text-sm font-medium">
-                        Total Revenue
-                    </twig:ui:card:title>
-                    <twig:ux:icon name="lucide:dollar-sign" class="h-4 w-4 text-muted-foreground"/>
+                    <twig:ui:card:title class="text-sm font-medium">Today's Revenue</twig:ui:card:title>
+                    <div class="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                        <twig:ux:icon name="lucide:trending-up" class="h-4 w-4 text-green-600 dark:text-green-400"/>
+                    </div>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
-                    <div class="text-2xl font-bold">{{ totalRevenue|number_format(2, '.', ',') }} Ar</div>
-                    <p class="text-xs text-muted-foreground">
+                    <div class="text-2xl font-bold">{{ todayRevenue|number_format(0, '.', ',') }} Ar</div>
+                    <p class="text-xs text-muted-foreground mt-1">
+                        <span class="text-green-600 dark:text-green-400 font-medium">{{ todayOrders }} orders</span> today
+                    </p>
+                </twig:ui:card:content>
+            </twig:ui:card:root>
+
+            {# Total Revenue #}
+            <twig:ui:card:root>
+                <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <twig:ui:card:title class="text-sm font-medium">Total Revenue</twig:ui:card:title>
+                    <div class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                        <twig:ux:icon name="lucide:dollar-sign" class="h-4 w-4 text-blue-600 dark:text-blue-400"/>
+                    </div>
+                </twig:ui:card:header>
+                <twig:ui:card:content>
+                    <div class="text-2xl font-bold">{{ totalRevenue|number_format(0, '.', ',') }} Ar</div>
+                    <p class="text-xs text-muted-foreground mt-1">
                         {% if lastMonthRevenue > 0 %}
                             {% set percentChange = ((totalRevenue - lastMonthRevenue) / lastMonthRevenue * 100)|round(1) %}
-                            {{ percentChange > 0 ? '+' : '' }}{{ percentChange }}% from last month
+                            <span class="{% if percentChange > 0 %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %} font-medium">
+                                {{ percentChange > 0 ? '+' : '' }}{{ percentChange }}%
+                            </span> from last month
                         {% else %}
-                            From all completed orders
+                            All time revenue
                         {% endif %}
                     </p>
                 </twig:ui:card:content>
             </twig:ui:card:root>
-            
+
+            {# Active Orders #}
             <twig:ui:card:root>
                 <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <twig:ui:card:title class="text-sm font-medium">
-                        Total Users
-                    </twig:ui:card:title>
-                    <twig:ux:icon name="lucide:users-round" class="h-4 w-4 text-muted-foreground"/>
+                    <twig:ui:card:title class="text-sm font-medium">Active Orders</twig:ui:card:title>
+                    <div class="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
+                        <twig:ux:icon name="lucide:shopping-cart" class="h-4 w-4 text-amber-600 dark:text-amber-400"/>
+                    </div>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
-                    <div class="text-2xl font-bold">{{ totalUsers }}</div>
-                    <p class="text-xs text-muted-foreground">
-                        Registered users in system
+                    <div class="text-2xl font-bold">{{ pendingOrders }}</div>
+                    <p class="text-xs text-muted-foreground mt-1">
+                        <span class="text-amber-600 dark:text-amber-400 font-medium">{{ totalOrders }}</span> total orders
                     </p>
                 </twig:ui:card:content>
             </twig:ui:card:root>
-            
+
+            {# Online Delivers #}
             <twig:ui:card:root>
                 <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <twig:ui:card:title class="text-sm font-medium">Total Orders</twig:ui:card:title>
-                    <twig:ux:icon name="lucide:shopping-cart" class="h-4 w-4 text-muted-foreground"/>
+                    <twig:ui:card:title class="text-sm font-medium">Delivers Online</twig:ui:card:title>
+                    <div class="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                        <twig:ux:icon name="lucide:bike" class="h-4 w-4 text-purple-600 dark:text-purple-400"/>
+                    </div>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
-                    <div class="text-2xl font-bold">{{ totalOrders }}</div>
-                    <p class="text-xs text-muted-foreground">
-                        {{ completedOrders }} completed, {{ pendingOrders }} pending
-                    </p>
-                </twig:ui:card:content>
-            </twig:ui:card:root>
-            
-            <twig:ui:card:root>
-                <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <twig:ui:card:title class="text-sm font-medium">Products</twig:ui:card:title>
-                    <twig:ux:icon name="lucide:package" class="h-4 w-4 text-muted-foreground"/>
-                </twig:ui:card:header>
-                <twig:ui:card:content>
-                    <div class="text-2xl font-bold">{{ totalProducts }}</div>
-                    <p class="text-xs text-muted-foreground">
-                        Available products
+                    <div class="text-2xl font-bold">{{ onlineDeliversCount }}/{{ totalDelivers }}</div>
+                    <p class="text-xs text-muted-foreground mt-1">
+                        <span class="{% if onlineDeliversCount > 0 %}text-green-600 dark:text-green-400{% else %}text-muted-foreground{% endif %} font-medium">
+                            {{ onlineDeliversCount > 0 ? 'Available now' : 'None available' }}
+                        </span>
                     </p>
                 </twig:ui:card:content>
             </twig:ui:card:root>
         </div>
 
-        {# Available Orders Section #}
-        <div class="grid gap-4 md:gap-8 lg:grid-cols-3">
-            <twig:ui:card:root class="lg:col-span-2">
-                <twig:ui:card:header class="flex flex-row items-center">
-                    <div class="grid gap-2">
-                        <twig:ui:card:title>Available Orders for Pharmacies</twig:ui:card:title>
-                        <twig:ui:card:description>
-                            Orders waiting to be assigned to a pharmacy or delivery person
+        {# Map Section #}
+        <twig:ui:card:root class="overflow-hidden">
+            <twig:ui:card:header class="bg-gradient-to-r from-primary/5 to-primary/10">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <twig:ux:icon name="lucide:map" class="h-5 w-5 text-primary"/>
+                            </div>
+                            <twig:ui:card:title class="text-xl">Real-Time Tracking</twig:ui:card:title>
+                        </div>
+                        <twig:ui:card:description class="text-base">
+                            Live map showing stores, delivery drivers locations, and pending orders
                         </twig:ui:card:description>
                     </div>
-                    <twig:ui:button:root size="sm" href="{{ path('admin_order') }}" class="ml-auto gap-1">
-                            View All
-                            <twig:ux:icon name="lucide:arrow-up-right" class="h-4 w-4"/>
-                    </twig:ui:button:root>
+                    <div class="flex flex-wrap items-center gap-4 text-sm bg-card px-4 py-3 rounded-lg border">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 rounded-full bg-blue-500 shadow-sm"></div>
+                            <span class="font-medium text-foreground">{{ stores|length }}</span>
+                            <span class="text-muted-foreground">Stores</span>
+                        </div>
+                        <div class="w-px h-6 bg-border"></div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 rounded-full bg-green-500 shadow-sm pulse-dot"></div>
+                            <span class="font-medium text-foreground">{{ onlineDeliversCount }}</span>
+                            <span class="text-muted-foreground">Online</span>
+                        </div>
+                        <div class="w-px h-6 bg-border"></div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 rounded-full bg-red-500 shadow-sm"></div>
+                            <span class="font-medium text-foreground">{{ ordersWithLocations|length }}</span>
+                            <span class="text-muted-foreground">Orders</span>
+                        </div>
+                    </div>
+                </div>
+            </twig:ui:card:header>
+            <twig:ui:card:content class="p-0">
+                <div id="dashboard-map" class="w-full"></div>
+            </twig:ui:card:content>
+        </twig:ui:card:root>
+
+        {# Main Content Grid #}
+        <div class="grid gap-6 lg:grid-cols-3">
+            {# Online Delivers List #}
+            <twig:ui:card:root>
+                <twig:ui:card:header>
+                    <twig:ui:card:title>Delivery Drivers Online</twig:ui:card:title>
+                    <twig:ui:card:description>
+                        {{ onlineDeliversCount }} drivers currently active
+                    </twig:ui:card:description>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
-                    {% if availableOrders|length > 0 %}
-                    <twig:ui:table:root>
-                        <twig:ui:table:header>
-                            <twig:ui:table:row>
-                                    <twig:ui:table:head>Reference</twig:ui:table:head>
-                                <twig:ui:table:head>Customer</twig:ui:table:head>
-                                    <twig:ui:table:head>Priority</twig:ui:table:head>
-                                    <twig:ui:table:head>Amount</twig:ui:table:head>
-                                    <twig:ui:table:head>Date</twig:ui:table:head>
-                                    <twig:ui:table:head class="text-right">Actions</twig:ui:table:head>
-                            </twig:ui:table:row>
-                        </twig:ui:table:header>
-                        <twig:ui:table:body>
-                                {% for order in availableOrders %}
-                            <twig:ui:table:row>
-                                        <twig:ui:table:cell class="font-medium">
-                                            {{ order.reference }}
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell>
-                                            {% if order.owner %}
-                                                <div class="font-medium">{{ order.owner.fullName }}</div>
-                                                <div class="text-sm text-muted-foreground">{{ order.owner.email }}</div>
-                                            {% else %}
-                                                <span class="text-muted-foreground">N/A</span>
-                                            {% endif %}
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell>
-                                            {% set priorityClass = order.priority.value == 'urgent' ? 'bg-red-100 text-red-800' : (order.priority.value == 'planified' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800') %}
-                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ priorityClass }}">
-                                                {{ order.priority.value|capitalize }}
-                                            </span>
-                                </twig:ui:table:cell>
-                                        <twig:ui:table:cell>{{ order.totalAmount|number_format(2, '.', ',') }} Ar</twig:ui:table:cell>
-                                        <twig:ui:table:cell class="text-sm text-muted-foreground">
-                                            {{ order.createdAt|date('Y-m-d H:i') }}
-                                </twig:ui:table:cell>
-                                        <twig:ui:table:cell class="text-right">
-                                            <div class="flex items-center justify-end gap-2">
-                                                <twig:ui:button:root size="sm" href="{{ path('admin_order_view', {id: order.id}) }}" variant="outline">
-                                                    View
-                                                </twig:ui:button:root>
-                                                <twig:ui:button:root size="sm" href="{{ path('admin_order_edit', {id: order.id}) }}">
-                                                    Assign
-                                                </twig:ui:button:root>
+                    {% if onlineDelivers|length > 0 %}
+                        <div class="space-y-4">
+                            {% for deliver in onlineDelivers %}
+                                <div class="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                                    <div class="relative">
+                                        <div class="h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-semibold">
+                                            {{ deliver.user.firstName|first }}{{ deliver.user.lastName|first }}
+                                        </div>
+                                        <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white dark:border-gray-900 pulse-dot"></span>
                                     </div>
-                                </twig:ui:table:cell>
-                            </twig:ui:table:row>
-                                {% endfor %}
-                        </twig:ui:table:body>
-                    </twig:ui:table:root>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-medium text-sm">{{ deliver.user.fullName }}</p>
+                                        <p class="text-xs text-muted-foreground truncate">{{ deliver.user.email }}</p>
+                                        {% if deliver.location and deliver.location.updatedAt %}
+                                            <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                                                Last update {{ deliver.location.updatedAt|date('H:i') }}
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                    <twig:ui:button:root size="sm" variant="ghost" onclick="focusOnDeliver({{ deliver.location ? deliver.location.latitude : 0 }}, {{ deliver.location ? deliver.location.longitude : 0 }})">
+                                        <twig:ux:icon name="lucide:map-pin" class="h-4 w-4"/>
+                                    </twig:ui:button:root>
+                                </div>
+                            {% endfor %}
+                        </div>
                     {% else %}
                         <div class="flex flex-col items-center justify-center py-8 text-center">
-                            <twig:ux:icon name="lucide:package-check" class="h-12 w-12 text-muted-foreground mb-4"/>
-                            <p class="text-sm text-muted-foreground">No available orders at the moment</p>
+                            <div class="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                                <twig:ux:icon name="lucide:bike" class="h-6 w-6 text-muted-foreground"/>
+                            </div>
+                            <p class="text-sm font-medium mb-1">No Drivers Online</p>
+                            <p class="text-xs text-muted-foreground">Waiting for drivers to come online</p>
                         </div>
                     {% endif %}
                 </twig:ui:card:content>
             </twig:ui:card:root>
 
-            <twig:ui:card:root>
-                <twig:ui:card:header>
-                    <twig:ui:card:title>Quick Stats</twig:ui:card:title>
-                </twig:ui:card:header>
-                <twig:ui:card:content class="grid gap-6">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="h-2 w-2 rounded-full bg-green-500"></div>
-                            <span class="text-sm text-muted-foreground">Completed</span>
+            {# Available Orders and Quick Stats #}
+            <div class="lg:col-span-2 space-y-6">
+                {# Available Orders #}
+                <twig:ui:card:root>
+                    <twig:ui:card:header class="flex flex-row items-center">
+                        <div class="grid gap-2">
+                            <twig:ui:card:title>Available Orders</twig:ui:card:title>
+                            <twig:ui:card:description>
+                                Pending orders waiting for assignment
+                            </twig:ui:card:description>
                         </div>
-                        <span class="text-sm font-medium">{{ completedOrders }}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="h-2 w-2 rounded-full bg-yellow-500"></div>
-                            <span class="text-sm text-muted-foreground">Pending</span>
-                        </div>
-                        <span class="text-sm font-medium">{{ pendingOrders }}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="h-2 w-2 rounded-full bg-blue-500"></div>
-                            <span class="text-sm text-muted-foreground">Processing</span>
-                        </div>
-                        <span class="text-sm font-medium">{{ totalOrders - completedOrders - pendingOrders }}</span>
-                    </div>
-                </twig:ui:card:content>
-            </twig:ui:card:root>
+                        <twig:ui:button:root size="sm" href="{{ path('admin_order') }}" class="ml-auto gap-1" data-turbo-frame="_top">
+                            View All
+                            <twig:ux:icon name="lucide:arrow-up-right" class="h-4 w-4"/>
+                        </twig:ui:button:root>
+                    </twig:ui:card:header>
+                    <twig:ui:card:content>
+                        {% if availableOrders|length > 0 %}
+                            <div class="space-y-3">
+                                {% for order in availableOrders|slice(0, 5) %}
+                                    <div class="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-all cursor-pointer" onclick="focusOnOrder('{{ order.reference }}')">
+                                        <div class="flex items-center gap-4">
+                                            <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-bold text-sm">
+                                                {% if order.priority.value == 'urgent' %}
+                                                    <twig:ux:icon name="lucide:alert-circle" class="h-5 w-5"/>
+                                                {% else %}
+                                                    <twig:ux:icon name="lucide:shopping-bag" class="h-5 w-5"/>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <p class="font-medium text-sm">{{ order.reference }}</p>
+                                                <p class="text-xs text-muted-foreground">
+                                                    {{ order.owner ? order.owner.fullName : 'Guest' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-bold text-sm">{{ order.totalAmount|number_format(0) }} Ar</p>
+                                            <p class="text-xs text-muted-foreground">{{ order.createdAt|date('H:i') }}</p>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="flex flex-col items-center justify-center py-8 text-center">
+                                <p class="text-sm font-medium mb-1">All Caught Up!</p>
+                                <p class="text-xs text-muted-foreground">No pending orders at the moment</p>
+                            </div>
+                        {% endif %}
+                    </twig:ui:card:content>
+                </twig:ui:card:root>
+
+                {# Quick Stats Grid #}
+                <div class="grid gap-4 md:grid-cols-3">
+                    <twig:ui:card:root>
+                        <twig:ui:card:content class="pt-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Stores</p>
+                                    <p class="text-2xl font-bold">{{ totalStores }}</p>
+                                </div>
+                                <twig:ux:icon name="lucide:store" class="h-8 w-8 text-muted-foreground"/>
+                            </div>
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
+
+                    <twig:ui:card:root>
+                        <twig:ui:card:content class="pt-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Products</p>
+                                    <p class="text-2xl font-bold">{{ totalProducts }}</p>
+                                </div>
+                                <twig:ux:icon name="lucide:package" class="h-8 w-8 text-muted-foreground"/>
+                            </div>
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
+
+                    <twig:ui:card:root>
+                        <twig:ui:card:content class="pt-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-muted-foreground">Users</p>
+                                    <p class="text-2xl font-bold">{{ totalUsers }}</p>
+                                </div>
+                                <twig:ux:icon name="lucide:users-round" class="h-8 w-8 text-muted-foreground"/>
+                            </div>
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
+                </div>
+            </div>
         </div>
+
         {# Recent Orders Section #}
         <twig:ui:card:root>
             <twig:ui:card:header class="flex flex-row items-center">
@@ -185,7 +320,7 @@
                         Latest orders from your system
                     </twig:ui:card:description>
                 </div>
-                <twig:ui:button:root size="sm" href="{{ path('admin_order') }}" class="ml-auto gap-1">
+                <twig:ui:button:root size="sm" href="{{ path('admin_order') }}" class="ml-auto gap-1" data-turbo-frame="_top">
                     View All
                     <twig:ux:icon name="lucide:arrow-up-right" class="h-4 w-4"/>
                 </twig:ui:button:root>
@@ -197,8 +332,8 @@
                             <twig:ui:table:row>
                                 <twig:ui:table:head>Reference</twig:ui:table:head>
                                 <twig:ui:table:head>Customer</twig:ui:table:head>
-                                <twig:ui:table:head class="hidden xl:table-column">Status</twig:ui:table:head>
-                                <twig:ui:table:head class="hidden xl:table-column">Date</twig:ui:table:head>
+                                <twig:ui:table:head class="hidden lg:table-cell">Status</twig:ui:table:head>
+                                <twig:ui:table:head class="hidden md:table-cell">Date</twig:ui:table:head>
                                 <twig:ui:table:head class="text-right">Amount</twig:ui:table:head>
                             </twig:ui:table:row>
                         </twig:ui:table:header>
@@ -206,7 +341,9 @@
                             {% for order in recentOrders %}
                                 <twig:ui:table:row>
                                     <twig:ui:table:cell class="font-medium">
-                                        {{ order.reference }}
+                                        <a href="{{ path('admin_order_view', {id: order.id}) }}" class="hover:underline">
+                                            {{ order.reference }}
+                                        </a>
                                     </twig:ui:table:cell>
                                     <twig:ui:table:cell>
                                         {% if order.owner %}
@@ -218,16 +355,16 @@
                                             <span class="text-muted-foreground">Guest</span>
                                         {% endif %}
                                     </twig:ui:table:cell>
-                                    <twig:ui:table:cell class="hidden xl:table-column">
-                                        {% set statusClass = order.status.value == 'delivered' ? 'bg-green-100 text-green-800' : (order.status.value == 'cancelled' ? 'bg-red-100 text-red-800' : (order.status.value == 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')) %}
+                                    <twig:ui:table:cell class="hidden lg:table-cell">
+                                        {% set statusClass = order.status.value == 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : (order.status.value == 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : (order.status.value == 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400')) %}
                                         <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ statusClass }}">
                                             {{ order.status.value|capitalize }}
                                         </span>
                                     </twig:ui:table:cell>
-                                    <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column text-muted-foreground">
-                                        {{ order.createdAt|date('Y-m-d') }}
+                                    <twig:ui:table:cell class="hidden md:table-cell text-muted-foreground">
+                                        {{ order.createdAt|date('Y-m-d H:i') }}
                                     </twig:ui:table:cell>
-                                    <twig:ui:table:cell class="text-right">{{ order.totalAmount|number_format(2, '.', ',') }} Ar</twig:ui:table:cell>
+                                    <twig:ui:table:cell class="text-right font-semibold">{{ order.totalAmount|number_format(0) }} Ar</twig:ui:table:cell>
                                 </twig:ui:table:row>
                             {% endfor %}
                         </twig:ui:table:body>
@@ -241,4 +378,133 @@
             </twig:ui:card:content>
         </twig:ui:card:root>
     </main>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {# Leaflet JS #}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+    
+    <script>
+        // Initialize map
+        const map = L.map('dashboard-map').setView([-18.8792, 47.5079], 13); // Antananarivo, Madagascar
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Custom icons with improved styling
+        const storeIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>',
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+            popupAnchor: [0, -18]
+        });
+
+        const deliverIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4), 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/><polygon points="12 15 17 21 7 21 12 15"/></svg></div>',
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+            popupAnchor: [0, -18]
+        });
+
+        const orderIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4), 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>',
+            iconSize: [36, 36],
+            iconAnchor: [18, 18],
+            popupAnchor: [0, -18]
+        });
+
+        // Add stores to map with enhanced popups
+        const stores = {{ stores|json_encode|raw }};
+        stores.forEach(store => {
+            if (store.location && store.location.latitude && store.location.longitude) {
+                L.marker([store.location.latitude, store.location.longitude], {icon: storeIcon})
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 200px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <div style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6;"></div>
+                                <strong style="font-size: 14px; color: #1e293b;">${store.name}</strong>
+                            </div>
+                            <div style="font-size: 12px; color: #64748b; margin-left: 16px;">
+                                📍 ${store.location.address || 'Store location'}
+                            </div>
+                        </div>
+                    `);
+            }
+        });
+
+        // Add online delivers to map with enhanced popups
+        const onlineDelivers = {{ onlineDeliversData|json_encode|raw }};
+        onlineDelivers.forEach(deliver => {
+            if (deliver.deliveryLocation && deliver.deliveryLocation.latitude && deliver.deliveryLocation.longitude) {
+                L.marker([deliver.deliveryLocation.latitude, deliver.deliveryLocation.longitude], {icon: deliverIcon})
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 200px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <div style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite;"></div>
+                                <strong style="font-size: 14px; color: #1e293b;">${deliver.firstName} ${deliver.lastName}</strong>
+                            </div>
+                            <div style="font-size: 12px; color: #64748b; margin-left: 16px;">
+                                <div style="margin-bottom: 4px;">🚴 Delivery Driver - <span style="color: #22c55e; font-weight: 600;">Online</span></div>
+                                <div style="color: #94a3b8;">⏰ Last update: ${new Date(deliver.deliveryLocation.updatedAt.date).toLocaleTimeString()}</div>
+                            </div>
+                        </div>
+                    `);
+            }
+        });
+
+        // Add orders with locations to map with enhanced popups
+        const ordersWithLocations = {{ ordersWithLocations|json_encode|raw }};
+        const orderMarkers = {};
+        ordersWithLocations.forEach(order => {
+            if (order.location && order.location.latitude && order.location.longitude) {
+                const marker = L.marker([order.location.latitude, order.location.longitude], {icon: orderIcon})
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <div style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></div>
+                                <strong style="font-size: 14px; color: #1e293b;">Order: ${order.reference}</strong>
+                            </div>
+                            <div style="font-size: 12px; color: #64748b; margin-left: 16px;">
+                                <div style="margin-bottom: 4px;">📍 ${order.location.address || 'Delivery location'}</div>
+                                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
+                                    <strong style="color: #1e293b; font-size: 13px;">💰 ${order.totalAmount.toLocaleString()} Ar</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                orderMarkers[order.reference] = marker;
+            }
+        });
+
+        // Helper function to focus on deliver
+        window.focusOnDeliver = function(lat, lng) {
+            if (lat && lng) {
+                map.setView([lat, lng], 16);
+            }
+        };
+
+        // Helper function to focus on order
+        window.focusOnOrder = function(reference) {
+            if (orderMarkers[reference]) {
+                map.setView(orderMarkers[reference].getLatLng(), 16);
+                orderMarkers[reference].openPopup();
+            }
+        };
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            location.reload();
+        }, 30000);
+    </script>
 {% endblock %}

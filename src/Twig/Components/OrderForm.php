@@ -4,7 +4,7 @@ namespace App\Twig\Components;
 
 
 use App\Entity\Order;
-use App\Form\orderType;
+use App\Form\OrderType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormInterface;
 use Symfony\UX\LiveComponent\Attribute\AsLiveComponent;

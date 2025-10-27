@@ -32,12 +32,19 @@ class OrderItemType extends AbstractType
                     return $repository->createQueryBuilder('p')
                         ->orderBy('p.name', 'ASC');
                 },
+                'choice_attr' => function(Product $product) {
+                    // Add data-price attribute for frontend calculation
+                    $price = $product->getTotalPrice() ?? $product->getUnitPrice() ?? 0;
+                    return ['data-price' => $price];
+                },
             ])
             ->add('store', EntityType::class, [
                 'class' => Store::class,
                 'choice_label' => 'name',
                 'label' => 'order.form.store',
-                'placeholder' => 'order.form.store_placeholder',
+                'placeholder' => 'Select a store (optional)',
+                'required' => false,
+                'help' => 'Optional: Select a specific pharmacy',
                 'query_builder' => function ($repository) {
                     return $repository->createQueryBuilder('f')
                         ->orderBy('f.name', 'ASC');

@@ -31,9 +31,26 @@ class OrderType extends AbstractType
                 'label' => 'order.form.reference',
                 'required' => true,
             ])
+            ->add('owner', EntityType::class, [
+                'class' => User::class,
+                'label' => 'order.form.customer',
+                'required' => false,
+                'placeholder' => 'Select a customer (optional)',
+                'choices' => $this->getCustomers(),
+                'choice_label' => function(User $user) {
+                    return $user->getFullName() . ' - ' . $user->getEmail();
+                },
+                'help' => 'Customer who placed this order',
+            ])
             ->add('totalAmount', TextType::class, [
                 'label' => 'order.form.total_amount',
-                'required' => true,
+                'required' => false,
+                'disabled' => true,
+                'attr' => [
+                    'readonly' => true,
+                    'placeholder' => 'Calculated automatically from items',
+                ],
+                'help' => 'Auto-calculated from order items',
             ])
             ->add('location', LocationType::class, [
                 'label' => 'order.form.location',
@@ -79,7 +96,7 @@ class OrderType extends AbstractType
                 'label' => 'order.form.delivery_person',
                 'required' => false,
                 'placeholder' => 'Select a delivery person',
-                'choices' => $this->userRepository->findByRole('ROLE_DELIVERY'),
+                'choices' => $this->getDeliveryPersons(),
                 'choice_label' => function(User $user) {
                     return $user->getFullName() . ' - ' . $user->getEmail();
                 },
@@ -117,5 +134,59 @@ class OrderType extends AbstractType
         $resolver->setDefaults([
             'data_class' => Order::class,
         ]);
+    }
+
+    /**
+     * Get customers (users without ROLE_ADMIN or ROLE_DELIVERY)
+     */
+    private function getCustomers(): array
+    {
+        // Get all users and filter in PHP to avoid JSON LIKE issues with PostgreSQL
+        $allUsers = $this->userRepository->findAll();
+        
+        $customers = array_filter($allUsers, function(User $user) {
+            $roles = $user->getRoles();
+            // Exclude admins and delivery persons
+            // Include only users with ROLE_USER or ROLE_CUSTOMER (or both)
+            return !in_array('ROLE_ADMIN', $roles) 
+                && !in_array('ROLE_DELIVERY', $roles);
+        });
+        
+        // Sort by first name, then last name
+        usort($customers, function(User $a, User $b) {
+            $firstNameCompare = strcasecmp($a->getFirstName() ?? '', $b->getFirstName() ?? '');
+            if ($firstNameCompare !== 0) {
+                return $firstNameCompare;
+            }
+            return strcasecmp($a->getLastName() ?? '', $b->getLastName() ?? '');
+        });
+        
+        return $customers;
+    }
+
+    /**
+     * Get delivery persons (users with ROLE_DELIVERY)
+     */
+    private function getDeliveryPersons(): array
+    {
+        // Get all users and filter in PHP to avoid JSON LIKE issues with PostgreSQL
+        $allUsers = $this->userRepository->findAll();
+        
+        $deliveryPersons = array_filter($allUsers, function(User $user) {
+            $roles = $user->getRoles();
+            // Include only users with ROLE_DELIVERY
+            return in_array('ROLE_DELIVERY', $roles);
+        });
+        
+        // Sort by first name, then last name
+        usort($deliveryPersons, function(User $a, User $b) {
+            $firstNameCompare = strcasecmp($a->getFirstName() ?? '', $b->getFirstName() ?? '');
+            if ($firstNameCompare !== 0) {
+                return $firstNameCompare;
+            }
+            return strcasecmp($a->getLastName() ?? '', $b->getLastName() ?? '');
+        });
+        
+        return $deliveryPersons;
     }
 }
