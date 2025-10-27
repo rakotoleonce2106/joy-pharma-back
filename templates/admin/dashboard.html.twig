@@ -1,11 +1,16 @@
 {% extends 'admin/layout.html.twig' %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
     <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
+        <div class="flex items-center justify-between">
+            <h1 class="text-3xl font-bold tracking-tight">Dashboard</h1>
+        </div>
+
+        {# Statistics Cards #}
         <div class="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-            <twig:ui:card:root x-chunk="dashboard-01-chunk-0">
+            <twig:ui:card:root>
                 <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
                     <twig:ui:card:title class="text-sm font-medium">
                         Total Revenue
@@ -13,374 +18,227 @@
                     <twig:ux:icon name="lucide:dollar-sign" class="h-4 w-4 text-muted-foreground"/>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
-                    <div class="text-2xl font-bold">$45,231.89</div>
+                    <div class="text-2xl font-bold">{{ totalRevenue|number_format(2, '.', ',') }} Ar</div>
                     <p class="text-xs text-muted-foreground">
-                        +20.1% from last month
+                        {% if lastMonthRevenue > 0 %}
+                            {% set percentChange = ((totalRevenue - lastMonthRevenue) / lastMonthRevenue * 100)|round(1) %}
+                            {{ percentChange > 0 ? '+' : '' }}{{ percentChange }}% from last month
+                        {% else %}
+                            From all completed orders
+                        {% endif %}
                     </p>
                 </twig:ui:card:content>
             </twig:ui:card:root>
-            <twig:ui:card:root x-chunk="dashboard-01-chunk-1">
+            
+            <twig:ui:card:root>
                 <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
                     <twig:ui:card:title class="text-sm font-medium">
-                        Subscriptions
+                        Total Users
                     </twig:ui:card:title>
                     <twig:ux:icon name="lucide:users-round" class="h-4 w-4 text-muted-foreground"/>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
-                    <div class="text-2xl font-bold">+2350</div>
+                    <div class="text-2xl font-bold">{{ totalUsers }}</div>
                     <p class="text-xs text-muted-foreground">
-                        +180.1% from last month
+                        Registered users in system
                     </p>
                 </twig:ui:card:content>
             </twig:ui:card:root>
-            <twig:ui:card:root x-chunk="dashboard-01-chunk-2">
+            
+            <twig:ui:card:root>
                 <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <twig:ui:card:title class="text-sm font-medium">Sales</twig:ui:card:title>
-                    <twig:ux:icon name="lucide:credit-card" class="h-4 w-4 text-muted-foreground"/>
+                    <twig:ui:card:title class="text-sm font-medium">Total Orders</twig:ui:card:title>
+                    <twig:ux:icon name="lucide:shopping-cart" class="h-4 w-4 text-muted-foreground"/>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
-                    <div class="text-2xl font-bold">+12,234</div>
+                    <div class="text-2xl font-bold">{{ totalOrders }}</div>
                     <p class="text-xs text-muted-foreground">
-                        +19% from last month
+                        {{ completedOrders }} completed, {{ pendingOrders }} pending
                     </p>
                 </twig:ui:card:content>
             </twig:ui:card:root>
-            <twig:ui:card:root x-chunk="dashboard-01-chunk-3">
+            
+            <twig:ui:card:root>
                 <twig:ui:card:header class="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <twig:ui:card:title class="text-sm font-medium">Active Now</twig:ui:card:title>
-                    <twig:ux:icon name="lucide:activity" class="h-4 w-4 text-muted-foreground"/>
+                    <twig:ui:card:title class="text-sm font-medium">Products</twig:ui:card:title>
+                    <twig:ux:icon name="lucide:package" class="h-4 w-4 text-muted-foreground"/>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
-                    <div class="text-2xl font-bold">+573</div>
+                    <div class="text-2xl font-bold">{{ totalProducts }}</div>
                     <p class="text-xs text-muted-foreground">
-                        +201 since last hour
+                        Available products
                     </p>
                 </twig:ui:card:content>
             </twig:ui:card:root>
         </div>
-        <div class="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-            <twig:ui:card:root class="xl:col-span-2" x-chunk="dashboard-01-chunk-4">
+
+        {# Available Orders Section #}
+        <div class="grid gap-4 md:gap-8 lg:grid-cols-3">
+            <twig:ui:card:root class="lg:col-span-2">
                 <twig:ui:card:header class="flex flex-row items-center">
                     <div class="grid gap-2">
-                        <twig:ui:card:title>Transactions</twig:ui:card:title>
+                        <twig:ui:card:title>Available Orders for Pharmacies</twig:ui:card:title>
                         <twig:ui:card:description>
-                            Recent transactions from your store.
+                            Orders waiting to be assigned to a pharmacy or delivery person
                         </twig:ui:card:description>
                     </div>
-                    <twig:ui:button:root size="sm" class="ml-auto gap-1">
+                    <twig:ui:button:root size="sm" href="{{ path('admin_order') }}" class="ml-auto gap-1">
                             View All
                             <twig:ux:icon name="lucide:arrow-up-right" class="h-4 w-4"/>
                     </twig:ui:button:root>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
+                    {% if availableOrders|length > 0 %}
                     <twig:ui:table:root>
                         <twig:ui:table:header>
                             <twig:ui:table:row>
+                                    <twig:ui:table:head>Reference</twig:ui:table:head>
                                 <twig:ui:table:head>Customer</twig:ui:table:head>
-                                <twig:ui:table:head class="hidden xl:table-column">
-                                    Type
-                                </twig:ui:table:head>
-                                <twig:ui:table:head class="hidden xl:table-column">
-                                    Status
-                                </twig:ui:table:head>
-                                <twig:ui:table:head class="hidden xl:table-column">
-                                    Date
-                                </twig:ui:table:head>
-                                <twig:ui:table:head class="text-right">Amount</twig:ui:table:head>
+                                    <twig:ui:table:head>Priority</twig:ui:table:head>
+                                    <twig:ui:table:head>Amount</twig:ui:table:head>
+                                    <twig:ui:table:head>Date</twig:ui:table:head>
+                                    <twig:ui:table:head class="text-right">Actions</twig:ui:table:head>
                             </twig:ui:table:row>
                         </twig:ui:table:header>
                         <twig:ui:table:body>
+                                {% for order in availableOrders %}
                             <twig:ui:table:row>
+                                        <twig:ui:table:cell class="font-medium">
+                                            {{ order.reference }}
+                                </twig:ui:table:cell>
                                 <twig:ui:table:cell>
-                                    <div class="font-medium">Liam Johnson</div>
-                                    <div class="hidden text-sm text-muted-foreground md:inline">
-                                        liam@example.com
+                                            {% if order.owner %}
+                                                <div class="font-medium">{{ order.owner.fullName }}</div>
+                                                <div class="text-sm text-muted-foreground">{{ order.owner.email }}</div>
+                                            {% else %}
+                                                <span class="text-muted-foreground">N/A</span>
+                                            {% endif %}
+                                </twig:ui:table:cell>
+                                <twig:ui:table:cell>
+                                            {% set priorityClass = order.priority.value == 'urgent' ? 'bg-red-100 text-red-800' : (order.priority.value == 'planified' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800') %}
+                                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ priorityClass }}">
+                                                {{ order.priority.value|capitalize }}
+                                            </span>
+                                </twig:ui:table:cell>
+                                        <twig:ui:table:cell>{{ order.totalAmount|number_format(2, '.', ',') }} Ar</twig:ui:table:cell>
+                                        <twig:ui:table:cell class="text-sm text-muted-foreground">
+                                            {{ order.createdAt|date('Y-m-d H:i') }}
+                                </twig:ui:table:cell>
+                                        <twig:ui:table:cell class="text-right">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <twig:ui:button:root size="sm" href="{{ path('admin_order_view', {id: order.id}) }}" variant="outline">
+                                                    View
+                                                </twig:ui:button:root>
+                                                <twig:ui:button:root size="sm" href="{{ path('admin_order_edit', {id: order.id}) }}">
+                                                    Assign
+                                                </twig:ui:button:root>
                                     </div>
                                 </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    Sale
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    <Badge class="text-xs" variant="outline">
-                                        Approved
-                                    </Badge>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column">
-                                    2023-06-23
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="text-right">$250.00</twig:ui:table:cell>
                             </twig:ui:table:row>
-                            <twig:ui:table:row>
-                                <twig:ui:table:cell>
-                                    <div class="font-medium">Olivia Smith</div>
-                                    <div class="hidden text-sm text-muted-foreground md:inline">
-                                        olivia@example.com
-                                    </div>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    Refund
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    <Badge class="text-xs" variant="outline">
-                                        Declined
-                                    </Badge>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column">
-                                    2023-06-24
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="text-right">$150.00</twig:ui:table:cell>
-                            </twig:ui:table:row>
-                            <twig:ui:table:row>
-                                <twig:ui:table:cell>
-                                    <div class="font-medium">Noah Williams</div>
-                                    <div class="hidden text-sm text-muted-foreground md:inline">
-                                        noah@example.com
-                                    </div>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    Subscription
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    <Badge class="text-xs" variant="outline">
-                                        Approved
-                                    </Badge>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column">
-                                    2023-06-25
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="text-right">$350.00</twig:ui:table:cell>
-                            </twig:ui:table:row>
-                            <twig:ui:table:row>
-                                <twig:ui:table:cell>
-                                    <div class="font-medium">Emma Brown</div>
-                                    <div class="hidden text-sm text-muted-foreground md:inline">
-                                        emma@example.com
-                                    </div>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    Sale
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    <Badge class="text-xs" variant="outline">
-                                        Approved
-                                    </Badge>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column">
-                                    2023-06-26
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="text-right">$450.00</twig:ui:table:cell>
-                            </twig:ui:table:row>
-                            <twig:ui:table:row>
-                                <twig:ui:table:cell>
-                                    <div class="font-medium">Liam Johnson</div>
-                                    <div class="hidden text-sm text-muted-foreground md:inline">
-                                        liam@example.com
-                                    </div>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    Sale
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    <Badge class="text-xs" variant="outline">
-                                        Approved
-                                    </Badge>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column">
-                                    2023-06-27
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="text-right">$550.00</twig:ui:table:cell>
-                            </twig:ui:table:row>
-                            <twig:ui:table:row>
-                                <twig:ui:table:cell>
-                                    <div class="font-medium">Mendrika Rachel</div>
-                                    <div class="hidden text-sm text-muted-foreground md:inline">
-                                        liam@example.com
-                                    </div>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    Sale
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    <Badge class="text-xs" variant="outline">
-                                        Approved
-                                    </Badge>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column">
-                                    2023-06-27
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="text-right">$50.00</twig:ui:table:cell>
-                            </twig:ui:table:row>
-                            <twig:ui:table:row>
-                                <twig:ui:table:cell>
-                                    <div class="font-medium">Eva Meghan</div>
-                                    <div class="hidden text-sm text-muted-foreground md:inline">
-                                        liam@example.com
-                                    </div>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    Sale
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    <Badge class="text-xs" variant="outline">
-                                        Approved
-                                    </Badge>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column">
-                                    2023-06-27
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="text-right">$500.00</twig:ui:table:cell>
-                            </twig:ui:table:row>
-                            <twig:ui:table:row>
-                                <twig:ui:table:cell>
-                                    <div class="font-medium">Romy Raz</div>
-                                    <div class="hidden text-sm text-muted-foreground md:inline">
-                                        liam@example.com
-                                    </div>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    Sale
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden xl:table-column">
-                                    <Badge class="text-xs" variant="outline">
-                                        Approved
-                                    </Badge>
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column">
-                                    2023-06-27
-                                </twig:ui:table:cell>
-                                <twig:ui:table:cell class="text-right">$1500.00</twig:ui:table:cell>
-                            </twig:ui:table:row>
+                                {% endfor %}
                         </twig:ui:table:body>
                     </twig:ui:table:root>
+                    {% else %}
+                        <div class="flex flex-col items-center justify-center py-8 text-center">
+                            <twig:ux:icon name="lucide:package-check" class="h-12 w-12 text-muted-foreground mb-4"/>
+                            <p class="text-sm text-muted-foreground">No available orders at the moment</p>
+                        </div>
+                    {% endif %}
                 </twig:ui:card:content>
             </twig:ui:card:root>
+
             <twig:ui:card:root>
                 <twig:ui:card:header>
-                    <twig:ui:card:title>Recent Sales</twig:ui:card:title>
+                    <twig:ui:card:title>Quick Stats</twig:ui:card:title>
                 </twig:ui:card:header>
-                <twig:ui:card:content class="grid gap-8">
-                    <div class="flex items-center gap-4">
-                        <twig:ui:avatar:root class="hidden h-9 w-9 sm:flex">
-                            <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="Avatar"/>
-                            <twig:ui:avatar:fallback>OM</twig:ui:avatar:fallback>
-                        </twig:ui:avatar:root>
-                        <div class="grid gap-1">
-                            <p class="text-sm font-medium leading-none">
-                                Olivia Martin
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                olivia.martin@email.com
-                            </p>
+                <twig:ui:card:content class="grid gap-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="h-2 w-2 rounded-full bg-green-500"></div>
+                            <span class="text-sm text-muted-foreground">Completed</span>
                         </div>
-                        <div class="ml-auto font-medium">+$1,999.00</div>
+                        <span class="text-sm font-medium">{{ completedOrders }}</span>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <twig:ui:avatar:root class="hidden h-9 w-9 sm:flex">
-                            <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="Avatar"/>
-                            <twig:ui:avatar:fallback>JL</twig:ui:avatar:fallback>
-                        </twig:ui:avatar:root>
-                        <div class="grid gap-1">
-                            <p class="text-sm font-medium leading-none">
-                                Jackson Lee
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                jackson.lee@email.com
-                            </p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="h-2 w-2 rounded-full bg-yellow-500"></div>
+                            <span class="text-sm text-muted-foreground">Pending</span>
                         </div>
-                        <div class="ml-auto font-medium">+$39.00</div>
+                        <span class="text-sm font-medium">{{ pendingOrders }}</span>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <twig:ui:avatar:root class="hidden h-9 w-9 sm:flex">
-                            <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="Avatar"/>
-                            <twig:ui:avatar:fallback>IN</twig:ui:avatar:fallback>
-                        </twig:ui:avatar:root>
-                        <div class="grid gap-1">
-                            <p class="text-sm font-medium leading-none">
-                                Isabella Nguyen
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                isabella.nguyen@email.com
-                            </p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="h-2 w-2 rounded-full bg-blue-500"></div>
+                            <span class="text-sm text-muted-foreground">Processing</span>
                         </div>
-                        <div class="ml-auto font-medium">+$299.00</div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <twig:ui:avatar:root class="hidden h-9 w-9 sm:flex">
-                            <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="Avatar"/>
-                            <twig:ui:avatar:fallback>WK</twig:ui:avatar:fallback>
-                        </twig:ui:avatar:root>
-                        <div class="grid gap-1">
-                            <p class="text-sm font-medium leading-none">
-                                William Kim
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                will@email.com
-                            </p>
-                        </div>
-                        <div class="ml-auto font-medium">+$99.00</div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <twig:ui:avatar:root class="hidden h-9 w-9 sm:flex">
-                            <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="Avatar"/>
-                            <twig:ui:avatar:fallback>SD</twig:ui:avatar:fallback>
-                        </twig:ui:avatar:root>
-                        <div class="grid gap-1">
-                            <p class="text-sm font-medium leading-none">
-                                Sofia Davis
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                sofia.davis@email.com
-                            </p>
-                        </div>
-                        <div class="ml-auto font-medium">+$39.00</div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <twig:ui:avatar:root class="hidden h-9 w-9 sm:flex">
-                            <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="Avatar"/>
-                            <twig:ui:avatar:fallback>SD</twig:ui:avatar:fallback>
-                        </twig:ui:avatar:root>
-                        <div class="grid gap-1">
-                            <p class="text-sm font-medium leading-none">
-                                Mendrika Rachel
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                sofia.davis@email.com
-                            </p>
-                        </div>
-                        <div class="ml-auto font-medium">+$40.00</div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <twig:ui:avatar:root class="hidden h-9 w-9 sm:flex">
-                            <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="Avatar"/>
-                            <twig:ui:avatar:fallback>SD</twig:ui:avatar:fallback>
-                        </twig:ui:avatar:root>
-                        <div class="grid gap-1">
-                            <p class="text-sm font-medium leading-none">
-                                Eva Meghan
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                sofia.davis@email.com
-                            </p>
-                        </div>
-                        <div class="ml-auto font-medium">+$20.00</div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <twig:ui:avatar:root class="hidden h-9 w-9 sm:flex">
-                            <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="Avatar"/>
-                            <twig:ui:avatar:fallback>SD</twig:ui:avatar:fallback>
-                        </twig:ui:avatar:root>
-                        <div class="grid gap-1">
-                            <p class="text-sm font-medium leading-none">
-                                Romy Raz
-                            </p>
-                            <p class="text-sm text-muted-foreground">
-                                sofia.davis@email.com
-                            </p>
-                        </div>
-                        <div class="ml-auto font-medium">+$53.00</div>
+                        <span class="text-sm font-medium">{{ totalOrders - completedOrders - pendingOrders }}</span>
                     </div>
                 </twig:ui:card:content>
             </twig:ui:card:root>
         </div>
+        {# Recent Orders Section #}
+        <twig:ui:card:root>
+            <twig:ui:card:header class="flex flex-row items-center">
+                <div class="grid gap-2">
+                    <twig:ui:card:title>Recent Orders</twig:ui:card:title>
+                    <twig:ui:card:description>
+                        Latest orders from your system
+                    </twig:ui:card:description>
+                </div>
+                <twig:ui:button:root size="sm" href="{{ path('admin_order') }}" class="ml-auto gap-1">
+                    View All
+                    <twig:ux:icon name="lucide:arrow-up-right" class="h-4 w-4"/>
+                </twig:ui:button:root>
+            </twig:ui:card:header>
+            <twig:ui:card:content>
+                {% if recentOrders|length > 0 %}
+                    <twig:ui:table:root>
+                        <twig:ui:table:header>
+                            <twig:ui:table:row>
+                                <twig:ui:table:head>Reference</twig:ui:table:head>
+                                <twig:ui:table:head>Customer</twig:ui:table:head>
+                                <twig:ui:table:head class="hidden xl:table-column">Status</twig:ui:table:head>
+                                <twig:ui:table:head class="hidden xl:table-column">Date</twig:ui:table:head>
+                                <twig:ui:table:head class="text-right">Amount</twig:ui:table:head>
+                            </twig:ui:table:row>
+                        </twig:ui:table:header>
+                        <twig:ui:table:body>
+                            {% for order in recentOrders %}
+                                <twig:ui:table:row>
+                                    <twig:ui:table:cell class="font-medium">
+                                        {{ order.reference }}
+                                    </twig:ui:table:cell>
+                                    <twig:ui:table:cell>
+                                        {% if order.owner %}
+                                            <div class="font-medium">{{ order.owner.fullName }}</div>
+                                            <div class="hidden text-sm text-muted-foreground md:inline">
+                                                {{ order.owner.email }}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted-foreground">Guest</span>
+                                        {% endif %}
+                                    </twig:ui:table:cell>
+                                    <twig:ui:table:cell class="hidden xl:table-column">
+                                        {% set statusClass = order.status.value == 'delivered' ? 'bg-green-100 text-green-800' : (order.status.value == 'cancelled' ? 'bg-red-100 text-red-800' : (order.status.value == 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')) %}
+                                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ statusClass }}">
+                                            {{ order.status.value|capitalize }}
+                                        </span>
+                                    </twig:ui:table:cell>
+                                    <twig:ui:table:cell class="hidden md:table-cell lg:hidden xl:table-column text-muted-foreground">
+                                        {{ order.createdAt|date('Y-m-d') }}
+                                    </twig:ui:table:cell>
+                                    <twig:ui:table:cell class="text-right">{{ order.totalAmount|number_format(2, '.', ',') }} Ar</twig:ui:table:cell>
+                                </twig:ui:table:row>
+                            {% endfor %}
+                        </twig:ui:table:body>
+                    </twig:ui:table:root>
+                {% else %}
+                    <div class="flex flex-col items-center justify-center py-8 text-center">
+                        <twig:ux:icon name="lucide:shopping-cart" class="h-12 w-12 text-muted-foreground mb-4"/>
+                        <p class="text-sm text-muted-foreground">No orders yet</p>
+                    </div>
+                {% endif %}
+            </twig:ui:card:content>
+        </twig:ui:card:root>
     </main>
 {% endblock %}
