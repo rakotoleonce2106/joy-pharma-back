@@ -108,7 +108,7 @@
         </div>
         
         {# Existing Images Preview - Horizontal Scroll #}
-        {% if initialFormData.images|length > 0 %}
+        {% if initialFormData and initialFormData.images is defined and initialFormData.images|length > 0 %}
             <div class="space-y-2">
                 <label class="text-sm font-medium text-muted-foreground">Current Images</label>
                 <div class="flex gap-3 overflow-x-auto pb-2">

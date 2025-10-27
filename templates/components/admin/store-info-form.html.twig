@@ -1,15 +1,6 @@
-<div {{ attributes }}>
-    {{ form_start(form, { attr: {
-        class: 'space-y-6',
-        'id': 'store-form'
-    } }) }}
-
+<div class="space-y-6">
     {# Store Information Section #}
     <div class="space-y-4">
-        <div class="flex items-center gap-2 pb-2 border-b">
-            <twig:ux:icon name="lucide:store" class="h-5 w-5 text-primary"/>
-            <h3 class="text-lg font-semibold">Store Information</h3>
-        </div>
         <div class="grid gap-4">
             <div>
                 {{ form_row(form.name, {
@@ -106,43 +97,5 @@
             </div>
         {% endif %}
     </div>
-
-    {# Store Owner Login Credentials Section #}
-    <div class="space-y-4">
-        <div class="flex items-center gap-2 pb-2 border-b">
-            <twig:ux:icon name="lucide:key" class="h-5 w-5 text-primary"/>
-            <h3 class="text-lg font-semibold">Store Owner Login</h3>
-        </div>
-        <div class="bg-muted/50 rounded-lg p-4 space-y-4">
-            <p class="text-sm text-muted-foreground">
-                Login credentials for the store owner to access their dashboard
-            </p>
-            
-            <div>
-                {{ form_row(form.ownerEmail) }}
-            </div>
-            
-            <div>
-                {{ form_row(form.ownerPassword) }}
-            </div>
-            
-            <div class="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <twig:ux:icon name="lucide:info" class="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
-                <div class="text-sm text-blue-900 dark:text-blue-100">
-                    <p class="font-medium mb-1">Password Information</p>
-                    <p class="text-blue-700 dark:text-blue-300">If no password is provided, the default password <strong>JoyPharma2025!</strong> will be used</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {# Hidden Turbo Frame Buttons #}
-    <div class="items-center justify-center gap-2 mt-6 hidden turbo-frame:flex">
-        <twig:ui:button:root href="{{ path('admin_store') }}" variant="outline">
-            {{ 'Discard'|trans }}
-        </twig:ui:button:root>
-        <twig:ui:button:root formnovalidate>{{ 'Save Store'|trans }}</twig:ui:button:root>
-    </div>
-
-    {{ form_end(form) }}
 </div>
+

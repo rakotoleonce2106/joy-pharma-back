@@ -1,0 +1,67 @@
+<div>
+    <div class="space-y-6">
+        {# Current Store Owner Info #}
+        {% if store.owner %}
+            <div class="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <twig:ux:icon name="lucide:user-check" class="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+                <div class="text-sm text-blue-900 dark:text-blue-100">
+                    <p class="font-medium mb-1">Current Store Owner</p>
+                    <p class="text-blue-700 dark:text-blue-300">
+                        <strong>{{ store.owner.fullName }}</strong><br>
+                        Email: {{ store.owner.email }}<br>
+                        Role: {{ store.owner.roles|join(', ') }}
+                    </p>
+                </div>
+            </div>
+        {% else %}
+            <div class="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <twig:ux:icon name="lucide:alert-triangle" class="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+                <div class="text-sm text-amber-900 dark:text-amber-100">
+                    <p class="font-medium mb-1">No Owner Assigned</p>
+                    <p class="text-amber-700 dark:text-amber-300">
+                        This store doesn't have an owner account yet. Create one below.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+        {# Login Credentials Form #}
+        <div class="bg-muted/50 rounded-lg p-6 space-y-4">
+            <div>
+                <label for="{{ form.ownerEmail.vars.id }}" class="block text-sm font-medium mb-2">
+                    Login Email
+                </label>
+                <div class="text-xs text-muted-foreground mb-2">
+                    This email will be used for store owner login
+                </div>
+                {{ form_widget(form.ownerEmail, {
+                    'attr': {
+                        'class': 'w-full',
+                        'placeholder': 'store@example.com'
+                    }
+                }) }}
+                {{ form_errors(form.ownerEmail) }}
+            </div>
+            
+            <div>
+                <div class="text-xs text-muted-foreground mb-2">
+                    Leave empty to keep existing password or auto-generate for new accounts
+                </div>
+                {{ form_row(form.ownerPassword) }}
+            </div>
+            
+            <div class="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <twig:ux:icon name="lucide:info" class="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+                <div class="text-sm text-blue-900 dark:text-blue-100">
+                    <p class="font-medium mb-1">Password Requirements</p>
+                    <ul class="text-blue-700 dark:text-blue-300 list-disc list-inside space-y-1">
+                        <li>Minimum 8 characters</li>
+                        <li>Mix of letters, numbers recommended</li>
+                        <li>Default: <strong>JoyPharma2025!</strong> if left empty</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

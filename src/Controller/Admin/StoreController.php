@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\DataTable\Type\StoreDataTableType;
+use App\DataTable\Type\StoreProductDataTableType;
 use App\Entity\Store;
+use App\Entity\StoreProduct;
 use App\Entity\User;
+use App\Form\StoreProductType;
 use App\Form\StoreType;
+use App\Repository\StoreProductRepository;
 use App\Repository\StoreRepository;
 use App\Service\StoreService;
 use App\Service\MediaFileService;
 use App\Service\UserService;
 use App\Traits\ToastTrait;
+use Doctrine\ORM\EntityManagerInterface;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,6 +35,8 @@ class StoreController extends AbstractController
         private readonly StoreService $storeService,
         private readonly MediaFileService $mediaFileService,
         private readonly UserService $userService,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly StoreProductRepository $storeProductRepository,
     ) {}
     #[Route('/store', name: 'admin_store')]
     public function index(Request $request): Response
@@ -59,21 +66,32 @@ class StoreController extends AbstractController
                 $store->addImage($mediaFile);
             }
 
-            $userTemp = $this->userService->getUserByEmail($store->getContact()->getEmail());
-            if(!$userTemp){
-                $user= new User();
-                $user->setEmail($store->getContact()->getEmail());
+            // Get login credentials from form
+            $ownerEmail = $form->get('ownerEmail')->getData();
+            $ownerPassword = $form->get('ownerPassword')->getData();
+            
+            // Check if user already exists with this email
+            $user = $this->userService->getUserByEmail($ownerEmail);
+            if(!$user){
+                $user = new User();
+                $user->setEmail($ownerEmail);
                 $user->setFirstName($store->getName());
-                $user->setLastName($store->getName());
+                $user->setLastName('Store Owner');
                 $user->setRoles(['ROLE_STORE']);
-                $user->setPassword('JoyPharma2025!');
+                
+                // Use provided password or auto-generate
+                $password = $ownerPassword ?: 'JoyPharma2025!';
+                $user->setPassword($password);
                 
                 $userWithPassword = $this->userService->hashPassword($user);
                 $this->userService->persistUser($userWithPassword);
             }
+            
+            // Set the owner relationship
+            $store->setOwner($user);
            
             $this->storeService->createStore($store);
-            $this->addSuccessToast('Store created!', "The Store has been successfully created.");
+            $this->addSuccessToast('Store created!', "The Store has been successfully created. Login email: {$ownerEmail}");
             return $this->redirectToRoute('admin_store', [], Response::HTTP_SEE_OTHER);
         }
 
@@ -84,12 +102,49 @@ class StoreController extends AbstractController
     }
 
     #[Route('/store/{id}/edit', name: 'admin_store_edit', defaults: ['title' => 'Edit Store'])]
-    public function editAction(Request $request, Store $store): Response
+    public function editAction(Request $request, int $id): Response
     {
+        // Fetch store with eager loading of all relationships
+        $store = $this->StoreRepository->createQueryBuilder('s')
+            ->leftJoin('s.owner', 'o')
+            ->leftJoin('s.contact', 'c')
+            ->leftJoin('s.location', 'l')
+            ->leftJoin('s.image', 'si')
+            ->addSelect('o', 'c', 'l', 'si')
+            ->where('s.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if (!$store) {
+            throw $this->createNotFoundException('Store not found');
+        }
+
         $form = $this->createForm(StoreType::class, $store, [
             'action' => $this->generateUrl('admin_store_edit', ['id' => $store->getId()])
         ]);
-        return $this->handleStoreForm($request, $form, $store, 'edit');
+        
+        // Pre-populate email if owner exists
+        if ($store->getOwner()) {
+            $form->get('ownerEmail')->setData($store->getOwner()->getEmail());
+        }
+
+        // Create DataTable for store products with pagination and filters
+        $storeProductsQuery = $this->storeProductRepository->createQueryBuilder('sp')
+            ->leftJoin('sp.product', 'p')
+            ->leftJoin('p.brand', 'b')
+            ->leftJoin('p.images', 'img')
+            ->addSelect('p', 'b', 'img')
+            ->where('sp.store = :store')
+            ->setParameter('store', $store);
+
+        $productsDataTable = $this->createDataTable(StoreProductDataTableType::class, $storeProductsQuery, [
+            'edit_route' => fn(array $params) => $this->generateUrl('admin_store_product_edit', $params),
+            'delete_route' => fn(array $params) => $this->generateUrl('admin_store_product_delete', $params),
+        ]);
+        $productsDataTable->handleRequest($request);
+        
+        return $this->handleStoreForm($request, $form, $store, 'edit', $productsDataTable);
     }
 
     #[Route('/store/{id}/delete', name: 'admin_store_delete', methods: ['POST'])]
@@ -113,7 +168,7 @@ class StoreController extends AbstractController
     }
 
 
-    private function handleStoreForm(Request $request, $form, Store $store, string $action): Response
+    private function handleStoreForm(Request $request, $form, Store $store, string $action, $productsDataTable = null): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -123,6 +178,41 @@ class StoreController extends AbstractController
                 $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
                 $store->addImage($mediaFile);
             }
+
+            // Get login credentials from form
+            $ownerEmail = $form->get('ownerEmail')->getData();
+            $ownerPassword = $form->get('ownerPassword')->getData();
+            
+            // Get or create user
+            $user = $store->getOwner();
+            $isNewUser = false;
+            
+            if (!$user) {
+                $user = $this->userService->getUserByEmail($ownerEmail);
+                if (!$user) {
+                    $user = new User();
+                    $isNewUser = true;
+                }
+            }
+            
+            // Update user details
+            $user->setEmail($ownerEmail);
+            $user->setFirstName($store->getName());
+            $user->setLastName('Store Owner');
+            $user->setRoles(['ROLE_STORE']);
+            
+            // Update password if provided
+            if ($ownerPassword) {
+                $user->setPassword($ownerPassword);
+                $user = $this->userService->hashPassword($user);
+            }
+            
+            if ($isNewUser || $ownerPassword) {
+                $this->userService->persistUser($user);
+            }
+            
+            // Set the owner relationship
+            $store->setOwner($user);
 
             $this->storeService->updateStore($store);
 
@@ -138,9 +228,80 @@ class StoreController extends AbstractController
             return $this->redirectToRoute('admin_store', status: Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render("admin/store/{$action}.html.twig", [
+        $templateData = [
+            'store' => $store,
+            'form' => $form
+        ];
+
+        if ($productsDataTable) {
+            $templateData['productsDataTable'] = $productsDataTable->createView();
+        }
+
+        return $this->render("admin/store/{$action}.html.twig", $templateData);
+    }
+
+    #[Route('/store/{id}/product/add', name: 'admin_store_product_add', defaults: ['title' => 'Add Product to Store'])]
+    public function addProductAction(Request $request, Store $store): Response
+    {
+        $storeProduct = new StoreProduct();
+        $storeProduct->setStore($store);
+        
+        $form = $this->createForm(StoreProductType::class, $storeProduct);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->entityManager->persist($storeProduct);
+            $this->entityManager->flush();
+
+            $this->addSuccessToast('Product added!', 'The product has been successfully added to the store.');
+            return $this->redirectToRoute('admin_store_edit', ['id' => $store->getId()], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/store/product-add.html.twig", [
             'store' => $store,
             'form' => $form
         ]);
+    }
+
+    #[Route('/store/{storeId}/product/{id}/edit', name: 'admin_store_product_edit', defaults: ['title' => 'Edit Store Product'])]
+    public function editProductAction(Request $request, int $storeId, StoreProduct $storeProduct): Response
+    {
+        $store = $storeProduct->getStore();
+        
+        if ($store->getId() !== $storeId) {
+            throw $this->createNotFoundException('Store product not found');
+        }
+
+        $form = $this->createForm(StoreProductType::class, $storeProduct);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->entityManager->flush();
+
+            $this->addSuccessToast('Product updated!', 'The store product has been successfully updated.');
+            return $this->redirectToRoute('admin_store_edit', ['id' => $storeId], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/store/product-edit.html.twig", [
+            'store' => $store,
+            'storeProduct' => $storeProduct,
+            'form' => $form
+        ]);
+    }
+
+    #[Route('/store/{storeId}/product/{id}/delete', name: 'admin_store_product_delete', methods: ['POST'])]
+    public function deleteProductAction(int $storeId, StoreProduct $storeProduct): Response
+    {
+        $store = $storeProduct->getStore();
+        
+        if ($store->getId() !== $storeId) {
+            throw $this->createNotFoundException('Store product not found');
+        }
+
+        $this->entityManager->remove($storeProduct);
+        $this->entityManager->flush();
+
+        $this->addSuccessToast('Product removed!', 'The product has been successfully removed from the store.');
+        return $this->redirectToRoute('admin_store_edit', ['id' => $storeId], Response::HTTP_SEE_OTHER);
     }
 }
