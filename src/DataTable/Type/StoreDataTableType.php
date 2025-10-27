@@ -30,8 +30,7 @@ class StoreDataTableType extends AbstractDataTableType
             'href' => $this->urlGenerator->generate('admin_store_new'),
             'attr' => [
                 'variant' => 'default',
-                'data-turbo-frame' => 'dialog',
-                'target' => 'dialog',
+                'data-turbo-frame' => '_top',
             ],
             'icon_attr' => [
                 'name' => 'radix-icons:plus',
@@ -103,8 +102,7 @@ class StoreDataTableType extends AbstractDataTableType
                 'attr' => [
                     'size' => 'sm',
                     'variant' => 'outline',
-                    'data-turbo-frame' => 'dialog',
-                    'target' => 'dialog',
+                    'data-turbo-frame' => '_top',
                     'class' => 'whitespace-nowrap'
                 ]
             ])

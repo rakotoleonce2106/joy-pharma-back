@@ -33,7 +33,8 @@ class StoreType extends AbstractType
                 'label' => 'product.form.category',
                 'placeholder' => 'product.form.category_placeholder',
                 'query_builder' => function ($repository) {
-                    return $repository->createQueryBuilder('c');
+                    return $repository->createQueryBuilder('c')
+                        ->where('c.parent IS NULL');
                 },
             ])
             ->add('description', TextareaType::class, [

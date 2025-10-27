@@ -49,7 +49,38 @@ class StoreController extends AbstractController
     {
         $store = new Store();
         $form = $this->createForm(StoreType::class, $store, ['action' => $this->generateUrl('admin_store_new')]);
-        return $this->handleStoreForm($request, $form, $store, 'create');
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var UploadedFile|null $uploadedFile */
+            $image = $form->get('image')->getData();
+            if ($image) {
+                $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
+                $store->addImage($mediaFile);
+            }
+
+            $userTemp = $this->userService->getUserByEmail($store->getContact()->getEmail());
+            if(!$userTemp){
+                $user= new User();
+                $user->setEmail($store->getContact()->getEmail());
+                $user->setFirstName($store->getName());
+                $user->setLastName($store->getName());
+                $user->setRoles(['ROLE_STORE']);
+                $user->setPassword('JoyPharma2025!');
+                
+                $userWithPassword = $this->userService->hashPassword($user);
+                $this->userService->persistUser($userWithPassword);
+            }
+           
+            $this->storeService->createStore($store);
+            $this->addSuccessToast('Store created!', "The Store has been successfully created.");
+            return $this->redirectToRoute('admin_store', [], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/store/create.html.twig", [
+            'store' => $store,
+            'form' => $form
+        ]);
     }
 
     #[Route('/store/{id}/edit', name: 'admin_store_edit', defaults: ['title' => 'Edit Store'])]
@@ -82,51 +113,20 @@ class StoreController extends AbstractController
     }
 
 
-    private function handleStoreForm(Request $request, $form,Store $store, string $action): Response
+    private function handleStoreForm(Request $request, $form, Store $store, string $action): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-
-            if ($action === 'create') {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
-                    $store->addImage($mediaFile);
-                }
-
-                $userTemp = $this->userService->getUserByEmail($store->getContact()->getEmail());
-                if(!$userTemp){
-                    $user= new User();
-                    $user->setEmail($store->getContact()->getEmail());
-                    $user->setFirstName($store->getName());
-                    $user->setLastName($store->getName());
-                    $user->setRoles(['ROLE_STORE']);
-                    $user->setPassword('JoyPharma2025!');
-                    
-                // Create a new user entity
-                
-                $userWithPassword = $this->userService->hashPassword($user);
-                $this->userService->persistUser($userWithPassword);
-                }
-               
-                $this->storeService->createStore($store);
-            } else {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                     $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
-                    $store->addImage($mediaFile);
-                }
-
-                $this->storeService->updateStore($store);
+            /** @var UploadedFile|null $uploadedFile */
+            $image = $form->get('image')->getData();
+            if ($image) {
+                $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
+                $store->addImage($mediaFile);
             }
 
+            $this->storeService->updateStore($store);
 
-            $this->addSuccessToast(
-                $action === 'create' ? 'Store created!' : 'Store updated!',
-                "The Store has been successfully {$action}d."
-            );
+            $this->addSuccessToast('Store updated!', "The Store has been successfully updated.");
 
             if ($request->headers->has('turbo-frame')) {
                 $stream = $this->renderBlockView("admin/store/{$action}.html.twig", 'stream_success', [
