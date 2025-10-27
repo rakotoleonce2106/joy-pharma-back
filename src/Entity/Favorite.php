@@ -23,7 +23,7 @@ class Favorite
     private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'favorites')]
-    #[Groups('favorite:read', 'favorite:write')]
+    #[Groups(['favorite:read', 'favorite:write'])]
     private ?Product $product = null;
 
     public function getId(): ?int

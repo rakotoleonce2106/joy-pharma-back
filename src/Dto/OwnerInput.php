@@ -4,9 +4,12 @@ namespace App\Dto;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class FavoriteInput
+class OwnerInput
 {
     #[Assert\NotBlank]
     #[Assert\Type("integer")]
     public int $productId;
+
+    #[Assert\Type("integer")]
+    public int $quantity;
 }

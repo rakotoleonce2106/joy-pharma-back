@@ -31,7 +31,7 @@ App\Entity\Favorite:
         normalizationContext:
           groups: ['favorite:read', 'id:read','product:read','image:read']
         processor: App\State\FavoriteProcessor
-        input: 'App\Dto\FavoriteInput'
+        input: 'App\Dto\OwnerInput'
         openapi:
             summary: 'Create a favorite'
             description: 'Create a favorite'
