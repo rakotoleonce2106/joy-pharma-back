@@ -23,11 +23,17 @@ class ResetPasswordController extends AbstractController
         UserService $userService,
     ): JsonResponse
     {
-
-        $resetRequest = $passwordService->getResetValid($input->email);
+        // Verify the code is valid
+        $resetRequest = $passwordService->getResetCodeValid($input->email, $input->code);
 
         if (!$resetRequest) {
-            return new JsonResponse(['message' => 'Invalid reset request'], 400);
+            return new JsonResponse(['message' => 'Invalid or expired reset code'], 400);
+        }
+
+        // Check if the reset code has expired
+        if (new \DateTime() > $resetRequest->getExpiresAt()) {
+            $passwordService->invalidateResetRequest($resetRequest);
+            return new JsonResponse(['message' => 'Reset code has expired'], 400);
         }
 
         $user = $this->userService->getUserByEmail($input->email);
@@ -37,6 +43,7 @@ class ResetPasswordController extends AbstractController
 
         // Update the user's password
         $this->userService->hashPassword($user, $input->password);
+        $this->userService->saveUser($user);
 
         // Invalidate the reset request
         $passwordService->invalidateResetRequest($resetRequest);

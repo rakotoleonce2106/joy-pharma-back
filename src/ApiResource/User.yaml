@@ -29,7 +29,37 @@ App\Entity\User:
                 multipart: [ 'multipart/form-data' ]
             processor: App\State\UserUpdateProcessor
             
-            
+        update_password:
+            method: "POST"
+            class: ApiPlatform\Metadata\Post
+            controller: 'App\Controller\Api\UpdatePasswordController'
+            input: 'App\Dto\UpdatePasswordInput'
+            uriTemplate: "/user/update-password"
+            normalizationContext:
+                groups: ['update_password:write']
+            security: "is_granted('ROLE_USER')"
+            openapi:
+                summary: "Update user password"
+                description: "Update the password for the currently authenticated user"
+                security:
+                    - JWT: []
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    currentPassword:
+                                        type: string
+                                    newPassword:
+                                        type: string
+                                        minLength: 8
+                                    confirmPassword:
+                                        type: string
+                                required:
+                                    - currentPassword
+                                    - newPassword
+                                    - confirmPassword
 
         facebook_login:
             method: "POST"

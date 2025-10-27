@@ -16,10 +16,14 @@ class ResetPasswordInput
     public ?string $email = null;
 
     #[Assert\Length(min: 4, max: 6)]
-    #[Groups(['check_code:write'])]
+    #[Groups(['check_code:write', 'reset_password:write'])]
     public ?string $code = null;
 
     #[Assert\Length(min: 8, max: 4096)]
+    #[Assert\Regex(
+        pattern: '/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/',
+        message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+    )]
     #[Groups(['reset_password:write'])]
     public ?string $password = null;
 }

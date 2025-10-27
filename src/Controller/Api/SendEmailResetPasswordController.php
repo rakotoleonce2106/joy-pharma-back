@@ -31,19 +31,29 @@ class SendEmailResetPasswordController extends AbstractController
     {
         $user = $userService->getUserByEmail($input->email);
         if (!$user) {
-            return new JsonResponse(['message' => 'User not found'], 404);
+            return new JsonResponse(['message' => 'If an account exists with this email, you will receive a password reset code.'], 200);
         }
+        
+        // Invalidate any existing reset requests for this email
+        $existingRequest = $passwordService->getResetValid($input->email);
+        if ($existingRequest) {
+            $passwordService->invalidateResetRequest($existingRequest);
+        }
+        
         $code = random_int(100000, 999999); // Generate a 6-digit code
         $passwordService->createResetPassword($input->email, (string)$code);
 
-        // Send email
+        // Send email with HTML template
         $emailMessage = (new TemplatedEmail())
-            ->from('joypharma@gmail.com')
+            ->from('noreply@joypharma.com')
             ->to($input->email)
-            ->subject('Reset Your Password')
-            ->text("Your reset code is: $code");
+            ->subject('Password Reset Code - Joy Pharma')
+            ->htmlTemplate('emails/reset_password.html.twig')
+            ->context([
+                'code' => $code,
+            ]);
         $mailer->send($emailMessage);
 
-        return new JsonResponse(['message' => 'Reset code sent']);
+        return new JsonResponse(['message' => 'If an account exists with this email, you will receive a password reset code.'], 200);
     }
 }

@@ -47,6 +47,9 @@ security:
        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
        - { path: ^/api/register, roles: PUBLIC_ACCESS }
        - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
+       - { path: ^/api/password/forgot, roles: PUBLIC_ACCESS }
+       - { path: ^/api/password/verify-code, roles: PUBLIC_ACCESS }
+       - { path: ^/api/password/reset, roles: PUBLIC_ACCESS }
        - { path: ^/api/products ,roles: PUBLIC_ACCESS }
 
 when@test:
