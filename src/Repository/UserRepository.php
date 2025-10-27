@@ -57,4 +57,53 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
         $this->save($user, true);
     }
+
+    /**
+     * Find users with a specific role
+     * PostgreSQL and MySQL compatible method using native SQL
+     * 
+     * @param string $role The role to search for (e.g., 'ROLE_DELIVERY')
+     * @return User[] Returns an array of User objects
+     */
+    public function findByRole(string $role): array
+    {
+        $conn = $this->getEntityManager()->getConnection();
+        
+        // Use native SQL that works with both PostgreSQL and MySQL
+        $sql = '
+            SELECT u.* 
+            FROM "user" u 
+            WHERE CAST(u.roles AS TEXT) LIKE :role
+            ORDER BY u.first_name ASC
+        ';
+        
+        $stmt = $conn->prepare($sql);
+        $resultSet = $stmt->executeQuery(['role' => '%' . $role . '%']);
+        
+        $results = $resultSet->fetchAllAssociative();
+        
+        // Convert results to User entities
+        $users = [];
+        foreach ($results as $row) {
+            $user = $this->find($row['id']);
+            if ($user) {
+                $users[] = $user;
+            }
+        }
+        
+        return $users;
+    }
+
+    /**
+     * Get all users and filter by role in PHP
+     * This is a fallback method for use in forms where QueryBuilder is required
+     * Note: For better performance with large datasets, consider implementing a custom DQL function
+     * 
+     * @return \Doctrine\ORM\QueryBuilder
+     */
+    public function createQueryBuilderForAllUsers()
+    {
+        return $this->createQueryBuilder('u')
+            ->orderBy('u.firstName', 'ASC');
+    }
 }
