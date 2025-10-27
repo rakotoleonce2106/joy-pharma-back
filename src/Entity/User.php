@@ -9,6 +9,7 @@ use App\Entity\Traits\EntityStatusTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
 use Vich\UploaderBundle\Entity\File as EmbeddedFile;
@@ -103,6 +104,60 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Cart::class, mappedBy: 'user')]
     private Collection $carts;
 
+    // Delivery Person Fields
+    #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
+    #[Groups(['user:read'])]
+    private bool $isOnline = false;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 8, nullable: true)]
+    #[Groups(['user:read'])]
+    private ?string $currentLatitude = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 11, scale: 8, nullable: true)]
+    #[Groups(['user:read'])]
+    private ?string $currentLongitude = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['user:read'])]
+    private ?\DateTimeInterface $lastLocationUpdate = null;
+
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
+    #[Groups(['user:read'])]
+    private int $totalDeliveries = 0;
+
+    #[ORM\Column(type: Types::FLOAT, nullable: true)]
+    #[Groups(['user:read'])]
+    private ?float $averageRating = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
+    #[Groups(['user:read'])]
+    private string $totalEarnings = '0.00';
+
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?string $vehicleType = null; // bike, motorcycle, car
+
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?string $vehiclePlate = null;
+
+    /**
+     * @var Collection<int, Notification>
+     */
+    #[ORM\OneToMany(targetEntity: Notification::class, mappedBy: 'user')]
+    private Collection $notifications;
+
+    /**
+     * @var Collection<int, DeliverySchedule>
+     */
+    #[ORM\OneToMany(targetEntity: DeliverySchedule::class, mappedBy: 'deliveryPerson')]
+    private Collection $deliverySchedules;
+
+    /**
+     * @var Collection<int, Invoice>
+     */
+    #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'deliveryPerson')]
+    private Collection $invoices;
 
     public function __construct()
     {
@@ -112,6 +167,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->deliverOrders = new ArrayCollection();
         $this->favorites = new ArrayCollection();
         $this->carts = new ArrayCollection();
+        $this->notifications = new ArrayCollection();
+        $this->deliverySchedules = new ArrayCollection();
+        $this->invoices = new ArrayCollection();
     }
 
     public function getEmail(): ?string
@@ -429,6 +487,199 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             }
         }
 
+        return $this;
+    }
+
+    // Delivery Person Methods
+    public function isOnline(): bool
+    {
+        return $this->isOnline;
+    }
+
+    public function setIsOnline(bool $isOnline): static
+    {
+        $this->isOnline = $isOnline;
+        return $this;
+    }
+
+    public function getCurrentLatitude(): ?string
+    {
+        return $this->currentLatitude;
+    }
+
+    public function setCurrentLatitude(?string $currentLatitude): static
+    {
+        $this->currentLatitude = $currentLatitude;
+        return $this;
+    }
+
+    public function getCurrentLongitude(): ?string
+    {
+        return $this->currentLongitude;
+    }
+
+    public function setCurrentLongitude(?string $currentLongitude): static
+    {
+        $this->currentLongitude = $currentLongitude;
+        return $this;
+    }
+
+    public function getLastLocationUpdate(): ?\DateTimeInterface
+    {
+        return $this->lastLocationUpdate;
+    }
+
+    public function setLastLocationUpdate(?\DateTimeInterface $lastLocationUpdate): static
+    {
+        $this->lastLocationUpdate = $lastLocationUpdate;
+        return $this;
+    }
+
+    public function getTotalDeliveries(): int
+    {
+        return $this->totalDeliveries;
+    }
+
+    public function setTotalDeliveries(int $totalDeliveries): static
+    {
+        $this->totalDeliveries = $totalDeliveries;
+        return $this;
+    }
+
+    public function incrementTotalDeliveries(): static
+    {
+        $this->totalDeliveries++;
+        return $this;
+    }
+
+    public function getAverageRating(): ?float
+    {
+        return $this->averageRating;
+    }
+
+    public function setAverageRating(?float $averageRating): static
+    {
+        $this->averageRating = $averageRating;
+        return $this;
+    }
+
+    public function getTotalEarnings(): string
+    {
+        return $this->totalEarnings;
+    }
+
+    public function setTotalEarnings(string $totalEarnings): static
+    {
+        $this->totalEarnings = $totalEarnings;
+        return $this;
+    }
+
+    public function addEarnings(float $amount): static
+    {
+        $this->totalEarnings = bcadd($this->totalEarnings, (string)$amount, 2);
+        return $this;
+    }
+
+    public function getVehicleType(): ?string
+    {
+        return $this->vehicleType;
+    }
+
+    public function setVehicleType(?string $vehicleType): static
+    {
+        $this->vehicleType = $vehicleType;
+        return $this;
+    }
+
+    public function getVehiclePlate(): ?string
+    {
+        return $this->vehiclePlate;
+    }
+
+    public function setVehiclePlate(?string $vehiclePlate): static
+    {
+        $this->vehiclePlate = $vehiclePlate;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Notification>
+     */
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
+
+    public function addNotification(Notification $notification): static
+    {
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeNotification(Notification $notification): static
+    {
+        if ($this->notifications->removeElement($notification)) {
+            if ($notification->getUser() === $this) {
+                $notification->setUser(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DeliverySchedule>
+     */
+    public function getDeliverySchedules(): Collection
+    {
+        return $this->deliverySchedules;
+    }
+
+    public function addDeliverySchedule(DeliverySchedule $schedule): static
+    {
+        if (!$this->deliverySchedules->contains($schedule)) {
+            $this->deliverySchedules->add($schedule);
+            $schedule->setDeliveryPerson($this);
+        }
+        return $this;
+    }
+
+    public function removeDeliverySchedule(DeliverySchedule $schedule): static
+    {
+        if ($this->deliverySchedules->removeElement($schedule)) {
+            if ($schedule->getDeliveryPerson() === $this) {
+                $schedule->setDeliveryPerson(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Invoice>
+     */
+    public function getInvoices(): Collection
+    {
+        return $this->invoices;
+    }
+
+    public function addInvoice(Invoice $invoice): static
+    {
+        if (!$this->invoices->contains($invoice)) {
+            $this->invoices->add($invoice);
+            $invoice->setDeliveryPerson($this);
+        }
+        return $this;
+    }
+
+    public function removeInvoice(Invoice $invoice): static
+    {
+        if ($this->invoices->removeElement($invoice)) {
+            if ($invoice->getDeliveryPerson() === $this) {
+                $invoice->setDeliveryPerson(null);
+            }
+        }
         return $this;
     }
 }

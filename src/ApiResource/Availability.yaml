@@ -1,0 +1,57 @@
+# Availability Management
+App\Entity\User:
+    operations:
+        # Toggle availability
+        toggle_availability:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/availability'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Availability\ToggleAvailabilityProcessor
+            input: false
+            read: false
+            openapi:
+                summary: 'Toggle availability'
+                description: 'Toggle delivery person online/offline status'
+
+        # Set online status
+        set_online_status:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/availability/online'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Availability\OnlineStatusProcessor
+            input: false
+            read: false
+            openapi:
+                summary: 'Set online status'
+                description: 'Set delivery person online/offline status'
+
+# Delivery Schedule
+App\Entity\DeliverySchedule:
+    operations:
+        # Get schedule
+        get_schedule:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/availability/schedule'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\Availability\ScheduleProvider
+            normalizationContext:
+                groups: ['schedule:read']
+            openapi:
+                summary: 'Get delivery schedule'
+                description: 'Get delivery person schedule'
+
+        # Update schedule
+        update_schedule:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/availability/schedule'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Availability\ScheduleProcessor
+            input: App\Dto\ScheduleInput
+            read: false
+            normalizationContext:
+                groups: ['schedule:read']
+            openapi:
+                summary: 'Update delivery schedule'
+                description: 'Update delivery person schedule'
+
+

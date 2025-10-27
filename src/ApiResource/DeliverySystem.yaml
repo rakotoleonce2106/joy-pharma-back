@@ -1,0 +1,145 @@
+# Stats, Profile, Location, Stores, SOS, Support endpoints
+
+# Dashboard Stats
+App\Dto\DashboardStats:
+    operations:
+        get_dashboard:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/stats/dashboard'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\Stats\DashboardProvider
+            read: false
+            openapi:
+                summary: 'Get dashboard statistics'
+                description: 'Get dashboard stats for delivery person'
+                parameters:
+                    - name: period
+                      in: query
+                      schema:
+                          type: string
+                          enum: [today, week, month, year]
+                          default: today
+
+# Earnings Stats
+App\Dto\EarningsStats:
+    operations:
+        get_earnings:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/stats/earnings'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\Stats\EarningsProvider
+            read: false
+            openapi:
+                summary: 'Get earnings statistics'
+                description: 'Get detailed earnings history'
+                parameters:
+                    - name: period
+                      in: query
+                      schema:
+                          type: string
+                          enum: [week, month, year]
+                          default: week
+
+# Invoices
+App\Entity\Invoice:
+    operations:
+        get_invoices:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/invoices'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\Invoice\InvoiceCollectionProvider
+            normalizationContext:
+                groups: ['invoice:read']
+            openapi:
+                summary: 'Get invoices list'
+                description: 'Get list of invoices for delivery person'
+
+        download_invoice:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/invoices/{id}/download'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\Invoice\DownloadInvoiceProvider
+            read: false
+            openapi:
+                summary: 'Download invoice PDF'
+                description: 'Download invoice as PDF'
+
+# Profile Update
+App\Dto\ProfileUpdate:
+    operations:
+        update_profile:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/profile'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Profile\UpdateProfileProcessor
+            read: false
+            openapi:
+                summary: 'Update delivery person profile'
+                description: 'Update profile information'
+
+# Location Update
+App\Entity\DeliveryLocation:
+    operations:
+        update_location:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/location'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Location\UpdateLocationProcessor
+            input: App\Dto\UpdateLocationInput
+            openapi:
+                summary: 'Update delivery person location'
+                description: 'Update real-time location'
+
+# Stores
+App\Entity\Store:
+    operations:
+        get_stores:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/stores'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\Store\StoreCollectionProvider
+            openapi:
+                summary: 'Get stores list'
+                description: 'Get list of available stores'
+
+# Emergency SOS
+App\Entity\EmergencySOS:
+    operations:
+        send_sos:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/emergency/sos'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Emergency\SOSProcessor
+            input: App\Dto\SOSInput
+            openapi:
+                summary: 'Send emergency SOS'
+                description: 'Send emergency SOS signal with location'
+
+# Support Ticket
+App\Entity\SupportTicket:
+    operations:
+        create_ticket:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/support/contact'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Support\ContactProcessor
+            input: App\Dto\SupportTicketInput
+            openapi:
+                summary: 'Contact support'
+                description: 'Create a support ticket'
+
+# Auth Logout
+App\Dto\LogoutResponse:
+    operations:
+        logout:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/logout'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Auth\LogoutProcessor
+            read: false
+            input: false
+            openapi:
+                summary: 'Logout'
+                description: 'Logout delivery person (client should remove token)'
+
+

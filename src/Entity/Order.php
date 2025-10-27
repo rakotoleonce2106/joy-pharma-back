@@ -90,15 +90,54 @@ class Order
     #[Groups(['order:create','order:read'])]
     private ?User $deliver = null;
 
+    // Delivery tracking fields
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?\DateTimeInterface $acceptedAt = null;
 
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?\DateTimeInterface $pickedUpAt = null;
 
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?\DateTimeInterface $deliveredAt = null;
 
-     public function __construct()
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?\DateTimeInterface $estimatedDeliveryTime = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?\DateTimeInterface $actualDeliveryTime = null;
+
+    #[ORM\Column(length: 255, nullable: true, unique: true)]
+    #[Groups(['order:read'])]
+    private ?string $qrCode = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?\DateTimeInterface $qrCodeValidatedAt = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $deliveryFee = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['order:read', 'order:create'])]
+    private ?string $deliveryNotes = null;
+
+    #[ORM\OneToOne(mappedBy: 'orderRef', cascade: ['persist', 'remove'])]
+    #[Groups(['order:read'])]
+    private ?Rating $rating = null;
+
+    public function __construct()
     {
         $this->status = OrderStatus::STATUS_PENDING;
         $this->priority = PriorityType::PRIORITY_STANDARD;
         $this->createdAt = new \DateTime();
         $this->reference = $this->generateReference();
+        $this->qrCode = $this->generateQRCode();
         $this->items = new ArrayCollection();
     }
 
@@ -247,6 +286,11 @@ class Order
         return 'ORD-' . date('Y') . '-' . str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
     }
 
+    private function generateQRCode(): string
+    {
+        return 'QR-' . strtoupper(bin2hex(random_bytes(16)));
+    }
+
     /**
      * @return Collection<int, OrderItem>
      */
@@ -289,4 +333,120 @@ class Order
         return $this;
     }
 
+    // Delivery tracking methods
+    public function getAcceptedAt(): ?\DateTimeInterface
+    {
+        return $this->acceptedAt;
+    }
+
+    public function setAcceptedAt(?\DateTimeInterface $acceptedAt): static
+    {
+        $this->acceptedAt = $acceptedAt;
+        return $this;
+    }
+
+    public function getPickedUpAt(): ?\DateTimeInterface
+    {
+        return $this->pickedUpAt;
+    }
+
+    public function setPickedUpAt(?\DateTimeInterface $pickedUpAt): static
+    {
+        $this->pickedUpAt = $pickedUpAt;
+        return $this;
+    }
+
+    public function getDeliveredAt(): ?\DateTimeInterface
+    {
+        return $this->deliveredAt;
+    }
+
+    public function setDeliveredAt(?\DateTimeInterface $deliveredAt): static
+    {
+        $this->deliveredAt = $deliveredAt;
+        return $this;
+    }
+
+    public function getEstimatedDeliveryTime(): ?\DateTimeInterface
+    {
+        return $this->estimatedDeliveryTime;
+    }
+
+    public function setEstimatedDeliveryTime(?\DateTimeInterface $estimatedDeliveryTime): static
+    {
+        $this->estimatedDeliveryTime = $estimatedDeliveryTime;
+        return $this;
+    }
+
+    public function getActualDeliveryTime(): ?\DateTimeInterface
+    {
+        return $this->actualDeliveryTime;
+    }
+
+    public function setActualDeliveryTime(?\DateTimeInterface $actualDeliveryTime): static
+    {
+        $this->actualDeliveryTime = $actualDeliveryTime;
+        return $this;
+    }
+
+    public function getQrCode(): ?string
+    {
+        return $this->qrCode;
+    }
+
+    public function setQrCode(?string $qrCode): static
+    {
+        $this->qrCode = $qrCode;
+        return $this;
+    }
+
+    public function getQrCodeValidatedAt(): ?\DateTimeInterface
+    {
+        return $this->qrCodeValidatedAt;
+    }
+
+    public function setQrCodeValidatedAt(?\DateTimeInterface $qrCodeValidatedAt): static
+    {
+        $this->qrCodeValidatedAt = $qrCodeValidatedAt;
+        return $this;
+    }
+
+    public function getDeliveryFee(): ?string
+    {
+        return $this->deliveryFee;
+    }
+
+    public function setDeliveryFee(?string $deliveryFee): static
+    {
+        $this->deliveryFee = $deliveryFee;
+        return $this;
+    }
+
+    public function getDeliveryNotes(): ?string
+    {
+        return $this->deliveryNotes;
+    }
+
+    public function setDeliveryNotes(?string $deliveryNotes): static
+    {
+        $this->deliveryNotes = $deliveryNotes;
+        return $this;
+    }
+
+    public function getRating(): ?Rating
+    {
+        return $this->rating;
+    }
+
+    public function setRating(?Rating $rating): static
+    {
+        // set the owning side of the relation if necessary
+        if ($rating !== null && $rating->getOrderRef() !== $this) {
+            $rating->setOrderRef($this);
+        }
+
+        $this->rating = $rating;
+        return $this;
+    }
 }
+

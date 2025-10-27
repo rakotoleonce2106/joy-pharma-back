@@ -1,0 +1,65 @@
+App\Entity\Notification:
+    operations:
+        # Get notifications list
+        get_notifications:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/notifications'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\Notification\NotificationCollectionProvider
+            normalizationContext:
+                groups: ['notification:read']
+            openapi:
+                summary: 'Get user notifications'
+                description: 'Get paginated list of notifications for current user'
+                parameters:
+                    - name: page
+                      in: query
+                      schema:
+                          type: integer
+                          default: 1
+                    - name: limit
+                      in: query
+                      schema:
+                          type: integer
+                          default: 20
+
+        # Get unread count
+        get_unread_count:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/notifications/unread-count'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\Notification\UnreadCountProvider
+            read: false
+            openapi:
+                summary: 'Get unread notifications count'
+                description: 'Get count of unread notifications for current user'
+
+        # Mark notification as read
+        mark_read:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/notifications/{id}/read'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Notification\MarkReadProcessor
+            denormalizationContext:
+                groups: []
+            normalizationContext:
+                groups: ['notification:read']
+            openapi:
+                summary: 'Mark notification as read'
+                description: 'Mark a specific notification as read'
+
+        # Mark all as read
+        mark_all_read:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/notifications/read-all'
+            security: 'is_granted("ROLE_USER")'
+            processor: App\State\Notification\MarkAllReadProcessor
+            read: false
+            openapi:
+                summary: 'Mark all notifications as read'
+                description: 'Mark all user notifications as read'
+
+    normalizationContext:
+        groups: ['notification:read']
+
+
