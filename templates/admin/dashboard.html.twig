@@ -9,11 +9,31 @@
      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
      crossorigin=""/>
     <style>
+        /* Map container with fixed height */
         #dashboard-map {
-            height: 600px;
-            border-radius: 0.75rem;
+            height: 300px !important;
+            max-height: 300px !important;
+            min-height: 300px !important;
+            width: 100%;
             z-index: 1;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            overflow: hidden !important;
+            position: relative;
+        }
+        
+        /* Leaflet specific containers */
+        #dashboard-map .leaflet-container,
+        #dashboard-map .leaflet-pane,
+        #dashboard-map .leaflet-map-pane {
+            height: 300px !important;
+            max-height: 300px !important;
+            overflow: hidden !important;
+        }
+        
+        /* Prevent markers from extending beyond container */
+        #dashboard-map .leaflet-marker-pane,
+        #dashboard-map .leaflet-popup-pane,
+        #dashboard-map .leaflet-shadow-pane {
+            max-height: 300px !important;
         }
         .pulse-dot {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -26,12 +46,52 @@
                 opacity: .5;
             }
         }
+        @keyframes map-pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+        }
         .leaflet-popup-content-wrapper {
             border-radius: 0.5rem;
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
         }
         .leaflet-popup-tip {
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+        .custom-div-icon {
+            background: none !important;
+            border: none !important;
+        }
+        .driver-marker {
+            position: relative;
+            animation: map-pulse 2s infinite;
+        }
+        .price-badge {
+            background: white;
+            color: #dc2626;
+            font-weight: bold;
+            font-size: 9px;
+            padding: 2px 5px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+        .driver-name-badge {
+            background: white;
+            color: #16a34a;
+            font-weight: 600;
+            font-size: 9px;
+            padding: 2px 5px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            margin-top: 2px;
+            white-space: nowrap;
         }
     </style>
 {% endblock %}
@@ -165,7 +225,7 @@
                     </div>
                 </div>
             </twig:ui:card:header>
-            <twig:ui:card:content class="p-0">
+            <twig:ui:card:content class="p-0 !h-[300px] !max-h-[300px] overflow-hidden">
                 <div id="dashboard-map" class="w-full"></div>
             </twig:ui:card:content>
         </twig:ui:card:root>
@@ -388,53 +448,136 @@
      crossorigin=""></script>
     
     <script>
-        // Initialize map
-        const map = L.map('dashboard-map').setView([-18.8792, 47.5079], 13); // Antananarivo, Madagascar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing dashboard map...');
+            console.log('Leaflet loaded:', typeof L !== 'undefined');
+            
+            // Check if map div exists
+            const mapDiv = document.getElementById('dashboard-map');
+            console.log('Map div found:', mapDiv !== null);
+            if (!mapDiv) {
+                console.error('Map div not found!');
+                return;
+            }
+            
+            // Initialize map with specific options
+            const map = L.map('dashboard-map', {
+                scrollWheelZoom: true,
+                zoomControl: true,
+                attributionControl: true,
+                dragging: true
+            }).setView([-18.8792, 47.5079], 13); // Antananarivo, Madagascar
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
-        }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            console.log('Map initialized successfully');
+            
+            // Force map to redraw after initialization and set explicit height
+            setTimeout(() => {
+                const mapContainer = document.getElementById('dashboard-map');
+                if (mapContainer) {
+                    mapContainer.style.height = '300px';
+                    mapContainer.style.maxHeight = '300px';
+                    mapContainer.style.overflow = 'hidden';
+                }
+                map.invalidateSize();
+                console.log('Map size invalidated and height enforced');
+            }, 100);
 
-        // Custom icons with improved styling
-        const storeIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: '<div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4), 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>',
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
-            popupAnchor: [0, -18]
-        });
+        // Function to create store icon (pharmacy)
+        function createStoreIcon(storeName) {
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: `
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); display: flex; align-items: center; justify-content: center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
+                                <path d="M9 2v6H6v2h3v2H7v2h2v2H7v2h2v4h6v-4h2v-2h-2v-2h2v-2h-2v-2h3V8h-3V2H9zm2 2h2v4h-2V4zm-2 6h6v2h-2v2h-2v-2H9v-2z"/>
+                            </svg>
+                        </div>
+                        <div style="background: white; color: #2563eb; font-weight: 600; font-size: 9px; padding: 2px 6px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); margin-top: 2px; white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis;">
+                            ${storeName}
+                        </div>
+                    </div>
+                `,
+                iconSize: [80, 55],
+                iconAnchor: [40, 28],
+                popupAnchor: [0, -28]
+            });
+        }
 
-        const deliverIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: '<div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4), 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"/><polygon points="12 15 17 21 7 21 12 15"/></svg></div>',
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
-            popupAnchor: [0, -18]
-        });
+        // Function to create deliver icon with name
+        function createDeliverIcon(firstName, lastName) {
+            const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+            const displayName = `${firstName} ${lastName}`;
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: `
+                    <div class="driver-marker" style="display: flex; flex-direction: column; align-items: center;">
+                        <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4); display: flex; align-items: center; justify-content: center; position: relative;">
+                            <span style="color: white; font-weight: bold; font-size: 12px;">${initials}</span>
+                            <div style="position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px; background: #22c55e; border: 2px solid white; border-radius: 50%; animation: map-pulse 2s infinite;"></div>
+                        </div>
+                        <div class="driver-name-badge" style="margin-top: 2px; font-size: 9px; padding: 2px 5px;">
+                            🚴 ${displayName}
+                        </div>
+                    </div>
+                `,
+                iconSize: [100, 55],
+                iconAnchor: [50, 28],
+                popupAnchor: [0, -28]
+            });
+        }
 
-        const orderIcon = L.divIcon({
-            className: 'custom-div-icon',
-            html: '<div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); width: 36px; height: 36px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4), 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>',
-            iconSize: [36, 36],
-            iconAnchor: [18, 18],
-            popupAnchor: [0, -18]
-        });
+        // Function to create order icon with price
+        function createOrderIcon(price, reference) {
+            const formattedPrice = new Intl.NumberFormat('fr-MG').format(price);
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: `
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="9" cy="21" r="1"/>
+                                <circle cx="20" cy="21" r="1"/>
+                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                            </svg>
+                        </div>
+                        <div class="price-badge" style="margin-top: 2px; font-size: 9px; padding: 2px 5px;">
+                            💰 ${formattedPrice} Ar
+                        </div>
+                    </div>
+                `,
+                iconSize: [100, 55],
+                iconAnchor: [50, 28],
+                popupAnchor: [0, -28]
+            });
+        }
 
         // Add stores to map with enhanced popups
         const stores = {{ stores|json_encode|raw }};
+        console.log('Stores data:', stores);
         stores.forEach(store => {
             if (store.location && store.location.latitude && store.location.longitude) {
+                const storeIcon = createStoreIcon(store.name);
                 L.marker([store.location.latitude, store.location.longitude], {icon: storeIcon})
                     .addTo(map)
                     .bindPopup(`
-                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 200px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <div style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6;"></div>
-                                <strong style="font-size: 14px; color: #1e293b;">${store.name}</strong>
+                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                <div style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6;"></div>
+                                <strong style="font-size: 15px; color: #1e293b;">🏪 ${store.name}</strong>
                             </div>
-                            <div style="font-size: 12px; color: #64748b; margin-left: 16px;">
-                                📍 ${store.location.address || 'Store location'}
+                            <div style="font-size: 12px; color: #64748b; line-height: 1.6;">
+                                <div style="margin-bottom: 4px;">
+                                    <strong style="color: #475569;">Address:</strong>
+                                </div>
+                                <div style="padding-left: 8px;">
+                                    📍 ${store.location.address || 'Store location'}
+                                </div>
                             </div>
                         </div>
                     `);
@@ -443,19 +586,32 @@
 
         // Add online delivers to map with enhanced popups
         const onlineDelivers = {{ onlineDeliversData|json_encode|raw }};
+        console.log('Online delivers data:', onlineDelivers);
         onlineDelivers.forEach(deliver => {
             if (deliver.deliveryLocation && deliver.deliveryLocation.latitude && deliver.deliveryLocation.longitude) {
+                const deliverIcon = createDeliverIcon(deliver.firstName, deliver.lastName);
                 L.marker([deliver.deliveryLocation.latitude, deliver.deliveryLocation.longitude], {icon: deliverIcon})
                     .addTo(map)
                     .bindPopup(`
-                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 200px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <div style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite;"></div>
-                                <strong style="font-size: 14px; color: #1e293b;">${deliver.firstName} ${deliver.lastName}</strong>
+                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                <div style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e; animation: pulse 2s infinite;"></div>
+                                <strong style="font-size: 15px; color: #1e293b;">🚴 ${deliver.firstName} ${deliver.lastName}</strong>
                             </div>
-                            <div style="font-size: 12px; color: #64748b; margin-left: 16px;">
-                                <div style="margin-bottom: 4px;">🚴 Delivery Driver - <span style="color: #22c55e; font-weight: 600;">Online</span></div>
-                                <div style="color: #94a3b8;">⏰ Last update: ${new Date(deliver.deliveryLocation.updatedAt.date).toLocaleTimeString()}</div>
+                            <div style="font-size: 12px; color: #64748b; line-height: 1.6;">
+                                <div style="background: #f0fdf4; border-left: 3px solid #22c55e; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                                    <div style="color: #16a34a; font-weight: 600;">✓ Driver Online</div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span>⏰</span>
+                                    <span style="color: #475569;">Last update: ${new Date(deliver.deliveryLocation.updatedAt.date).toLocaleTimeString('fr-FR')}</span>
+                                </div>
+                                ${deliver.deliveryLocation.address ? `
+                                    <div style="display: flex; align-items: start; gap: 6px; margin-top: 6px;">
+                                        <span>📍</span>
+                                        <span style="color: #475569;">${deliver.deliveryLocation.address}</span>
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
                     `);
@@ -464,22 +620,43 @@
 
         // Add orders with locations to map with enhanced popups
         const ordersWithLocations = {{ ordersWithLocations|json_encode|raw }};
+        console.log('Orders with locations data:', ordersWithLocations);
         const orderMarkers = {};
         ordersWithLocations.forEach(order => {
             if (order.location && order.location.latitude && order.location.longitude) {
+                const orderIcon = createOrderIcon(order.totalAmount, order.reference);
                 const marker = L.marker([order.location.latitude, order.location.longitude], {icon: orderIcon})
                     .addTo(map)
                     .bindPopup(`
-                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px;">
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                <div style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></div>
-                                <strong style="font-size: 14px; color: #1e293b;">Order: ${order.reference}</strong>
+                        <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 260px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
+                                <div style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div>
+                                <strong style="font-size: 15px; color: #1e293b;">🛒 Order: ${order.reference}</strong>
                             </div>
-                            <div style="font-size: 12px; color: #64748b; margin-left: 16px;">
-                                <div style="margin-bottom: 4px;">📍 ${order.location.address || 'Delivery location'}</div>
-                                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
-                                    <strong style="color: #1e293b; font-size: 13px;">💰 ${order.totalAmount.toLocaleString()} Ar</strong>
+                            <div style="font-size: 12px; line-height: 1.6;">
+                                <div style="background: #fef2f2; border-left: 3px solid #ef4444; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+                                    <div style="font-size: 16px; font-weight: bold; color: #dc2626; margin-bottom: 4px;">
+                                        💰 ${new Intl.NumberFormat('fr-MG').format(order.totalAmount)} Ar
+                                    </div>
+                                    <div style="font-size: 11px; color: #991b1b;">
+                                        Total amount
+                                    </div>
                                 </div>
+                                ${order.location.address ? `
+                                    <div style="display: flex; align-items: start; gap: 6px; color: #475569;">
+                                        <span style="flex-shrink: 0;">📍</span>
+                                        <div>
+                                            <strong style="display: block; margin-bottom: 2px; color: #1e293b;">Delivery Address:</strong>
+                                            <span>${order.location.address}</span>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${order.status ? `
+                                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0;">
+                                        <span style="color: #64748b;">Status: </span>
+                                        <span style="font-weight: 600; color: #ef4444; text-transform: capitalize;">${order.status}</span>
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
                     `);
@@ -502,9 +679,10 @@
             }
         };
 
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            location.reload();
-        }, 30000);
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                location.reload();
+            }, 30000);
+        }); // End of DOMContentLoaded
     </script>
 {% endblock %}

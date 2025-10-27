@@ -78,6 +78,7 @@ class DashboardController extends AbstractController
                     'deliveryLocation' => [
                         'latitude' => $location->getLatitude(),
                         'longitude' => $location->getLongitude(),
+                        'address' => $location->getAddress(),
                         'updatedAt' => [
                             'date' => $location->getUpdatedAt()->format('Y-m-d H:i:s')
                         ]
@@ -99,14 +100,29 @@ class DashboardController extends AbstractController
         $availableOrders = $this->orderRepository->findAvailableOrders(10);
 
         // Get all stores with their locations for map
-        $stores = $this->storeRepository->createQueryBuilder('s')
+        $storesResult = $this->storeRepository->createQueryBuilder('s')
             ->leftJoin('s.location', 'l')
             ->addSelect('l')
             ->getQuery()
             ->getResult();
 
+        // Prepare stores data for JSON
+        $stores = [];
+        foreach ($storesResult as $store) {
+            $location = $store->getLocation();
+            $stores[] = [
+                'id' => $store->getId(),
+                'name' => $store->getName(),
+                'location' => $location ? [
+                    'latitude' => $location->getLatitude(),
+                    'longitude' => $location->getLongitude(),
+                    'address' => $location->getAddress(),
+                ] : null
+            ];
+        }
+
         // Get orders with delivery locations for map
-        $ordersWithLocations = $this->orderRepository->createQueryBuilder('o')
+        $ordersResult = $this->orderRepository->createQueryBuilder('o')
             ->leftJoin('o.location', 'l')
             ->leftJoin('o.owner', 'ow')
             ->addSelect('l', 'ow')
@@ -115,6 +131,25 @@ class DashboardController extends AbstractController
             ->setMaxResults(50)
             ->getQuery()
             ->getResult();
+
+        // Prepare orders data for JSON
+        $ordersWithLocations = [];
+        foreach ($ordersResult as $order) {
+            $location = $order->getLocation();
+            if ($location && $location->getLatitude() && $location->getLongitude()) {
+                $ordersWithLocations[] = [
+                    'id' => $order->getId(),
+                    'reference' => $order->getReference(),
+                    'totalAmount' => $order->getTotalAmount(),
+                    'status' => $order->getStatus()->value,
+                    'location' => [
+                        'latitude' => $location->getLatitude(),
+                        'longitude' => $location->getLongitude(),
+                        'address' => $location->getAddress(),
+                    ]
+                ];
+            }
+        }
 
         // Calculate total revenue from completed orders
         $totalRevenue = $this->orderRepository->createQueryBuilder('o')
