@@ -46,13 +46,35 @@ class ProductController extends AbstractController
     {
         $product = new Product();
         $form = $this->createForm(ProductType::class, $product, ['action' => $this->generateUrl('admin_product_new')]);
-        return $this->handleProductForm($request, $form, $product, 'create');
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Handle images field if it exists
+            if ($form->has('images')) {
+                /** @var UploadedFile[] $images */
+                $images = $form->get('images')->getData();
+                if ($images && count($images) > 0) {
+                    foreach ($images as $uploadedImage) {
+                        $mediaFile = $this->mediaFileService->createMediaByFile($uploadedImage, 'images/product/');
+                        $product->addImage($mediaFile);
+                    }
+                }
+            }
+            
+            $this->productService->createProduct($product);
+            $this->addSuccessToast('Product created!', "The product has been successfully created.");
+            return $this->redirectToRoute('admin_product', [], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/product/create.html.twig", [
+            'product' => $product,
+            'form' => $form
+        ]);
     }
 
     #[Route('/product/{id}/edit', name: 'admin_product_edit', defaults: ['title' => 'Edit product'])]
     public function editAction(Request $request, Product $product): Response
     {
-
         $form = $this->createForm(ProductType::class, $product, [
             'action' => $this->generateUrl('admin_product_edit', ['id' => $product->getId()])
         ]);
@@ -84,44 +106,21 @@ class ProductController extends AbstractController
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-
-            if ($action === 'create') {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/product/');
-                    $product->setImage($mediaFile);
+            // Handle images field if it exists
+            if ($form->has('images')) {
+                /** @var UploadedFile[] $images */
+                $images = $form->get('images')->getData();
+                if ($images && count($images) > 0) {
+                    foreach ($images as $uploadedImage) {
+                        $mediaFile = $this->mediaFileService->createMediaByFile($uploadedImage, 'images/product/');
+                        $product->addImage($mediaFile);
+                    }
                 }
-                /** @var UploadedFile|null $uploadedFile */
-                $svg = $form->get('svg')->getData();
-
-                if ($svg) {
-                    $svgFile = $this->mediaFileService->createMediaByFile($svg, 'icons/product/');
-                    $product->setSvg($svgFile);
-                }
-                $this->productService->createProduct($product);
-            } else {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->updateMediaFileFromFile($product->getImage(), $image, 'images/product/');
-                    $product->setImage($mediaFile);
-                }
-                /** @var UploadedFile|null $uploadedFile */
-                $svg = $form->get('svg')->getData();
-
-                if ($svg) {
-                    $svgFile = $this->mediaFileService->updateMediaFileFromFile($product->getSvg(), $svg, 'icons/product/');
-                    $product->setSvg($svgFile);
-                }
-                $this->productService->updateProduct($product);
             }
+            
+            $this->productService->updateProduct($product);
 
-
-            $this->addSuccessToast(
-                $action === 'create' ? 'Product created!' : 'Product updated!',
-                "The product has been successfully {$action}d."
-            );
+            $this->addSuccessToast('Product updated!', "The product has been successfully updated.");
 
             if ($request->headers->has('turbo-frame')) {
                 $stream = $this->renderBlockView("admin/product/{$action}.html.twig", 'stream_success', [

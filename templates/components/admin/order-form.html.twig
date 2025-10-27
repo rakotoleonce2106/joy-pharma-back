@@ -10,10 +10,11 @@
     {{ form_row(form.phone) }}
     {{ form_row(form.status) }}
     {{ form_row(form.priority) }}
+    {{ form_row(form.deliver) }}
     {{ form_row(form.location) }}
 
     <div class="items">
-        <h3>{{ 'order.form.items'|trans }}</h3>
+        <h3 class="text-lg font-semibold mb-3">{{ 'order.form.items'|trans }}</h3>
         <div data-form-collection-target="container">
             {% for item in form.items %}
                 <div class="item flex space-x-4 mb-2" data-form-collection-target="item">
@@ -26,12 +27,13 @@
                 </div>
             {% endfor %}
         </div>
-        <button type="button" data-action="form-collection#addItem" data-prototype="{{ form_widget(form.items.vars.prototype)|e('html_attr') }}">
-            {{ 'Add Item'|trans }}
+        <button type="button" data-action="form-collection#addItem" data-prototype="{{ form_widget(form.items.vars.prototype)|e('html_attr') }}" class="mt-2 text-blue-600 hover:text-blue-800">
+            + {{ 'Add Item'|trans }}
         </button>
     </div>
 
     {{ form_row(form.notes) }}
+    {{ form_row(form.deliveryNotes) }}
     <div class="items-center justify-center gap-2 mt-6 hidden turbo-frame:flex">
         <twig:ui:button:root href="{{ path('admin_order') }}" variant="outline">
             {{ 'Discard'|trans }}

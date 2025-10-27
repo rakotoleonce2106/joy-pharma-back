@@ -30,8 +30,7 @@ class ProductDataTableType extends AbstractDataTableType
             'href' => $this->urlGenerator->generate('admin_product_new'),
             'attr' => [
                 'variant' => 'default',
-                'data-turbo-frame' => 'dialog',
-                'target' => 'dialog',
+                'data-turbo-frame' => '_top',
             ],
             'icon_attr' => [
                 'name' => 'radix-icons:plus',
@@ -139,8 +138,7 @@ class ProductDataTableType extends AbstractDataTableType
                 'attr' => [
                     'size' => 'sm',
                     'variant' => 'outline',
-                    'data-turbo-frame' => 'dialog',
-                    'target' => 'dialog',
+                    'data-turbo-frame' => '_top',
                     'class' => 'whitespace-nowrap'
                 ]
             ])

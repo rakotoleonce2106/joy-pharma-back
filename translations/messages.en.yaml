@@ -140,6 +140,11 @@ unit:
         id: 'ID'
         label: 'Label'
 
+currency:
+    form:
+        label: 'Label'
+        label_placeholder: 'Enter currency label'
+
 
 store:
     form:

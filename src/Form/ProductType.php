@@ -80,17 +80,17 @@ class ProductType extends AbstractType
                 'required' => false,
                 'choice_label' => 'name',
                 'label' => 'product.form.manufacturer',
-                'placeholder' => 'manufacturer.form.manufacturer_placeholder',
+                'placeholder' => 'product.form.manufacturer_placeholder',
                 'query_builder' => function ($repository) {
                     return $repository->createQueryBuilder('c')
                         ->orderBy('c.name', 'ASC');
                 },
             ])
             ->add('unitPrice', TextType::class, [
-                'label' => 'product.form.unitPrice',
+                'label' => 'product.form.unit_price',
                 'required' => false,
                 'attr' => [
-                    'placeholder' => 'product.form.unitPrice_placeholder',
+                    'placeholder' => 'product.form.unit_price_placeholder',
                 ],
             ])
             ->add('totalPrice', TextType::class, [
@@ -100,9 +100,15 @@ class ProductType extends AbstractType
                     'placeholder' => 'product.form.code_placeholder',
                 ],
             ])
-            ->add('currency', CurrencyType::class, [
-                'label' => false,
-                'required' => false,
+            ->add('currency', EntityType::class, [
+                'class' => Currency::class,
+                'choice_label' => 'label',
+                'label' => 'product.form.currency',
+                'placeholder' => 'product.form.currency_placeholder',
+                'query_builder' => function ($repository) {
+                    return $repository->createQueryBuilder('c')
+                        ->orderBy('c.label', 'ASC');
+                },
             ])
             ->add('quantity', IntegerType::class, [
                 'label' => 'product.form.quantity',
