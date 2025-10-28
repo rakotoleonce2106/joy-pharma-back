@@ -1,25 +1,31 @@
 name: joy-pharma
 recipe: symfony
 config:
-  webroot: public  # Changed from '.' to 'public'
+  webroot: public
   php: 8.3
-  via: nginx
+  via: nginx  # Keep nginx for simplicity, but could be customized to FrankenPHP
   xdebug: false
-  database: postgres:14
+  database: postgres:16  # Updated to match compose.yaml (was 14, should be 16)
 services:
   appserver:
     overrides:
       environment:
+        # Xdebug
         XDEBUG_MODE: debug,develop
         PHP_IDE_CONFIG: serverName=appserver
         XDEBUG_CONFIG: discover_client_host=0 client_host=host.docker.internal
         XDEBUG_SESSION_START: lando
+        # App
+        APP_ENV: dev
+        DATABASE_URL: postgresql://postgres:postgres@database:5432/postgres?serverVersion=16&charset=utf8
     build_as_root:
       - apt update
       - >-
         curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh'
         | bash
-      - apt install symfony-cli
+      - apt install -y symfony-cli
+      # Install PHP extensions for FrankenPHP compatibility
+      - docker-php-ext-enable pdo_pgsql opcache intl zip
     build:
       - composer install --optimize-autoloader --no-scripts
   pgadmin:
@@ -49,7 +55,7 @@ proxy:
   mailhog:
     - mail.joy-pharma.loc
   pgadmin:
-    - pgladmin.joy-pharma.loc
+    - pgadmin.joy-pharma.loc  # Fixed typo: was pgladmin
 tooling:
   # Add custom console command
   console:
