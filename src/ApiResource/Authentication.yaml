@@ -1,0 +1,191 @@
+# Authentication and Registration APIs
+
+# Customer Registration
+App\Dto\RegisterCustomerInput:
+    operations:
+        register_customer:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/register'
+            processor: App\State\Auth\RegisterCustomerProcessor
+            read: false
+            openapi:
+                summary: 'Register as customer'
+                description: 'Register a new customer account and receive JWT token'
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                    password:
+                                        type: string
+                                        minLength: 8
+                                    firstName:
+                                        type: string
+                                    lastName:
+                                        type: string
+                                    phone:
+                                        type: string
+                                required:
+                                    - email
+                                    - password
+                                    - firstName
+                                    - lastName
+                                    - phone
+                responses:
+                    '201':
+                        description: 'Customer registered successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        token:
+                                            type: string
+                                        user:
+                                            type: object
+                    '409':
+                        description: 'Email already exists'
+
+# Delivery Person Registration
+App\Dto\RegisterDeliveryInput:
+    operations:
+        register_delivery:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/register/delivery'
+            processor: App\State\Auth\RegisterDeliveryProcessor
+            read: false
+            openapi:
+                summary: 'Register as delivery person'
+                description: 'Register a new delivery person account and receive JWT token'
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                    password:
+                                        type: string
+                                        minLength: 8
+                                    firstName:
+                                        type: string
+                                    lastName:
+                                        type: string
+                                    phone:
+                                        type: string
+                                    vehicleType:
+                                        type: string
+                                        enum: [bike, motorcycle, car, van]
+                                    vehiclePlate:
+                                        type: string
+                                required:
+                                    - email
+                                    - password
+                                    - firstName
+                                    - lastName
+                                    - phone
+                                    - vehicleType
+                responses:
+                    '201':
+                        description: 'Delivery person registered successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        token:
+                                            type: string
+                                        user:
+                                            type: object
+                                            properties:
+                                                userType:
+                                                    type: string
+                                                    example: delivery
+                                                delivery:
+                                                    type: object
+                    '409':
+                        description: 'Email already exists'
+
+# Store Owner Registration
+App\Dto\RegisterStoreInput:
+    operations:
+        register_store:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/register/store'
+            processor: App\State\Auth\RegisterStoreProcessor
+            read: false
+            openapi:
+                summary: 'Register as store owner'
+                description: 'Register a new store owner account and receive JWT token'
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                    password:
+                                        type: string
+                                        minLength: 8
+                                    firstName:
+                                        type: string
+                                    lastName:
+                                        type: string
+                                    phone:
+                                        type: string
+                                    storeName:
+                                        type: string
+                                    storeAddress:
+                                        type: string
+                                    storePhone:
+                                        type: string
+                                    storeEmail:
+                                        type: string
+                                        format: email
+                                    storeDescription:
+                                        type: string
+                                    storeCity:
+                                        type: string
+                                    storeLatitude:
+                                        type: number
+                                        format: float
+                                    storeLongitude:
+                                        type: number
+                                        format: float
+                                required:
+                                    - email
+                                    - password
+                                    - firstName
+                                    - lastName
+                                    - phone
+                                    - storeName
+                                    - storeAddress
+                responses:
+                    '201':
+                        description: 'Store owner registered successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        token:
+                                            type: string
+                                        user:
+                                            type: object
+                                            properties:
+                                                userType:
+                                                    type: string
+                                                    example: store
+                                                store:
+                                                    type: object
+                    '409':
+                        description: 'Email already exists'
+

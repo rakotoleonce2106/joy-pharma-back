@@ -6,17 +6,6 @@ App\Entity\User:
                 security:
                     -   JWT: [ 'ROLE_ADMIN' ]
 
-        post:
-            class: ApiPlatform\Metadata\Post
-            processor: App\State\UserPasswordHasher
-            uriTemplate: "/register"
-            validationContext:
-                groups: ['Default', 'user:create']
-            normalizationContext:
-                groups: [ 'id:read',"user:read" ]
-            input_formats:
-                multipart: [ 'multipart/form-data' ]
-
         patch:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/user/update"
@@ -28,38 +17,9 @@ App\Entity\User:
             input_formats:
                 multipart: [ 'multipart/form-data' ]
             processor: App\State\UserUpdateProcessor
-            
-        update_password:
-            method: "POST"
-            class: ApiPlatform\Metadata\Post
-            controller: 'App\Controller\Api\UpdatePasswordController'
-            input: 'App\Dto\UpdatePasswordInput'
-            uriTemplate: "/user/update-password"
-            normalizationContext:
-                groups: ['update_password:write']
-            security: "is_granted('ROLE_USER')"
             openapi:
-                summary: "Update user password"
-                description: "Update the password for the currently authenticated user"
-                security:
-                    - JWT: []
-                requestBody:
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    currentPassword:
-                                        type: string
-                                    newPassword:
-                                        type: string
-                                        minLength: 8
-                                    confirmPassword:
-                                        type: string
-                                required:
-                                    - currentPassword
-                                    - newPassword
-                                    - confirmPassword
+                summary: "Update user profile"
+                description: "Update user profile information with optional avatar upload"
 
         facebook_login:
             method: "POST"
@@ -70,7 +30,7 @@ App\Entity\User:
             uriTemplate: "/facebook_login"
             openapi:
                 summary: "Facebook login"
-                description: "Facebook login."
+                description: "Login with Facebook and receive JWT token"
 
         google_login:
             method: "POST"
@@ -81,7 +41,7 @@ App\Entity\User:
             uriTemplate: "/google_login"
             openapi:
                 summary: "Google login"
-                description: "Google login."
+                description: "Login with Google and receive JWT token"
             
 
         delete:
