@@ -19,7 +19,7 @@ App\Entity\Category:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/category'
-            provider: App\State\CategoryProvider
+            provider: App\State\Product\CategoryProvider
             normalizationContext:
                 groups: ['id:read','category:read','image:read']
             openapi:

@@ -39,7 +39,7 @@ App\Entity\Product:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/products/suggestion'
-            provider: 'App\State\SuggestionProductsProvider'
+            provider: 'App\State\Product\SuggestionProductsProvider'
             normalizationContext:
                 groups:  ['id:read','category:read','product:read','image:read']
             openapi:

@@ -64,18 +64,8 @@ App\Entity\Invoice:
                 summary: 'Download invoice PDF'
                 description: 'Download invoice as PDF'
 
-# Profile Update
-App\Dto\ProfileUpdate:
-    operations:
-        update_profile:
-            class: ApiPlatform\Metadata\Put
-            uriTemplate: '/profile'
-            security: 'is_granted("ROLE_USER")'
-            processor: App\State\Profile\UpdateProfileProcessor
-            read: false
-            openapi:
-                summary: 'Update delivery person profile'
-                description: 'Update profile information'
+# Profile Update - Using unified UserUpdateProcessor
+# Note: Use /user/update endpoint instead for profile updates
 
 # Location Update
 App\Entity\DeliveryLocation:

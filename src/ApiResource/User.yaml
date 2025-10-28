@@ -16,7 +16,7 @@ App\Entity\User:
             security: "is_granted('ROLE_USER')"
             input_formats:
                 multipart: [ 'multipart/form-data' ]
-            processor: App\State\UserUpdateProcessor
+            processor: App\State\User\UserUpdateProcessor
             openapi:
                 summary: "Update user profile"
                 description: "Update user profile information with optional avatar upload"
@@ -56,7 +56,7 @@ App\Entity\User:
             securityMessage: 'Only authenticated users can get current user.'
             method: GET
             uriTemplate: "/me"
-            provider: App\State\CurrentUserProvider
+            provider: App\State\User\CurrentUserProvider
             normalizationContext:
                 groups: ['id:read', "user:read" ,"image:read"]
             uriVariables: []

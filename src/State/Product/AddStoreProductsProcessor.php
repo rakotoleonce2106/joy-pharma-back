@@ -1,11 +1,10 @@
 <?php
-// api/src/State/OrderCreateProcessor.php
-namespace App\State;
+// api/src/State/Product/AddStoreProductsProcessor.php
+namespace App\State\Product;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\StoreProductsInput;
-use App\Entity\Order;
 use App\Entity\StoreProduct;
 use App\Entity\User;
 use App\Repository\ProductRepository;
@@ -15,7 +14,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class AddStoreProductsProssessor implements ProcessorInterface
+class AddStoreProductsProcessor implements ProcessorInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -25,9 +24,9 @@ class AddStoreProductsProssessor implements ProcessorInterface
         private ProductRepository $productRepository
     ) {}
 
-    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Order
+    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): array
     {
-        $storeProducts=[];
+        $storeProducts = [];
         $request = $this->requestStack->getCurrentRequest();
         if (!$request) {
             throw new BadRequestHttpException('No request found');
@@ -35,12 +34,23 @@ class AddStoreProductsProssessor implements ProcessorInterface
 
         // Get the current authenticated user
         $token = $this->tokenStorage->getToken();
-        $user = !$token->getUser();
-        if (!$token || !$user instanceof User || $user->getRoles()[] = 'ROLE_STORE') {
+        if (!$token || !$token->getUser() instanceof User) {
             throw new BadRequestHttpException('User not authenticated');
         }
 
-        // Check data is OrderInput
+        /** @var User $user */
+        $user = $token->getUser();
+        
+        // Check user is a store owner
+        if (!in_array('ROLE_STORE', $user->getRoles())) {
+            throw new BadRequestHttpException('User must be a store owner');
+        }
+        
+        if (!$user->getStore()) {
+            throw new BadRequestHttpException('User does not have a store');
+        }
+
+        // Check data is StoreProductsInput
         if (!$data instanceof StoreProductsInput) {
             throw new BadRequestHttpException('Invalid input data type');
         }
@@ -48,12 +58,19 @@ class AddStoreProductsProssessor implements ProcessorInterface
         foreach ($data->items as $item) {
             $storeProduct = new StoreProduct();
             $storeProduct->setStore($user->getStore());
-            $product = $this->productRepository->findOneBy(['id' => 'item']);
+            $product = $this->productRepository->findOneBy(['id' => $item]);
+            
+            if (!$product) {
+                throw new BadRequestHttpException('Product not found: ' . $item);
+            }
+            
             $storeProduct->setProduct($product);
             $this->entityManager->persist($storeProduct);
-            $storeProducts->add($storeProduct);
+            $storeProducts[] = $storeProduct;
         }
+        
         $this->entityManager->flush();
+        
         return $storeProducts;
     }
 }

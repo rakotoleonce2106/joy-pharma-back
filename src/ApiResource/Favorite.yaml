@@ -30,7 +30,7 @@ App\Entity\Favorite:
         uriTemplate: '/favorites'
         normalizationContext:
           groups: ['favorite:read', 'id:read','product:read','image:read']
-        processor: App\State\FavoriteProcessor
+        processor: App\State\Favorite\FavoriteProcessor
         input: 'App\Dto\OwnerInput'
         openapi:
             summary: 'Create a favorite'

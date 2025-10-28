@@ -1,7 +1,7 @@
 <?php
-// api/src/State/UserUpdateProcessor.php
+// api/src/State/User/UserUpdateProcessor.php
 
-namespace App\State;
+namespace App\State\User;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;

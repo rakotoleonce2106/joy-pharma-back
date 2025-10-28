@@ -14,7 +14,7 @@ App\Entity\StoreProduct:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/order"
             input: App\Dto\StoreProductsInput
-            processor: App\State\OrderCreateProcessor
+            processor: App\State\Order\OrderCreateProcessor
             format: 'json'
             normalizationContext:
                 groups: ['id:read','order:read',location:read,"user:read","product:read",'image:read']

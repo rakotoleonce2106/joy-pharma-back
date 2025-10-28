@@ -1,6 +1,6 @@
 <?php
-// api/src/State/OrderCreateProcessor.php
-namespace App\State;
+// api/src/State/Order/OrderCreateProcessor.php
+namespace App\State\Order;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;

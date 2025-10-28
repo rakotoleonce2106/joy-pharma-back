@@ -30,7 +30,7 @@ App\Entity\Cart:
         uriTemplate: '/carts'
         normalizationContext:
           groups: ['cart:write', 'id:read','product:read','image:read']
-        processor: App\State\CartProcessor
+        processor: App\State\Cart\CartProcessor
         input: 'App\Dto\OwnerInput'
         openapi:
             summary: 'Create a cart'

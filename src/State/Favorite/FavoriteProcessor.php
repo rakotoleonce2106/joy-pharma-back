@@ -1,17 +1,17 @@
 <?php
 
-namespace App\State;
+namespace App\State\Favorite;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\OwnerInput;
-use App\Entity\Cart;
+use App\Entity\Favorite;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
-readonly class CartProcessor implements ProcessorInterface
+readonly class FavoriteProcessor implements ProcessorInterface
 {
     public function __construct(
         private Security          $security,
@@ -19,7 +19,7 @@ readonly class CartProcessor implements ProcessorInterface
         private ProductRepository $productRepository
     ) {}
 
-    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Cart
+    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Favorite
     {
         if (!$data instanceof OwnerInput) {
             throw new \LogicException('Invalid input data');
@@ -32,22 +32,21 @@ readonly class CartProcessor implements ProcessorInterface
 
         $user = $this->security->getUser();
         // check if product is alreay in favorite
-        $cart = $this->entityManager->getRepository(Cart::class)->findOneBy(['user' => $user, 'product' => $data->productId]);
-        if ($cart) {
-            throw new \InvalidArgumentException('Product already in cart.');
+        $favorite = $this->entityManager->getRepository(Favorite::class)->findOneBy(['user' => $user, 'product' => $data->productId]);
+        if ($favorite) {
+            throw new \InvalidArgumentException('Product already in favorite.');
         }
 
         $product = $this->productRepository->find($data->productId);
         if (!$product) {
             throw new \InvalidArgumentException('Product not found.');
         }
-        $cart = new Cart();
-        $cart->setUser($user);
-        $cart->setQuantity($data->quantity);
-        $cart->setCreatedAtValue(new \DateTimeImmutable());
-        $cart->setProduct($product);
-        $this->entityManager->persist($cart);
+        $favorite = new Favorite();
+        $favorite->setUser($user);
+        $favorite->setCreatedAt(new \DateTimeImmutable());
+        $favorite->setProduct($product);
+        $this->entityManager->persist($favorite);
         $this->entityManager->flush();
-        return $cart;
+        return $favorite;
     }
 }
