@@ -1,0 +1,93 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}{{ 'Store Orders'|trans }}{% endblock %}
+
+{% block content %}
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <div class="flex items-center gap-4">
+            <twig:ui:button:root href="{{ path('store_dashboard') }}" variant="outline" size="icon" class="h-8 w-8">
+                <twig:ux:icon name="radix-icons:chevron-left" class="h-4 w-4"/>
+                <span class="sr-only">{{ 'Back'|trans }}</span>
+            </twig:ui:button:root>
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">{{ 'Store Orders'|trans }}</h1>
+                <p class="text-muted-foreground">{{ store.name }}</p>
+            </div>
+        </div>
+
+        <twig:ui:card:root>
+            <twig:ui:card:header>
+                <twig:ui:card:title>{{ 'All Order Items'|trans }}</twig:ui:card:title>
+                <twig:ui:card:description>{{ 'Manage all orders for your store'|trans }}</twig:ui:card:description>
+            </twig:ui:card:header>
+            <twig:ui:card:content>
+                {% if orderItems|length > 0 %}
+                    <div class="space-y-4">
+                        {% for item in orderItems %}
+                            <div class="p-4 border rounded-lg hover:bg-muted/50">
+                                <div class="flex items-start justify-between mb-2">
+                                    <div class="flex-1">
+                                        <div class="font-medium">{{ item.product ? item.product.name : 'N/A' }}</div>
+                                        <div class="text-sm text-muted-foreground mt-1">
+                                            {{ 'Order'|trans }}: #{{ item.orderParent.reference }}
+                                        </div>
+                                        {% if item.orderParent.owner %}
+                                            <div class="text-sm text-muted-foreground">
+                                                {{ 'Customer'|trans }}: {{ item.orderParent.owner.fullName }}
+                                            </div>
+                                        {% endif %}
+                                        <div class="text-sm text-muted-foreground">
+                                            {{ 'Quantity'|trans }}: {{ item.quantity }}
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-medium">{{ item.totalPrice|number_format(2, '.', ',') }} Ar</div>
+                                        {% if item.storePrice %}
+                                            <div class="text-xs text-green-600">{{ 'Your price'|trans }}: {{ item.storePrice|number_format(2, '.', ',') }} Ar</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center gap-2 mt-2">
+                                    {% set statusClass = item.storeStatus.value == 'accepted' ? 'bg-green-100 text-green-800' : (item.storeStatus.value == 'refused' ? 'bg-red-100 text-red-800' : (item.storeStatus.value == 'suggested' ? 'bg-yellow-100 text-yellow-800' : (item.storeStatus.value == 'approved' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'))) %}
+                                    <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium {{ statusClass }}">
+                                        {{ item.storeStatus.value|capitalize }}
+                                    </span>
+                                    {% if item.storeActionAt %}
+                                        <span class="text-xs text-muted-foreground">{{ item.storeActionAt|date('Y-m-d H:i') }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if item.storeNotes %}
+                                    <div class="mt-2 text-xs p-2 bg-background rounded border">
+                                        <span class="font-medium">{{ 'Notes'|trans }}:</span> {{ item.storeNotes }}
+                                    </div>
+                                {% endif %}
+                                {% if item.suggestedProduct %}
+                                    <div class="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
+                                        <div class="text-xs font-medium mb-1">{{ 'Suggested Product'|trans }}:</div>
+                                        <div class="text-sm font-medium">{{ item.suggestedProduct.name }}</div>
+                                        {% if item.storeSuggestion %}
+                                            <div class="text-xs text-muted-foreground">{{ item.storeSuggestion }}</div>
+                                        {% endif %}
+                                    </div>
+                                {% elseif item.storeSuggestion %}
+                                    <div class="mt-2 text-xs p-2 bg-yellow-50 rounded border border-yellow-200">
+                                        <span class="font-medium">{{ 'Suggestion'|trans }}:</span> {{ item.storeSuggestion }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <twig:ux:icon name="lucide:inbox" class="h-12 w-12 mx-auto text-muted-foreground mb-3"/>
+                        <h3 class="font-semibold text-lg mb-1">{{ 'No Orders Yet'|trans }}</h3>
+                        <p class="text-sm text-muted-foreground">{{ 'You have no orders yet'|trans }}</p>
+                    </div>
+                {% endif %}
+            </twig:ui:card:content>
+        </twig:ui:card:root>
+    </main>
+{% endblock %}
+

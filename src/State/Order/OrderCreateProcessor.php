@@ -8,6 +8,7 @@ use App\Dto\OrderInput;
 use App\Entity\Location;
 use App\Entity\Order;
 use App\Entity\OrderItem;
+use App\Entity\OrderItemStatus;
 use App\Entity\Payment;
 use App\Entity\User;
 use App\Repository\ProductRepository;
@@ -60,13 +61,15 @@ class OrderCreateProcessor implements ProcessorInterface
 
         $totalAmount = 0;
 
-        // Create and persist location
-        $location = new Location();
-        $location->setLatitude($data->latitude);
-        $location->setLongitude($data->longitude); 
-        $location->setAddress($data->address);
-        $this->entityManager->persist($location);
-        $order->setLocation($location);
+        // Create and persist location only if address data is provided
+        if ($data->latitude && $data->longitude && $data->address) {
+            $location = new Location();
+            $location->setLatitude($data->latitude);
+            $location->setLongitude($data->longitude); 
+            $location->setAddress($data->address);
+            $this->entityManager->persist($location);
+            $order->setLocation($location);
+        }
 
         // Process order items
         foreach ($data->items as $item) {
@@ -81,6 +84,17 @@ class OrderCreateProcessor implements ProcessorInterface
             $orderItem->setQuantity($item->quantity);
             $orderItem->setTotalPrice($totalPrice);
             $orderItem->setOrderParent($order);
+            
+            // Find and assign store that has this product
+            // Get the first store that has this product in stock
+            $storeProducts = $product->getStoreProducts();
+            if ($storeProducts && !$storeProducts->isEmpty()) {
+                $storeProduct = $storeProducts->first();
+                if ($storeProduct && $storeProduct->getStore()) {
+                    $orderItem->setStore($storeProduct->getStore());
+                }
+            }
+            // Note: Store status will default to PENDING (set in OrderItem constructor)
             
             $this->entityManager->persist($orderItem);
             $order->addItem($orderItem);

@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 enum OrderStatus :string
 {
@@ -39,6 +40,8 @@ class Order
     use EntityTimestampTrait;
 
     #[ORM\ManyToOne(inversedBy: 'orders')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'Customer is required')]
     #[Groups(['order:create','order:read'])]
     private ?User $owner = null;
 
@@ -75,11 +78,16 @@ class Order
     #[Groups(['order:read'])]
     private ?float $totalAmount = 0.0;
 
+    #[ORM\Column(nullable: true)]
+    #[Groups(['order:read'])]
+    private ?float $storeTotalAmount = null;
+
     #[ORM\Column(length: 255)]
     #[Groups(['order:read'])]
     private ?string $reference = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'Phone number is required')]
     #[Groups(['order:read'])]
     private ?string $phone = null;
 
@@ -211,6 +219,18 @@ class Order
         return $this;
     }
 
+    public function getStoreTotalAmount(): ?float
+    {
+        return $this->storeTotalAmount;
+    }
+
+    public function setStoreTotalAmount(?float $storeTotalAmount): static
+    {
+        $this->storeTotalAmount = $storeTotalAmount;
+
+        return $this;
+    }
+
     public function getReference(): ?string
     {
         return $this->reference;
@@ -328,15 +348,38 @@ class Order
     public function calculateTotalAmount(): self
     {
         $total = 0.0;
+        $storeTotal = 0.0;
         
         foreach ($this->items as $item) {
             $itemTotal = $item->getTotalPrice();
             if ($itemTotal !== null) {
                 $total += $itemTotal;
             }
+            
+            // Calculate store total based on store prices (if accepted)
+            // Store total = quantity * store product price
+            if ($item->getStoreStatus() === OrderItemStatus::ACCEPTED) {
+                $store = $item->getStore();
+                $product = $item->getProduct();
+                
+                if ($store && $product) {
+                    // Try to get price from StoreProduct relation
+                    $storeProducts = $product->getStoreProducts();
+                    if ($storeProducts) {
+                        $storeProduct = $storeProducts->filter(
+                            fn($sp) => $sp->getStore() === $store
+                        )->first();
+                        
+                        if ($storeProduct && $storeProduct->getPrice()) {
+                            $storeTotal += $storeProduct->getPrice() * $item->getQuantity();
+                        }
+                    }
+                }
+            }
         }
         
         $this->totalAmount = $total;
+        $this->storeTotalAmount = $storeTotal > 0 ? $storeTotal : null;
         
         return $this;
     }

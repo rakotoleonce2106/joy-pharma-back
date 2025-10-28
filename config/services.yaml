@@ -36,10 +36,9 @@ services:
         decorates: 'lexik_jwt_authentication.api_platform.openapi.factory'
         arguments: [ '@App\OpenApi\OpenApiDecorator.inner']
 
-        
-    App\State\UserPasswordHasher:
-        bind:
-            $processor: '@api_platform.doctrine.orm.state.persist_processor'
+    # App\State\UserPasswordHasher:
+    #     bind:
+    #         $processor: '@api_platform.doctrine.orm.state.persist_processor'
             
     App\Serializer\UploadedFileDenormalizer:
         tags: ['serializer.normalizer']

@@ -16,6 +16,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class OrderController extends AbstractController
 {
@@ -25,7 +26,8 @@ class OrderController extends AbstractController
     public  function __construct(
         private  readonly OrderRepository $orderRepository,
         private readonly OrderService $orderService,
-        private readonly MediaFileService $mediaFileService
+        private readonly MediaFileService $mediaFileService,
+        private readonly ValidatorInterface $validator
     ) {}
     #[Route('/order', name: 'admin_order')]
     public function index(Request $request): Response
@@ -48,6 +50,43 @@ class OrderController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // Validate required fields before saving
+            $errors = $this->validator->validate($order);
+            if (count($errors) > 0) {
+                foreach ($errors as $error) {
+                    $this->addFlash('error', $error->getMessage());
+                }
+                return $this->render("admin/order/create.html.twig", [
+                    'order' => $order,
+                    'form' => $form
+                ]);
+            }
+
+            // Additional validation
+            if (!$order->getOwner()) {
+                $this->addFlash('error', 'Customer is required. Please select a customer before saving.');
+                return $this->render("admin/order/create.html.twig", [
+                    'order' => $order,
+                    'form' => $form
+                ]);
+            }
+
+            if (!$order->getPhone()) {
+                $this->addFlash('error', 'Phone number is required.');
+                return $this->render("admin/order/create.html.twig", [
+                    'order' => $order,
+                    'form' => $form
+                ]);
+            }
+
+            if ($order->getItems()->isEmpty()) {
+                $this->addFlash('error', 'Order must have at least one item.');
+                return $this->render("admin/order/create.html.twig", [
+                    'order' => $order,
+                    'form' => $form
+                ]);
+            }
+
             $this->orderService->createorder($order);
             $this->addSuccessToast('Order created!', "The order has been successfully created.");
             return $this->redirectToRoute('admin_order', [], Response::HTTP_SEE_OTHER);
@@ -103,14 +142,48 @@ class OrderController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
-            if ($action === 'create') {
-
-                $this->orderService->createorder($order);
-            } else {
-
-                $this->orderService->updateorder($order);
+            // Validate required fields before saving
+            $errors = $this->validator->validate($order);
+            if (count($errors) > 0) {
+                foreach ($errors as $error) {
+                    $this->addFlash('error', $error->getMessage());
+                }
+                return $this->render("admin/order/{$action}.html.twig", [
+                    'order' => $order,
+                    'form' => $form
+                ]);
             }
 
+            // Additional validation
+            if (!$order->getOwner()) {
+                $this->addFlash('error', 'Customer is required. Please select a customer before saving.');
+                return $this->render("admin/order/{$action}.html.twig", [
+                    'order' => $order,
+                    'form' => $form
+                ]);
+            }
+
+            if (!$order->getPhone()) {
+                $this->addFlash('error', 'Phone number is required.');
+                return $this->render("admin/order/{$action}.html.twig", [
+                    'order' => $order,
+                    'form' => $form
+                ]);
+            }
+
+            if ($order->getItems()->isEmpty()) {
+                $this->addFlash('error', 'Order must have at least one item.');
+                return $this->render("admin/order/{$action}.html.twig", [
+                    'order' => $order,
+                    'form' => $form
+                ]);
+            }
+
+            if ($action === 'create') {
+                $this->orderService->createorder($order);
+            } else {
+                $this->orderService->updateorder($order);
+            }
 
             $this->addSuccessToast(
                 $action === 'create' ? 'Order created!' : 'Order updated!',

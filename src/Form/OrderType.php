@@ -34,13 +34,13 @@ class OrderType extends AbstractType
             ->add('owner', EntityType::class, [
                 'class' => User::class,
                 'label' => 'order.form.customer',
-                'required' => false,
-                'placeholder' => 'Select a customer (optional)',
+                'required' => true,
+                'placeholder' => 'Select a customer',
                 'choices' => $this->getCustomers(),
                 'choice_label' => function(User $user) {
                     return $user->getFullName() . ' - ' . $user->getEmail();
                 },
-                'help' => 'Customer who placed this order',
+                'help' => 'Customer who placed this order (required)',
             ])
             ->add('totalAmount', TextType::class, [
                 'label' => 'order.form.total_amount',
@@ -89,7 +89,10 @@ class OrderType extends AbstractType
             ])
             ->add('phone', TextType::class, [
                 'label' => 'order.form.phone',
-                'required' => false,
+                'required' => true,
+                'attr' => [
+                    'placeholder' => '+261340000000'
+                ],
             ])
             ->add('deliver', EntityType::class, [
                 'class' => User::class,

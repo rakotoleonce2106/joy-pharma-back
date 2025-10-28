@@ -10,15 +10,12 @@ use Symfony\Component\Validator\Constraints as Assert;
 class OrderInput
 {
     //lat
-    #[Assert\NotBlank]
-    public ?string $latitude;
+    public ?string $latitude = null;
 
     //lng
-    #[Assert\NotBlank]
-    public ?string $longitude;
+    public ?string $longitude = null;
 
-    #[Assert\NotBlank]
-    public ?string $address;
+    public ?string $address = null;
 
     //date
     #[Assert\NotBlank]

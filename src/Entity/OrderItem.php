@@ -4,8 +4,19 @@ namespace App\Entity;
 
 use App\Entity\Traits\EntityIdTrait;
 use App\Repository\OrderItemRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+
+enum OrderItemStatus: string
+{
+    case PENDING = 'pending';           // Waiting for store action
+    case ACCEPTED = 'accepted';         // Store accepted the item
+    case REFUSED = 'refused';           // Store refused the item
+    case SUGGESTED = 'suggested';       // Store suggested alternative (needs admin approval)
+    case APPROVED = 'approved';         // Admin approved the suggestion
+    case REJECTED = 'rejected';         // Admin rejected the suggestion
+}
 
 #[ORM\Entity(repositoryClass: OrderItemRepository::class)]
 #[ORM\HasLifecycleCallbacks]
@@ -31,7 +42,37 @@ class OrderItem
     private ?Order $orderParent = null;
 
     #[ORM\ManyToOne]
+    #[Groups(['order:read'])]
     private ?Store $store = null;
+
+    #[ORM\Column(type: 'string', length: 20, enumType: OrderItemStatus::class)]
+    #[Groups(['order:read'])]
+    private OrderItemStatus $storeStatus;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $storeNotes = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?string $storeSuggestion = null;
+
+    #[ORM\ManyToOne]
+    #[Groups(['order:read'])]
+    private ?Product $suggestedProduct = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['order:read'])]
+    private ?float $storePrice = null;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    #[Groups(['order:read'])]
+    private ?\DateTimeInterface $storeActionAt = null;
+
+    public function __construct()
+    {
+        $this->storeStatus = OrderItemStatus::PENDING;
+    }
 
     public function getId(): ?int
     {
@@ -157,6 +198,73 @@ class OrderItem
             $this->quantity ?? 0,
             number_format($this->totalPrice ?? 0, 2)
         );
+    }
+
+    public function getStoreStatus(): OrderItemStatus
+    {
+        return $this->storeStatus;
+    }
+
+    public function setStoreStatus(OrderItemStatus $storeStatus): static
+    {
+        $this->storeStatus = $storeStatus;
+        $this->storeActionAt = new \DateTime();
+        return $this;
+    }
+
+    public function getStoreNotes(): ?string
+    {
+        return $this->storeNotes;
+    }
+
+    public function setStoreNotes(?string $storeNotes): static
+    {
+        $this->storeNotes = $storeNotes;
+        return $this;
+    }
+
+    public function getStoreSuggestion(): ?string
+    {
+        return $this->storeSuggestion;
+    }
+
+    public function setStoreSuggestion(?string $storeSuggestion): static
+    {
+        $this->storeSuggestion = $storeSuggestion;
+        return $this;
+    }
+
+    public function getStorePrice(): ?float
+    {
+        return $this->storePrice;
+    }
+
+    public function setStorePrice(?float $storePrice): static
+    {
+        $this->storePrice = $storePrice;
+        return $this;
+    }
+
+    public function getStoreActionAt(): ?\DateTimeInterface
+    {
+        return $this->storeActionAt;
+    }
+
+    public function setStoreActionAt(?\DateTimeInterface $storeActionAt): static
+    {
+        $this->storeActionAt = $storeActionAt;
+        return $this;
+    }
+
+    public function getSuggestedProduct(): ?Product
+    {
+        return $this->suggestedProduct;
+    }
+
+    public function setSuggestedProduct(?Product $suggestedProduct): static
+    {
+        $this->suggestedProduct = $suggestedProduct;
+        return $this;
     }
 
 }

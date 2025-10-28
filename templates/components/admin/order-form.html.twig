@@ -120,11 +120,14 @@
         <div class="flex items-center gap-2 pb-2 border-b">
             <twig:ux:icon name="lucide:map-pin" class="h-5 w-5 text-primary"/>
             <h3 class="text-lg font-semibold">Delivery Location</h3>
+            <span class="text-xs text-muted-foreground">(Optional - leave empty for pickup orders)</span>
         </div>
         <div class="rounded-lg border bg-card p-6">
-            {{ form_row(form.location, {
-                'label': false
-            }) }}
+            {% if form.location is defined %}
+                <twig:admin:location-with-map :locationForm="form.location" />
+            {% else %}
+                <p class="text-sm text-muted-foreground">Location form not available</p>
+            {% endif %}
         </div>
     </div>
 

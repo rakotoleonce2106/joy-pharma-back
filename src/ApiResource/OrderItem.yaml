@@ -1,0 +1,61 @@
+App\Entity\OrderItem:
+    operations:
+        accept_order_item:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: "/store/order-item/accept"
+            input: App\Dto\AcceptOrderItemInput
+            processor: App\State\OrderItem\AcceptOrderItemProcessor
+            format: 'json'
+            normalizationContext:
+                groups: ['order:read', 'product:read']
+            openapi:
+                summary: 'Store accepts an order item'
+                description: 'Store owner accepts an order item with their store price'
+                security:
+                    - JWT: ['ROLE_STORE']
+
+        refuse_order_item:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: "/store/order-item/refuse"
+            input: App\Dto\RefuseOrderItemInput
+            processor: App\State\OrderItem\RefuseOrderItemProcessor
+            format: 'json'
+            normalizationContext:
+                groups: ['order:read', 'product:read']
+            openapi:
+                summary: 'Store refuses an order item'
+                description: 'Store owner refuses an order item with a reason'
+                security:
+                    - JWT: ['ROLE_STORE']
+
+        suggest_order_item:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: "/store/order-item/suggest"
+            input: App\Dto\SuggestOrderItemInput
+            processor: App\State\OrderItem\SuggestOrderItemProcessor
+            format: 'json'
+            normalizationContext:
+                groups: ['order:read', 'product:read']
+            openapi:
+                summary: 'Store suggests alternative for order item'
+                description: 'Store owner suggests an alternative product/price (requires admin approval)'
+                security:
+                    - JWT: ['ROLE_STORE']
+
+        approve_order_item_suggestion:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: "/admin/order-item/approve-suggestion"
+            input: App\Dto\ApproveOrderItemSuggestionInput
+            processor: App\State\OrderItem\ApproveOrderItemSuggestionProcessor
+            format: 'json'
+            normalizationContext:
+                groups: ['order:read', 'product:read']
+            openapi:
+                summary: 'Admin approves a store suggestion'
+                description: 'Admin approves a store suggestion for an order item'
+                security:
+                    - JWT: ['ROLE_ADMIN']
+
+    normalizationContext:
+        groups: ['order:read']
+

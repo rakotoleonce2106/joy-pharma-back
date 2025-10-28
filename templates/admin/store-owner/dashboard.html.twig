@@ -1,0 +1,170 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}{{ 'Store Dashboard'|trans }}{% endblock %}
+
+{% block content %}
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">{{ 'Store Dashboard'|trans }}</h1>
+                <p class="text-muted-foreground">{{ store.name }}</p>
+            </div>
+            <twig:ui:button:root href="{{ path('store_orders') }}" variant="outline">
+                <twig:ux:icon name="lucide:package" class="h-4 w-4 mr-2"/>
+                {{ 'View All Orders'|trans }}
+            </twig:ui:button:root>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-2">
+            {# Store Availability Card #}
+            <twig:ui:card:root>
+                <twig:ui:card:header>
+                    <twig:ui:card:title>
+                        <div class="flex items-center gap-2">
+                            <twig:ux:icon name="lucide:clock" class="h-5 w-5"/>
+                            {{ 'Store Availability'|trans }}
+                        </div>
+                    </twig:ui:card:title>
+                    <twig:ui:card:description>{{ 'Your store business hours'|trans }}</twig:ui:card:description>
+                </twig:ui:card:header>
+                <twig:ui:card:content>
+                    {% if storeSetting %}
+                        <div class="space-y-3">
+                            {% set days = {
+                                'monday': storeSetting.mondayHours,
+                                'tuesday': storeSetting.tuesdayHours,
+                                'wednesday': storeSetting.wednesdayHours,
+                                'thursday': storeSetting.thursdayHours,
+                                'friday': storeSetting.fridayHours,
+                                'saturday': storeSetting.saturdayHours,
+                                'sunday': storeSetting.sundayHours
+                            } %}
+                            
+                            {% for dayName, hours in days %}
+                                <div class="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50">
+                                    <span class="font-medium capitalize">{{ dayName|trans }}</span>
+                                    {% if hours and hours.isClosed %}
+                                        <span class="text-sm text-red-600 font-medium">{{ 'Closed'|trans }}</span>
+                                    {% elseif hours and hours.openingTime and hours.closingTime %}
+                                        <span class="text-sm text-green-600 font-medium">
+                                            {{ hours.openingTime|date('H:i') }} - {{ hours.closingTime|date('H:i') }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-sm text-muted-foreground">{{ 'Not set'|trans }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-muted-foreground">{{ 'No availability settings configured'|trans }}</p>
+                    {% endif %}
+                </twig:ui:card:content>
+            </twig:ui:card:root>
+
+            {# Store Statistics Card #}
+            <twig:ui:card:root>
+                <twig:ui:card:header>
+                    <twig:ui:card:title>
+                        <div class="flex items-center gap-2">
+                            <twig:ux:icon name="lucide:trending-up" class="h-5 w-5"/>
+                            {{ 'Statistics'|trans }}
+                        </div>
+                    </twig:ui:card:title>
+                    <twig:ui:card:description>{{ 'Your store performance'|trans }}</twig:ui:card:description>
+                </twig:ui:card:header>
+                <twig:ui:card:content>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div>
+                                <p class="text-sm text-muted-foreground">{{ 'Pending Orders'|trans }}</p>
+                                <p class="text-2xl font-bold">{{ pendingOrderItems|length }}</p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                                <twig:ux:icon name="lucide:clock" class="h-6 w-6 text-yellow-600"/>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div>
+                                <p class="text-sm text-muted-foreground">{{ 'Store Status'|trans }}</p>
+                                <p class="text-lg font-bold">
+                                    {% if store.status %}
+                                        {{ store.status.value|capitalize }}
+                                    {% else %}
+                                        {{ 'Active'|trans }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                <twig:ux:icon name="lucide:store" class="h-6 w-6 text-blue-600"/>
+                            </div>
+                        </div>
+                    </div>
+                </twig:ui:card:content>
+            </twig:ui:card:root>
+        </div>
+
+        {# Pending Order Items #}
+        {% if pendingOrderItems|length > 0 %}
+            <twig:ui:card:root>
+                <twig:ui:card:header>
+                    <twig:ui:card:title>
+                        <div class="flex items-center gap-2">
+                            <twig:ux:icon name="lucide:package" class="h-5 w-5"/>
+                            {{ 'Pending Order Items'|trans }}
+                        </div>
+                    </twig:ui:card:title>
+                    <twig:ui:card:description>{{ 'Items waiting for your action'|trans }}</twig:ui:card:description>
+                </twig:ui:card:header>
+                <twig:ui:card:content>
+                    <div class="space-y-4">
+                        {% for item in pendingOrderItems %}
+                            <div class="p-4 border rounded-lg hover:bg-muted/50">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="font-medium">{{ item.product ? item.product.name : 'N/A' }}</div>
+                                        <div class="text-sm text-muted-foreground mt-1">
+                                            {{ 'Order'|trans }}: #{{ item.orderParent.reference }}
+                                        </div>
+                                        <div class="text-sm text-muted-foreground">
+                                            {{ 'Quantity'|trans }}: {{ item.quantity }}
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-medium">{{ item.totalPrice|number_format(2, '.', ',') }} Ar</div>
+                                        <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 mt-1">
+                                            {{ 'Pending'|trans }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 mt-3">
+                                    <twig:ui:button:root size="sm" variant="default" class="flex-1">
+                                        <twig:ux:icon name="lucide:check" class="h-3 w-3 mr-1"/>
+                                        {{ 'Accept'|trans }}
+                                    </twig:ui:button:root>
+                                    <twig:ui:button:root size="sm" variant="destructive" class="flex-1">
+                                        <twig:ux:icon name="lucide:x" class="h-3 w-3 mr-1"/>
+                                        {{ 'Refuse'|trans }}
+                                    </twig:ui:button:root>
+                                    <twig:ui:button:root size="sm" variant="outline">
+                                        <twig:ux:icon name="lucide:lightbulb" class="h-3 w-3 mr-1"/>
+                                        {{ 'Suggest'|trans }}
+                                    </twig:ui:button:root>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </twig:ui:card:content>
+            </twig:ui:card:root>
+        {% else %}
+            <twig:ui:card:root>
+                <twig:ui:card:content class="text-center py-8">
+                    <twig:ux:icon name="lucide:inbox" class="h-12 w-12 mx-auto text-muted-foreground mb-3"/>
+                    <h3 class="font-semibold text-lg mb-1">{{ 'No Pending Orders'|trans }}</h3>
+                    <p class="text-sm text-muted-foreground">{{ 'You have no pending order items at the moment'|trans }}</p>
+                </twig:ui:card:content>
+            </twig:ui:card:root>
+        {% endif %}
+    </main>
+{% endblock %}
+

@@ -1,0 +1,53 @@
+<div {{ attributes }} data-controller="location-map">
+    <div class="space-y-4">
+        {# Map Container #}
+        <div class="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div 
+                data-location-map-target="map" 
+                class="w-full"
+                style="height: 400px;"
+            ></div>
+        </div>
+
+        {# Location Form Fields #}
+        <div class="grid gap-4 md:grid-cols-2">
+            <div class="md:col-span-2">
+                {{ form_row(locationForm.address, {
+                    'label': 'Address',
+                    'help': 'Click on the map to select a location, or enter an address and press Enter to search'
+                }) }}
+            </div>
+            <div>
+                {{ form_row(locationForm.latitude, {
+                    'label': 'Latitude',
+                    'help': 'Auto-filled from map'
+                }) }}
+            </div>
+            <div>
+                {{ form_row(locationForm.longitude, {
+                    'label': 'Longitude',
+                    'help': 'Auto-filled from map'
+                }) }}
+            </div>
+        </div>
+
+        {# Instructions #}
+        <div class="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 flex-shrink-0 text-blue-600 dark:text-blue-400">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <div class="text-blue-900 dark:text-blue-100">
+                <strong>How to use:</strong>
+                <ul class="mt-1 ml-4 list-disc space-y-1">
+                    <li>Click anywhere on the map to set the delivery location</li>
+                    <li>Drag the marker to adjust the position</li>
+                    <li>Or enter an address in the field above to search</li>
+                    <li>Leave empty for pickup orders</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
