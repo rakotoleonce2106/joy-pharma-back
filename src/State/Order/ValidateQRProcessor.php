@@ -84,3 +84,6 @@ class ValidateQRProcessor implements ProcessorInterface
 }
 
 
+
+
+
