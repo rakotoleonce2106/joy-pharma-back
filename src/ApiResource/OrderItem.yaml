@@ -1,5 +1,30 @@
 App\Entity\OrderItem:
     operations:
+        get_pending_order_items:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: "/store/order-items/pending"
+            security: 'is_granted("ROLE_STORE")'
+            provider: App\State\Store\PendingOrderItemsProvider
+            normalizationContext:
+                groups: ['order:read', 'product:read']
+            openapi:
+                summary: 'Get pending order items'
+                description: 'Get list of order items pending store action for the authenticated store owner'
+                parameters:
+                    - name: page
+                      in: query
+                      schema:
+                          type: integer
+                          default: 1
+                      description: 'Page number'
+                    - name: limit
+                      in: query
+                      schema:
+                          type: integer
+                          default: 20
+                          maximum: 100
+                      description: 'Items per page'
+
         accept_order_item:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/store/order-item/accept"

@@ -42,3 +42,4 @@ class ToggleAvailabilityProcessor implements ProcessorInterface
 
 
 
+

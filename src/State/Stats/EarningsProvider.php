@@ -102,3 +102,4 @@ class EarningsProvider implements ProviderInterface
 
 
 
+
