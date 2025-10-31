@@ -10,6 +10,7 @@ use App\Entity\OrderStatus;
 use App\Repository\OrderItemRepository;
 use App\Repository\StoreProductRepository;
 use App\Repository\StoreRepository;
+use App\Service\DateRangeService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -20,7 +21,8 @@ class StoreStatisticsProvider implements ProviderInterface
         private readonly StoreRepository $storeRepository,
         private readonly OrderItemRepository $orderItemRepository,
         private readonly StoreProductRepository $storeProductRepository,
-        private readonly Security $security
+        private readonly Security $security,
+        private readonly DateRangeService $dateRangeService
     ) {
     }
 
@@ -72,7 +74,7 @@ class StoreStatisticsProvider implements ProviderInterface
 
     private function getTodayOrdersCount($store): int
     {
-        $today = new \DateTime('today');
+        $today = $this->dateRangeService->getToday();
         
         return $this->orderItemRepository->createQueryBuilder('oi')
             ->select('COUNT(DISTINCT oi.id)')
@@ -101,7 +103,7 @@ class StoreStatisticsProvider implements ProviderInterface
 
     private function getTodayEarnings($store): float
     {
-        $today = new \DateTime('today');
+        $today = $this->dateRangeService->getToday();
         
         return (float) ($this->orderItemRepository->createQueryBuilder('oi')
             ->select('SUM(oi.storePrice * oi.quantity)')
@@ -123,7 +125,7 @@ class StoreStatisticsProvider implements ProviderInterface
 
     private function getWeeklyEarnings($store): float
     {
-        $weekStart = new \DateTime('monday this week');
+        $weekStart = $this->dateRangeService->getWeekStart();
         
         return (float) ($this->orderItemRepository->createQueryBuilder('oi')
             ->select('SUM(oi.storePrice * oi.quantity)')
@@ -145,7 +147,7 @@ class StoreStatisticsProvider implements ProviderInterface
 
     private function getMonthlyEarnings($store): float
     {
-        $monthStart = new \DateTime('first day of this month');
+        $monthStart = $this->dateRangeService->getMonthStart();
         
         return (float) ($this->orderItemRepository->createQueryBuilder('oi')
             ->select('SUM(oi.storePrice * oi.quantity)')

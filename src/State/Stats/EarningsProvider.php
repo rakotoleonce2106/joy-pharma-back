@@ -8,6 +8,7 @@ use App\Dto\EarningsStats;
 use App\Entity\OrderStatus;
 use App\Entity\User;
 use App\Repository\OrderRepository;
+use App\Service\DateRangeService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -16,7 +17,8 @@ class EarningsProvider implements ProviderInterface
     public function __construct(
         private readonly OrderRepository $orderRepository,
         private readonly EntityManagerInterface $em,
-        private readonly Security $security
+        private readonly Security $security,
+        private readonly DateRangeService $dateRangeService
     ) {
     }
 
@@ -30,7 +32,7 @@ class EarningsProvider implements ProviderInterface
         }
 
         $period = $context['filters']['period'] ?? 'week';
-        [$startDate, $endDate] = $this->getDateRange($period);
+        [$startDate, $endDate] = $this->dateRangeService->getDateRange($period);
 
         $earnings = $this->getDetailedEarnings($user, $startDate, $endDate, $period);
         $totalEarnings = $this->orderRepository->calculateEarningsForPerson($user, $startDate, $endDate);
@@ -45,28 +47,11 @@ class EarningsProvider implements ProviderInterface
         );
     }
 
-    private function getDateRange(string $period): array
-    {
-        $endDate = new \DateTime();
-        $endDate->setTime(23, 59, 59);
-
-        return match ($period) {
-            'week' => [(new \DateTime())->modify('-7 days')->setTime(0, 0, 0), $endDate],
-            'month' => [(new \DateTime())->modify('-30 days')->setTime(0, 0, 0), $endDate],
-            'year' => [(new \DateTime())->modify('-365 days')->setTime(0, 0, 0), $endDate],
-            default => [(new \DateTime())->modify('-7 days')->setTime(0, 0, 0), $endDate]
-        };
-    }
-
     private function getDetailedEarnings(User $user, \DateTime $startDate, \DateTime $endDate, string $period): array
     {
         $qb = $this->em->createQueryBuilder();
         
-        $groupFormat = match ($period) {
-            'week', 'month' => "DATE_FORMAT(o.deliveredAt, '%Y-%m-%d')",
-            'year' => "DATE_FORMAT(o.deliveredAt, '%Y-%m')",
-            default => "DATE_FORMAT(o.deliveredAt, '%Y-%m-%d')"
-        };
+        $groupFormat = $this->dateRangeService->getGroupFormat($period);
 
         $results = $qb->select(
                 "$groupFormat as period",

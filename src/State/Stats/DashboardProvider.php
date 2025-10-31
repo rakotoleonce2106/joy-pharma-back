@@ -7,13 +7,15 @@ use ApiPlatform\State\ProviderInterface;
 use App\Dto\DashboardStats;
 use App\Entity\User;
 use App\Repository\OrderRepository;
+use App\Service\DateRangeService;
 use Symfony\Bundle\SecurityBundle\Security;
 
 class DashboardProvider implements ProviderInterface
 {
     public function __construct(
         private readonly OrderRepository $orderRepository,
-        private readonly Security $security
+        private readonly Security $security,
+        private readonly DateRangeService $dateRangeService
     ) {
     }
 
@@ -27,7 +29,7 @@ class DashboardProvider implements ProviderInterface
         }
 
         $period = $context['filters']['period'] ?? 'today';
-        [$startDate, $endDate] = $this->getDateRange($period);
+        [$startDate, $endDate] = $this->dateRangeService->getDateRange($period);
 
         $totalDeliveries = $this->orderRepository->countDeliveriesForPerson($user, $startDate, $endDate);
         $totalEarnings = $this->orderRepository->calculateEarningsForPerson($user, $startDate, $endDate);
@@ -46,20 +48,6 @@ class DashboardProvider implements ProviderInterface
                 'averageRating' => $user->getAverageRating()
             ]
         );
-    }
-
-    private function getDateRange(string $period): array
-    {
-        $endDate = new \DateTime();
-        $endDate->setTime(23, 59, 59);
-
-        return match ($period) {
-            'today' => [(new \DateTime())->setTime(0, 0, 0), $endDate],
-            'week' => [(new \DateTime())->modify('-7 days')->setTime(0, 0, 0), $endDate],
-            'month' => [(new \DateTime())->modify('-30 days')->setTime(0, 0, 0), $endDate],
-            'year' => [(new \DateTime())->modify('-365 days')->setTime(0, 0, 0), $endDate],
-            default => [(new \DateTime())->setTime(0, 0, 0), $endDate]
-        };
     }
 }
 
