@@ -124,7 +124,7 @@
         </div>
         <div class="rounded-lg border bg-card p-6">
             {% if form.location is defined %}
-                <twig:admin:location-with-map :locationForm="form.location" />
+                {% include 'components/admin/location-with-map.html.twig' with {locationForm: form.location} %}
             {% else %}
                 <p class="text-sm text-muted-foreground">Location form not available</p>
             {% endif %}
