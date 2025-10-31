@@ -90,6 +90,12 @@ class StoreController extends AbstractController
             // Set the owner relationship
             $store->setOwner($user);
            
+            // Initialize StoreSetting with default business hours (if not already set)
+            if (!$store->getSetting()) {
+                $storeSetting = new \App\Entity\StoreSetting();
+                $store->setSetting($storeSetting);
+            }
+           
             $this->storeService->createStore($store);
             $this->addSuccessToast('Store created!', "The Store has been successfully created. Login email: {$ownerEmail}");
             return $this->redirectToRoute('admin_store', [], Response::HTTP_SEE_OTHER);

@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Store;
+use App\Entity\StoreSetting;
 use App\Repository\StoreRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -18,9 +19,40 @@ readonly class StoreService
 
     public function createStore(Store $store): void
     {
+        // Initialize StoreSetting if not already set
+        if (!$store->getSetting()) {
+            $storeSetting = new StoreSetting();
+            $store->setSetting($storeSetting);
+            
+            // Persist StoreSetting and its BusinessHours
+            $this->manager->persist($storeSetting);
+            $this->persistBusinessHoursIfNeeded($storeSetting);
+        }
         
         $this->manager->persist($store);
         $this->manager->flush();
+    }
+
+    private function persistBusinessHoursIfNeeded(StoreSetting $setting): void
+    {
+        // Persist any BusinessHours that haven't been persisted yet
+        // (created in StoreSetting constructor)
+        $methods = [
+            'getMondayHours',
+            'getTuesdayHours',
+            'getWednesdayHours',
+            'getThursdayHours',
+            'getFridayHours',
+            'getSaturdayHours',
+            'getSundayHours'
+        ];
+
+        foreach ($methods as $method) {
+            $hours = $setting->$method();
+            if ($hours && $hours->getId() === null) {
+                $this->manager->persist($hours);
+            }
+        }
     }
 
 

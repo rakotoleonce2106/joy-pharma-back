@@ -79,7 +79,6 @@ App\Entity\DeliveryLocation:
             openapi:
                 summary: 'Update delivery person location'
                 description: 'Update real-time location'
-
 # Stores
 App\Entity\Store:
     operations:
@@ -91,19 +90,6 @@ App\Entity\Store:
             openapi:
                 summary: 'Get stores list'
                 description: 'Get list of available stores'
-
-# Store Business Hours (Store Management)
-App\Dto\BusinessHoursResponse:
-    operations:
-        get_business_hours:
-            class: ApiPlatform\Metadata\Get
-            uriTemplate: '/store/business-hours'
-            security: 'is_granted("ROLE_STORE")'
-            provider: App\State\Store\BusinessHoursProvider
-            read: false
-            openapi:
-                summary: 'Get store business hours'
-                description: 'Get weekly business hours for the authenticated store owner'
 
 # Store Statistics (Store Management)
 App\Dto\StoreStatistics:

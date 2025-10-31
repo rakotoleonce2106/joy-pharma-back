@@ -11,8 +11,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-
-
+use Symfony\Component\Serializer\Attribute\Groups;
 
 enum BoutiqueStatus: string
 {
@@ -56,26 +55,32 @@ class Store
     
 
     #[ORM\Column(length: 255)]
+    #[Groups(['store:read'])]
     private ?string $name = null;
 
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Groups(['store:read'])]
     private ?string $description = null;
 
     /**
      * @var Collection<int, MediaFile>
      */
     #[ORM\OneToMany(targetEntity: MediaFile::class, mappedBy: 'store')]
+    #[Groups(['store:read'])]
     private Collection $image;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[Groups(['store:read'])]
     private ?StoreSetting $setting = null;
 
 
     #[ORM\OneToOne(inversedBy: 'store', cascade: ['persist', 'remove'])]
+    #[Groups(['store:read'])]
     private ?ContactInfo $contact = null;
 
     #[ORM\OneToOne(inversedBy: 'store', cascade: ['persist', 'remove'])]
+    #[Groups(['store:read'])]
     private ?Location $location = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]

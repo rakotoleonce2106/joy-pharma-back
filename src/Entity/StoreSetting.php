@@ -5,31 +5,46 @@ namespace App\Entity;
 use App\Entity\Traits\EntityIdTrait;
 use App\Repository\StoreSettingRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: StoreSettingRepository::class)]
 class StoreSetting
 {
     use EntityIdTrait;
 
-    #[ORM\ManyToOne(inversedBy: 'monday')]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $mondayHours = null;
 
-    #[ORM\ManyToOne(inversedBy: 'tuesday')]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $tuesdayHours = null;
 
-    #[ORM\ManyToOne(inversedBy: 'wednesday')]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $wednesdayHours = null;
 
-    #[ORM\ManyToOne(inversedBy: 'thursday')]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $thursdayHours = null;
 
-    #[ORM\ManyToOne(inversedBy: 'friday')]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $fridayHours = null;
 
-    #[ORM\ManyToOne(inversedBy: 'saturday')]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $saturdayHours = null;
 
-    #[ORM\ManyToOne(inversedBy: 'sunday')]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $sundayHours = null;
 
      public function __construct()
@@ -37,18 +52,39 @@ class StoreSetting
         $this->initializeDefaults();
     }
 
-        private function initializeDefaults(): void
+    private function initializeDefaults(): void
     {
-        // Initialize business hours (9-6 weekdays, 10-4 weekends, closed Sunday)
-        $this->mondayHours = new BusinessHours('09:00', '18:00');
-        $this->tuesdayHours = new BusinessHours('09:00', '18:00');
-        $this->wednesdayHours = new BusinessHours('09:00', '18:00');
-        $this->thursdayHours = new BusinessHours('09:00', '18:00');
-        $this->fridayHours = new BusinessHours('09:00', '18:00');
-        $this->saturdayHours = new BusinessHours('10:00', '16:00');
-        $this->sundayHours = new BusinessHours(null, null, true); // Closed
-
-
+        // Initialize business hours only if they don't exist
+        // Check if hours exist, if not create new BusinessHours with defaults
+        // Defaults: 9-6 weekdays, 10-4 weekends, closed Sunday
+        
+        if (!$this->mondayHours) {
+            $this->mondayHours = new BusinessHours('09:00', '18:00');
+        }
+        
+        if (!$this->tuesdayHours) {
+            $this->tuesdayHours = new BusinessHours('09:00', '18:00');
+        }
+        
+        if (!$this->wednesdayHours) {
+            $this->wednesdayHours = new BusinessHours('09:00', '18:00');
+        }
+        
+        if (!$this->thursdayHours) {
+            $this->thursdayHours = new BusinessHours('09:00', '18:00');
+        }
+        
+        if (!$this->fridayHours) {
+            $this->fridayHours = new BusinessHours('09:00', '18:00');
+        }
+        
+        if (!$this->saturdayHours) {
+            $this->saturdayHours = new BusinessHours('10:00', '16:00');
+        }
+        
+        if (!$this->sundayHours) {
+            $this->sundayHours = new BusinessHours(null, null, true); // Closed
+        }
     }
 
 
