@@ -84,6 +84,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $googleId = null;
 
     #[ORM\ManyToOne(inversedBy: 'owner')]
+    #[Groups(['user:read'])]
     private ?Store $store = null;
 
     /**

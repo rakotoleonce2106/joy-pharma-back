@@ -58,7 +58,7 @@ App\Entity\User:
             uriTemplate: "/me"
             provider: App\State\User\CurrentUserProvider
             normalizationContext:
-                groups: ['id:read', "user:read" ,"image:read"]
+                groups: ['id:read', "user:read" ,"image:read","store:read"]
             uriVariables: []
             openapiContext:
                 summary: Retrieves the current user resource.
