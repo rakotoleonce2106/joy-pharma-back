@@ -4,9 +4,11 @@ namespace App\State\Auth;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Entity\BusinessHours;
 use App\Entity\ContactInfo;
 use App\Entity\Location;
 use App\Entity\Store;
+use App\Entity\StoreSetting;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -61,6 +63,10 @@ class RegisterStoreProcessor implements ProcessorInterface
         
         $store->setLocation($location);
 
+        // Initialize StoreSetting with default business hours
+        $storeSetting = new StoreSetting();
+        $store->setSetting($storeSetting);
+
         // Create store owner user
         $user = new User();
         $user->setEmail($data->email);
@@ -74,11 +80,16 @@ class RegisterStoreProcessor implements ProcessorInterface
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data->password);
         $user->setPassword($hashedPassword);
 
-        // Save entities
+        // Save entities - persist StoreSetting and its BusinessHours
         $this->entityManager->persist($contact);
         $this->entityManager->persist($location);
         $this->entityManager->persist($store);
+        $this->entityManager->persist($storeSetting);
         $this->entityManager->persist($user);
+        
+        // Persist BusinessHours if they don't have IDs (they're created in StoreSetting constructor)
+        $this->persistBusinessHoursIfNeeded($storeSetting);
+        
         $this->entityManager->flush();
 
         // Generate JWT token
@@ -107,6 +118,28 @@ class RegisterStoreProcessor implements ProcessorInterface
                 ]
             ]
         ];
+    }
+
+    private function persistBusinessHoursIfNeeded(StoreSetting $setting): void
+    {
+        // Persist any BusinessHours that haven't been persisted yet
+        // (created in StoreSetting constructor)
+        $methods = [
+            'getMondayHours',
+            'getTuesdayHours',
+            'getWednesdayHours',
+            'getThursdayHours',
+            'getFridayHours',
+            'getSaturdayHours',
+            'getSundayHours'
+        ];
+
+        foreach ($methods as $method) {
+            $hours = $setting->$method();
+            if ($hours && $hours->getId() === null) {
+                $this->entityManager->persist($hours);
+            }
+        }
     }
 }
 
