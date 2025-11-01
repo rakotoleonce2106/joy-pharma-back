@@ -1,4 +1,4 @@
-<div {{ attributes }} data-controller="location-map">
+<div data-controller="location-map" data-action="turbo:load->location-map#refresh"{{ attributes ? ' ' ~ attributes : '' }}>
     <div class="space-y-4">
         {# Map Container #}
         <div class="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -6,9 +6,9 @@
                 data-location-map-target="map" 
                 id="location-map-{{ locationForm.vars.id|default(random()) }}"
                 class="w-full location-map-container"
-                style="height: 400px !important; min-height: 400px !important; width: 100% !important; position: relative; z-index: 1;"
+                style="height: 400px !important; min-height: 400px !important; width: 100% !important; position: relative; z-index: 1; display: block !important;"
             >
-                <div class="flex items-center justify-center h-full text-muted-foreground">
+                <div class="flex items-center justify-center h-full text-muted-foreground" data-location-map-loading="true">
                     <div class="text-center">
                         <twig:ux:icon name="lucide:map-pin" class="h-12 w-12 mx-auto mb-2 opacity-50"/>
                         <p class="text-sm">Loading map...</p>

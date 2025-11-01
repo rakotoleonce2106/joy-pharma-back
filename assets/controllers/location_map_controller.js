@@ -29,20 +29,35 @@ export default class extends Controller {
         this.refreshHandler = refreshHandler;
 
         // Also listen for Turbo load events
-        document.addEventListener('turbo:load', () => {
+        const turboHandler = () => {
             setTimeout(() => this.tryInitialize(), 200);
-        });
+        };
+        document.addEventListener('turbo:load', turboHandler);
+        this.turboHandler = turboHandler;
 
-        // Always try to initialize after a short delay
-        // Try multiple times in case container isn't visible yet
-        setTimeout(() => this.tryInitialize(), 100);
-        setTimeout(() => this.tryInitialize(), 300);
-        setTimeout(() => this.tryInitialize(), 600);
-        setTimeout(() => this.tryInitialize(), 1000);
-        setTimeout(() => this.tryInitialize(), 2000);
+        // Initialize with staggered attempts to avoid race conditions
+        // Use a flag to prevent multiple simultaneous initializations
+        this._initializing = false;
+        this._initTimeouts = [];
+        
+        const initDelays = [100, 300, 600, 1000, 2000];
+        initDelays.forEach((delay, index) => {
+            const timeout = setTimeout(() => {
+                if (!this._initializing && !this.map) {
+                    this.tryInitialize();
+                }
+            }, delay);
+            this._initTimeouts.push(timeout);
+        });
     }
 
-    tryInitialize() {
+    async tryInitialize() {
+        // Prevent multiple simultaneous initializations
+        if (this._initializing) {
+            console.log('Location Map Controller: Already initializing, skipping...');
+            return;
+        }
+
         if (!this.hasMapTarget) {
             console.warn('Location Map Controller: Map target not found');
             return;
@@ -52,8 +67,34 @@ export default class extends Controller {
         console.log('Location Map Controller: Checking container', {
             offsetWidth: container.offsetWidth,
             offsetHeight: container.offsetHeight,
-            isVisible: container.offsetWidth > 0 && container.offsetHeight > 0
+            isVisible: container.offsetWidth > 0 && container.offsetHeight > 0,
+            hasMap: !!this.map
         });
+
+        // If map already exists, just refresh it
+        if (this.map) {
+            setTimeout(() => {
+                if (this.map && container.offsetWidth > 0 && container.offsetHeight > 0) {
+                    this.map.invalidateSize();
+                }
+            }, 100);
+            return;
+        }
+
+        // Set initialization flag
+        this._initializing = true;
+
+        // Wait for Leaflet to be available
+        if (typeof L === 'undefined') {
+            // Load Leaflet if not available
+            try {
+                await this.loadLeaflet();
+            } catch (error) {
+                console.error('Location Map Controller: Failed to load Leaflet', error);
+                this._initializing = false;
+                return;
+            }
+        }
 
         // Use IntersectionObserver to detect when map container becomes visible
         const observer = new IntersectionObserver((entries) => {
@@ -98,8 +139,13 @@ export default class extends Controller {
         // If container is already visible, initialize immediately
         if (container.offsetWidth > 0 && container.offsetHeight > 0 && !this.map) {
             console.log('Location Map Controller: Container visible, initializing immediately');
-            this.initialize();
+            await this.initialize();
         }
+        
+        // Reset initialization flag after a delay to allow for future retries
+        setTimeout(() => {
+            this._initializing = false;
+        }, 500);
     }
 
     async initialize() {
@@ -473,15 +519,30 @@ export default class extends Controller {
     }
 
     disconnect() {
+        // Clear all timeouts
+        if (this._initTimeouts) {
+            this._initTimeouts.forEach(timeout => clearTimeout(timeout));
+            this._initTimeouts = [];
+        }
+        
         if (this.refreshHandler) {
             document.removeEventListener('location-map:refresh', this.refreshHandler);
         }
+        
+        if (this.turboHandler) {
+            document.removeEventListener('turbo:load', this.turboHandler);
+        }
+        
         if (this.resizeHandler) {
             window.removeEventListener('resize', this.resizeHandler);
         }
+        
         if (this.map) {
             this.map.remove();
             this.map = null;
         }
+        
+        this._initializing = false;
+        this.marker = null;
     }
 }

@@ -99,7 +99,7 @@
 {% endblock %}
 
 {% block _order_location_widget %}
-<div class="space-y-4" data-controller="location-map">
+<div class="space-y-4" data-controller="location-map" data-action="turbo:load->location-map#refresh">
     {# Map Container - Show first #}
     <div class="relative">
         <div class="flex items-center gap-2 mb-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">

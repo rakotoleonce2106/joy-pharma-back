@@ -448,7 +448,9 @@
      crossorigin=""></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        let dashboardMap = null;
+        
+        function initializeDashboardMap() {
             console.log('Initializing dashboard map...');
             console.log('Leaflet loaded:', typeof L !== 'undefined');
             
@@ -460,32 +462,46 @@
                 return;
             }
             
-            // Initialize map with specific options
-            const map = L.map('dashboard-map', {
-                scrollWheelZoom: true,
-                zoomControl: true,
-                attributionControl: true,
-                dragging: true
-            }).setView([-18.8792, 47.5079], 13); // Antananarivo, Madagascar
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
-            }).addTo(map);
+            // Remove existing map if it exists
+            if (dashboardMap) {
+                dashboardMap.remove();
+                dashboardMap = null;
+            }
             
-            console.log('Map initialized successfully');
+            // Ensure map container has dimensions
+            if (!mapDiv.style.height) {
+                mapDiv.style.height = '300px';
+                mapDiv.style.minHeight = '300px';
+                mapDiv.style.maxHeight = '300px';
+                mapDiv.style.width = '100%';
+                mapDiv.style.display = 'block';
+                mapDiv.style.overflow = 'hidden';
+            }
             
-            // Force map to redraw after initialization and set explicit height
+            // Wait for container to be visible
             setTimeout(() => {
-                const mapContainer = document.getElementById('dashboard-map');
-                if (mapContainer) {
-                    mapContainer.style.height = '300px';
-                    mapContainer.style.maxHeight = '300px';
-                    mapContainer.style.overflow = 'hidden';
-                }
-                map.invalidateSize();
-                console.log('Map size invalidated and height enforced');
-            }, 100);
+                // Initialize map with specific options
+                dashboardMap = L.map('dashboard-map', {
+                    scrollWheelZoom: true,
+                    zoomControl: true,
+                    attributionControl: true,
+                    dragging: true
+                }).setView([-18.8792, 47.5079], 13); // Antananarivo, Madagascar
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
+                }).addTo(dashboardMap);
+                
+                console.log('Map initialized successfully');
+                
+                // Force map to redraw after initialization
+                setTimeout(() => {
+                    if (dashboardMap) {
+                        dashboardMap.invalidateSize();
+                        console.log('Map size invalidated');
+                    }
+                }, 200);
 
         // Function to create store icon (pharmacy)
         function createStoreIcon(storeName) {
@@ -557,14 +573,14 @@
             });
         }
 
-        // Add stores to map with enhanced popups
-        const stores = {{ stores|json_encode|raw }};
-        console.log('Stores data:', stores);
-        stores.forEach(store => {
-            if (store.location && store.location.latitude && store.location.longitude) {
-                const storeIcon = createStoreIcon(store.name);
-                L.marker([store.location.latitude, store.location.longitude], {icon: storeIcon})
-                    .addTo(map)
+                // Add stores to map with enhanced popups
+                const stores = {{ stores|json_encode|raw }};
+                console.log('Stores data:', stores);
+                stores.forEach(store => {
+                    if (store.location && store.location.latitude && store.location.longitude) {
+                        const storeIcon = createStoreIcon(store.name);
+                        L.marker([store.location.latitude, store.location.longitude], {icon: storeIcon})
+                            .addTo(dashboardMap)
                     .bindPopup(`
                         <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 220px;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
@@ -584,14 +600,14 @@
             }
         });
 
-        // Add online delivers to map with enhanced popups
-        const onlineDelivers = {{ onlineDeliversData|json_encode|raw }};
-        console.log('Online delivers data:', onlineDelivers);
-        onlineDelivers.forEach(deliver => {
-            if (deliver.deliveryLocation && deliver.deliveryLocation.latitude && deliver.deliveryLocation.longitude) {
-                const deliverIcon = createDeliverIcon(deliver.firstName, deliver.lastName);
-                L.marker([deliver.deliveryLocation.latitude, deliver.deliveryLocation.longitude], {icon: deliverIcon})
-                    .addTo(map)
+                // Add online delivers to map with enhanced popups
+                const onlineDelivers = {{ onlineDeliversData|json_encode|raw }};
+                console.log('Online delivers data:', onlineDelivers);
+                onlineDelivers.forEach(deliver => {
+                    if (deliver.deliveryLocation && deliver.deliveryLocation.latitude && deliver.deliveryLocation.longitude) {
+                        const deliverIcon = createDeliverIcon(deliver.firstName, deliver.lastName);
+                        L.marker([deliver.deliveryLocation.latitude, deliver.deliveryLocation.longitude], {icon: deliverIcon})
+                            .addTo(dashboardMap)
                     .bindPopup(`
                         <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 240px;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
@@ -618,15 +634,15 @@
             }
         });
 
-        // Add orders with locations to map with enhanced popups
-        const ordersWithLocations = {{ ordersWithLocations|json_encode|raw }};
-        console.log('Orders with locations data:', ordersWithLocations);
-        const orderMarkers = {};
-        ordersWithLocations.forEach(order => {
-            if (order.location && order.location.latitude && order.location.longitude) {
-                const orderIcon = createOrderIcon(order.totalAmount, order.reference);
-                const marker = L.marker([order.location.latitude, order.location.longitude], {icon: orderIcon})
-                    .addTo(map)
+                // Add orders with locations to map with enhanced popups
+                const ordersWithLocations = {{ ordersWithLocations|json_encode|raw }};
+                console.log('Orders with locations data:', ordersWithLocations);
+                const orderMarkers = {};
+                ordersWithLocations.forEach(order => {
+                    if (order.location && order.location.latitude && order.location.longitude) {
+                        const orderIcon = createOrderIcon(order.totalAmount, order.reference);
+                        const marker = L.marker([order.location.latitude, order.location.longitude], {icon: orderIcon})
+                            .addTo(dashboardMap)
                     .bindPopup(`
                         <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 260px;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;">
@@ -664,25 +680,38 @@
             }
         });
 
-        // Helper function to focus on deliver
-        window.focusOnDeliver = function(lat, lng) {
-            if (lat && lng) {
-                map.setView([lat, lng], 16);
-            }
-        };
+                // Helper function to focus on deliver
+                window.focusOnDeliver = function(lat, lng) {
+                    if (dashboardMap && lat && lng) {
+                        dashboardMap.setView([lat, lng], 16);
+                    }
+                };
 
-        // Helper function to focus on order
-        window.focusOnOrder = function(reference) {
-            if (orderMarkers[reference]) {
-                map.setView(orderMarkers[reference].getLatLng(), 16);
-                orderMarkers[reference].openPopup();
-            }
-        };
-
-            // Auto-refresh every 30 seconds
-            setInterval(() => {
-                location.reload();
-            }, 30000);
-        }); // End of DOMContentLoaded
+                // Helper function to focus on order
+                window.focusOnOrder = function(reference) {
+                    if (dashboardMap && orderMarkers[reference]) {
+                        dashboardMap.setView(orderMarkers[reference].getLatLng(), 16);
+                        orderMarkers[reference].openPopup();
+                    }
+                };
+            }, 100); // End of setTimeout for map initialization
+        }
+        
+        // Initialize map on page load (both DOMContentLoaded and turbo:load)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDashboardMap);
+        } else {
+            initializeDashboardMap();
+        }
+        
+        // Also initialize on Turbo loads
+        document.addEventListener('turbo:load', function() {
+            setTimeout(initializeDashboardMap, 100);
+        });
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            location.reload();
+        }, 30000);
     </script>
 {% endblock %}
