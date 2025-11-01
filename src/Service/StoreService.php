@@ -92,6 +92,49 @@ readonly class StoreService
 
     public function deleteStore(Store $store): void
     {
+        // First, handle StoreSetting separately to avoid cascade cycle issues
+        $setting = $store->getSetting();
+        if ($setting) {
+            // Clear all BusinessHours references before removing StoreSetting
+            $setting->setMondayHours(null);
+            $setting->setTuesdayHours(null);
+            $setting->setWednesdayHours(null);
+            $setting->setThursdayHours(null);
+            $setting->setFridayHours(null);
+            $setting->setSaturdayHours(null);
+            $setting->setSundayHours(null);
+            
+            // Flush to clear the references
+            $this->manager->flush();
+            
+            // Remove StoreSetting explicitly (before removing Store)
+            $store->setSetting(null);
+            $this->manager->remove($setting);
+            $this->manager->flush();
+        }
+        
+        // Handle StoreProducts (they have foreign key to Store)
+        foreach ($store->getStoreProducts() as $storeProduct) {
+            $this->manager->remove($storeProduct);
+        }
+        $this->manager->flush();
+        
+        // Handle images/MediaFiles
+        foreach ($store->getImage() as $image) {
+            $image->setStore(null);
+        }
+        $this->manager->flush();
+        
+        // Handle owner relationship (clear the bidirectional reference)
+        $owner = $store->getOwner();
+        if ($owner) {
+            // Clear the Store reference from User to break the cycle
+            // We don't delete the User, just remove the Store reference
+            $store->setOwner(null);
+            $this->manager->flush();
+        }
+        
+        // Now remove the Store (without cascade, to avoid cycles)
         $this->manager->remove($store);
         $this->manager->flush();
     }

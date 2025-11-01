@@ -12,84 +12,111 @@ class StoreSetting
 {
     use EntityIdTrait;
 
-    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $mondayHours = null;
 
-    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $tuesdayHours = null;
 
-    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $wednesdayHours = null;
 
-    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $thursdayHours = null;
 
-    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $fridayHours = null;
 
-    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $saturdayHours = null;
 
-    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: BusinessHours::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write'])]
     private ?BusinessHours $sundayHours = null;
 
-     public function __construct()
+    public function __construct()
     {
         $this->initializeDefaults();
     }
 
-    private function initializeDefaults(): void
+    public function initializeDefaults(): void
     {
         // Initialize business hours only if they don't exist
         // Check if hours exist, if not create new BusinessHours with defaults
         // Defaults: 9-6 weekdays, 10-4 weekends, closed Sunday
-        
+
+        $defaultHours = new BusinessHours('09:00', '18:00');
+
         if (!$this->mondayHours) {
-            $this->mondayHours = new BusinessHours('09:00', '18:00');
+            $this->mondayHours = $defaultHours;
         }
-        
+
         if (!$this->tuesdayHours) {
-            $this->tuesdayHours = new BusinessHours('09:00', '18:00');
+            $this->tuesdayHours = $defaultHours;
         }
-        
+
         if (!$this->wednesdayHours) {
-            $this->wednesdayHours = new BusinessHours('09:00', '18:00');
+            $this->wednesdayHours = $defaultHours;
         }
-        
+
         if (!$this->thursdayHours) {
-            $this->thursdayHours = new BusinessHours('09:00', '18:00');
+            $this->thursdayHours = $defaultHours;
         }
-        
+
         if (!$this->fridayHours) {
-            $this->fridayHours = new BusinessHours('09:00', '18:00');
+            $this->fridayHours = $defaultHours;
         }
-        
+
         if (!$this->saturdayHours) {
-            $this->saturdayHours = new BusinessHours('10:00', '16:00');
+            $this->saturdayHours = $defaultHours;
         }
-        
+
         if (!$this->sundayHours) {
             $this->sundayHours = new BusinessHours(null, null, true); // Closed
         }
     }
 
+    /**
+     * Get BusinessHours for a specific day, ensuring it's never null
+     */
+    private function getBusinessHoursSafe(string $property): BusinessHours
+    {
+        $getter = 'get' . ucfirst($property);
+        $hours = $this->$getter();
+        
+        if (!$hours) {
+            // Create default if null
+            if ($property === 'sundayHours') {
+                $hours = new BusinessHours(null, null, true);
+            } else {
+                $hours = new BusinessHours('09:00', '18:00', false);
+            }
+            $setter = 'set' . ucfirst($property);
+            $this->$setter($hours);
+        }
+        
+        return $hours;
+    }
+
 
     public function getTuesdayHours(): ?BusinessHours
     {
+        if (!$this->tuesdayHours) {
+            $this->tuesdayHours = new BusinessHours('09:00', '18:00', false);
+        }
         return $this->tuesdayHours;
     }
 
@@ -102,6 +129,9 @@ class StoreSetting
 
     public function getMondayHours(): ?BusinessHours
     {
+        if (!$this->mondayHours) {
+            $this->mondayHours = new BusinessHours('09:00', '18:00', false);
+        }
         return $this->mondayHours;
     }
 
@@ -114,6 +144,9 @@ class StoreSetting
 
     public function getWednesdayHours(): ?BusinessHours
     {
+        if (!$this->wednesdayHours) {
+            $this->wednesdayHours = new BusinessHours('09:00', '18:00', false);
+        }
         return $this->wednesdayHours;
     }
 
@@ -126,6 +159,9 @@ class StoreSetting
 
     public function getThursdayHours(): ?BusinessHours
     {
+        if (!$this->thursdayHours) {
+            $this->thursdayHours = new BusinessHours('09:00', '18:00', false);
+        }
         return $this->thursdayHours;
     }
 
@@ -138,6 +174,9 @@ class StoreSetting
 
     public function getFridayHours(): ?BusinessHours
     {
+        if (!$this->fridayHours) {
+            $this->fridayHours = new BusinessHours('09:00', '18:00', false);
+        }
         return $this->fridayHours;
     }
 
@@ -150,6 +189,9 @@ class StoreSetting
 
     public function getSaturdayHours(): ?BusinessHours
     {
+        if (!$this->saturdayHours) {
+            $this->saturdayHours = new BusinessHours('09:00', '18:00', false);
+        }
         return $this->saturdayHours;
     }
 
@@ -162,6 +204,9 @@ class StoreSetting
 
     public function getSundayHours(): ?BusinessHours
     {
+        if (!$this->sundayHours) {
+            $this->sundayHours = new BusinessHours(null, null, true); // Closed
+        }
         return $this->sundayHours;
     }
 
@@ -171,7 +216,4 @@ class StoreSetting
 
         return $this;
     }
-
-
 }
-

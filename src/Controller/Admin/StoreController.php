@@ -10,6 +10,7 @@ use App\Entity\Store;
 use App\Entity\StoreProduct;
 use App\Entity\User;
 use App\Form\StoreProductType;
+use App\Form\StoreSettingType;
 use App\Form\StoreType;
 use App\Repository\StoreProductRepository;
 use App\Repository\StoreRepository;
@@ -55,10 +56,25 @@ class StoreController extends AbstractController
     public function createAction(Request $request): Response
     {
         $store = new Store();
+        
+        // Initialize location if null to prevent PropertyAccessor errors
+        // The LocationType form will handle creating a Location object if needed
+        if (!$store->getLocation()) {
+            $store->setLocation(new \App\Entity\Location());
+        }
+        
         $form = $this->createForm(StoreType::class, $store, ['action' => $this->generateUrl('admin_store_new')]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // After form processing, check if location should be null (empty location)
+            $location = $store->getLocation();
+            if ($location && empty($location->getAddress()) && 
+                ($location->getLatitude() === null || $location->getLatitude() === 0.0) && 
+                ($location->getLongitude() === null || $location->getLongitude() === 0.0)) {
+                // All location fields are empty, set to null
+                $store->setLocation(null);
+            }
             /** @var UploadedFile|null $uploadedFile */
             $image = $form->get('image')->getData();
             if ($image) {
@@ -68,7 +84,16 @@ class StoreController extends AbstractController
 
             // Get login credentials from form
             $ownerEmail = $form->get('ownerEmail')->getData();
-            $ownerPassword = $form->get('ownerPassword')->getData();
+            $ownerPasswordField = $form->get('ownerPassword');
+            $ownerPasswordData = $ownerPasswordField->getData();
+            
+            // Extract password from RepeatedType (returns array with 'first' key)
+            $ownerPassword = null;
+            if ($ownerPasswordData && is_array($ownerPasswordData) && isset($ownerPasswordData['first'])) {
+                $ownerPassword = $ownerPasswordData['first'];
+            } elseif (is_string($ownerPasswordData) && !empty($ownerPasswordData)) {
+                $ownerPassword = $ownerPasswordData;
+            }
             
             // Check if user already exists with this email
             $user = $this->userService->getUserByEmail($ownerEmail);
@@ -81,14 +106,15 @@ class StoreController extends AbstractController
                 
                 // Use provided password or auto-generate
                 $password = $ownerPassword ?: 'JoyPharma2025!';
-                $user->setPassword($password);
                 
-                $userWithPassword = $this->userService->hashPassword($user);
-                $this->userService->persistUser($userWithPassword);
+                // Hash and set password
+                $user = $this->userService->hashPassword($user, $password);
+                $this->userService->persistUser($user);
             }
             
-            // Set the owner relationship
+            // Set the bidirectional owner relationship
             $store->setOwner($user);
+            $user->setStore($store); // Important: Set bidirectional relationship
            
             // Initialize StoreSetting with default business hours (if not already set)
             if (!$store->getSetting()) {
@@ -110,13 +136,21 @@ class StoreController extends AbstractController
     #[Route('/store/{id}/edit', name: 'admin_store_edit', defaults: ['title' => 'Edit Store'])]
     public function editAction(Request $request, int $id): Response
     {
-        // Fetch store with eager loading of all relationships
+        // Fetch store with eager loading of all relationships including settings
         $store = $this->StoreRepository->createQueryBuilder('s')
             ->leftJoin('s.owner', 'o')
             ->leftJoin('s.contact', 'c')
             ->leftJoin('s.location', 'l')
             ->leftJoin('s.image', 'si')
-            ->addSelect('o', 'c', 'l', 'si')
+            ->leftJoin('s.setting', 'st')
+            ->leftJoin('st.mondayHours', 'mh')
+            ->leftJoin('st.tuesdayHours', 'th')
+            ->leftJoin('st.wednesdayHours', 'wh')
+            ->leftJoin('st.thursdayHours', 'thh')
+            ->leftJoin('st.fridayHours', 'fh')
+            ->leftJoin('st.saturdayHours', 'sah')
+            ->leftJoin('st.sundayHours', 'suh')
+            ->addSelect('o', 'c', 'l', 'si', 'st', 'mh', 'th', 'wh', 'thh', 'fh', 'sah', 'suh')
             ->where('s.id = :id')
             ->setParameter('id', $id)
             ->getQuery()
@@ -150,15 +184,134 @@ class StoreController extends AbstractController
         ]);
         $productsDataTable->handleRequest($request);
         
-        return $this->handleStoreForm($request, $form, $store, 'edit', $productsDataTable);
+        // Initialize StoreSetting if it doesn't exist
+        if (!$store->getSetting()) {
+            $storeSetting = new \App\Entity\StoreSetting();
+            $store->setSetting($storeSetting);
+            $this->entityManager->persist($storeSetting);
+            $this->entityManager->flush();
+        }
+        
+        // Ensure all BusinessHours are initialized (they can be null)
+        $storeSetting = $store->getSetting();
+        if ($storeSetting) {
+            $needsFlush = false;
+            // Check and initialize each BusinessHours if null
+            $hoursMapping = [
+                'mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours',
+                'fridayHours', 'saturdayHours', 'sundayHours'
+            ];
+            
+            foreach ($hoursMapping as $property) {
+                $getter = 'get' . ucfirst($property);
+                $setter = 'set' . ucfirst($property);
+                $hours = $storeSetting->$getter();
+                
+                if (!$hours) {
+                    // Create default BusinessHours based on day
+                    if ($property === 'sundayHours') {
+                        $newHours = new \App\Entity\BusinessHours(null, null, true); // Closed
+                    } else {
+                        $newHours = new \App\Entity\BusinessHours('09:00', '18:00', false);
+                    }
+                    $this->entityManager->persist($newHours);
+                    $storeSetting->$setter($newHours);
+                    $needsFlush = true;
+                }
+            }
+            
+            if ($needsFlush) {
+                $this->entityManager->persist($storeSetting);
+                $this->entityManager->flush();
+                // Refresh the storeSetting to ensure all relationships are loaded
+                $this->entityManager->refresh($storeSetting);
+                // Also refresh the store to ensure it has the updated setting
+                $this->entityManager->refresh($store);
+            }
+        }
+        
+        // Ensure storeSetting exists and all BusinessHours are initialized
+        $storeSetting = $store->getSetting();
+        if (!$storeSetting) {
+            $storeSetting = new \App\Entity\StoreSetting();
+            $store->setSetting($storeSetting);
+            $storeSetting->initializeDefaults();
+            // Persist all newly created BusinessHours
+            foreach (['mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours', 'fridayHours', 'saturdayHours', 'sundayHours'] as $prop) {
+                $getter = 'get' . ucfirst($prop);
+                $hours = $storeSetting->$getter();
+                if ($hours) {
+                    $this->entityManager->persist($hours);
+                }
+            }
+            $this->entityManager->persist($storeSetting);
+            $this->entityManager->flush();
+            // Refresh to ensure all relationships are loaded
+            $this->entityManager->refresh($storeSetting);
+        } else {
+            // Double-check all BusinessHours are initialized (safety check)
+            $hoursMapping = [
+                'mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours',
+                'fridayHours', 'saturdayHours', 'sundayHours'
+            ];
+            
+            $needsFlush = false;
+            foreach ($hoursMapping as $property) {
+                $getter = 'get' . ucfirst($property);
+                $setter = 'set' . ucfirst($property);
+                $hours = $storeSetting->$getter();
+                
+                if (!$hours) {
+                    // Create default BusinessHours based on day
+                    if ($property === 'sundayHours') {
+                        $newHours = new \App\Entity\BusinessHours(null, null, true); // Closed
+                    } else {
+                        $newHours = new \App\Entity\BusinessHours('09:00', '18:00', false);
+                    }
+                    $this->entityManager->persist($newHours);
+                    $storeSetting->$setter($newHours);
+                    $needsFlush = true;
+                }
+            }
+            
+            if ($needsFlush) {
+                $this->entityManager->persist($storeSetting);
+                $this->entityManager->flush();
+                $this->entityManager->refresh($storeSetting);
+            }
+        }
+        
+        // Final verification and initialization: ensure all BusinessHours exist before creating form
+        // Call initializeDefaults to ensure all BusinessHours are set
+        $storeSetting->initializeDefaults();
+        
+        // Double-check all BusinessHours are not null
+        foreach (['mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours', 'fridayHours', 'saturdayHours', 'sundayHours'] as $prop) {
+            $getter = 'get' . ucfirst($prop);
+            $hours = $storeSetting->$getter();
+            if (!$hours) {
+                throw new \RuntimeException("BusinessHours for {$prop} is still null after initialization");
+            }
+        }
+        
+        $storeSettingForm = $this->createForm(StoreSettingType::class, $storeSetting, [
+            'action' => $this->generateUrl('admin_store_setting_update', ['id' => $store->getId()])
+        ]);
+        
+        return $this->handleStoreForm($request, $form, $store, 'edit', $productsDataTable, $storeSettingForm);
     }
 
     #[Route('/store/{id}/delete', name: 'admin_store_delete', methods: ['POST'])]
-    public  function deleteAction(Store $store): Response
+    public function deleteAction(Request $request, Store $store): Response
     {
-        $this->storeService->deleteStore($store);
-        $this->addSuccessToast('Store deleted!', 'The Store has been successfully deleted.');
-        return $this->redirectToRoute('admin_store');
+        try {
+            $this->storeService->deleteStore($store);
+            $this->addSuccessToast('Store deleted!', 'The Store has been successfully deleted.');
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'Unable to delete store: ' . $e->getMessage());
+        }
+        
+        return $this->redirectToRoute('admin_store', status: Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/store/batch-delete', name: 'admin_store_batch_delete', methods: ['POST'])]
@@ -174,7 +327,7 @@ class StoreController extends AbstractController
     }
 
 
-    private function handleStoreForm(Request $request, $form, Store $store, string $action, $productsDataTable = null): Response
+    private function handleStoreForm(Request $request, $form, Store $store, string $action, $productsDataTable = null, $storeSettingForm = null): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -187,11 +340,21 @@ class StoreController extends AbstractController
 
             // Get login credentials from form
             $ownerEmail = $form->get('ownerEmail')->getData();
-            $ownerPassword = $form->get('ownerPassword')->getData();
+            $ownerPasswordField = $form->get('ownerPassword');
+            $ownerPasswordData = $ownerPasswordField->getData();
+            
+            // Extract password from RepeatedType (returns array with 'first' key)
+            $ownerPassword = null;
+            if ($ownerPasswordData && is_array($ownerPasswordData) && isset($ownerPasswordData['first'])) {
+                $ownerPassword = $ownerPasswordData['first'];
+            } elseif (is_string($ownerPasswordData) && !empty($ownerPasswordData)) {
+                $ownerPassword = $ownerPasswordData;
+            }
             
             // Get or create user
             $user = $store->getOwner();
             $isNewUser = false;
+            $passwordUpdated = false;
             
             if (!$user) {
                 $user = $this->userService->getUserByEmail($ownerEmail);
@@ -208,17 +371,23 @@ class StoreController extends AbstractController
             $user->setRoles(['ROLE_STORE']);
             
             // Update password if provided
-            if ($ownerPassword) {
-                $user->setPassword($ownerPassword);
-                $user = $this->userService->hashPassword($user);
+            if ($ownerPassword && !empty(trim($ownerPassword))) {
+                // Hash and set password
+                $user = $this->userService->hashPassword($user, $ownerPassword);
+                $passwordUpdated = true;
             }
             
-            if ($isNewUser || $ownerPassword) {
+            // Persist user if it's new or password was updated
+            if ($isNewUser || $passwordUpdated) {
                 $this->userService->persistUser($user);
+            } else {
+                // Still need to persist user in case email or other details changed
+                $this->entityManager->persist($user);
             }
             
-            // Set the owner relationship
+            // Set the bidirectional owner relationship
             $store->setOwner($user);
+            $user->setStore($store); // Important: Set bidirectional relationship
 
             $this->storeService->updateStore($store);
 
@@ -243,7 +412,202 @@ class StoreController extends AbstractController
             $templateData['productsDataTable'] = $productsDataTable->createView();
         }
 
+        if ($storeSettingForm) {
+            $templateData['storeSettingForm'] = $storeSettingForm->createView();
+        }
+
         return $this->render("admin/store/{$action}.html.twig", $templateData);
+    }
+
+    #[Route('/store/{id}/setting/update', name: 'admin_store_setting_update', defaults: ['title' => 'Update Store Settings'], methods: ['POST'])]
+    public function updateSettingAction(Request $request, int $id): Response
+    {
+        // Fetch store with settings
+        $store = $this->StoreRepository->createQueryBuilder('s')
+            ->leftJoin('s.setting', 'st')
+            ->leftJoin('st.mondayHours', 'mh')
+            ->leftJoin('st.tuesdayHours', 'th')
+            ->leftJoin('st.wednesdayHours', 'wh')
+            ->leftJoin('st.thursdayHours', 'thh')
+            ->leftJoin('st.fridayHours', 'fh')
+            ->leftJoin('st.saturdayHours', 'sah')
+            ->leftJoin('st.sundayHours', 'suh')
+            ->addSelect('st', 'mh', 'th', 'wh', 'thh', 'fh', 'sah', 'suh')
+            ->where('s.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if (!$store) {
+            throw $this->createNotFoundException('Store not found');
+        }
+
+        // Initialize StoreSetting if it doesn't exist
+        if (!$store->getSetting()) {
+            $storeSetting = new \App\Entity\StoreSetting();
+            $store->setSetting($storeSetting);
+            $this->entityManager->persist($storeSetting);
+            $this->entityManager->flush();
+        }
+
+        $storeSetting = $store->getSetting();
+        
+        // Ensure all BusinessHours are initialized (they can be null)
+        if ($storeSetting) {
+            $needsFlush = false;
+            // Check and initialize each BusinessHours if null
+            $hoursMapping = [
+                'mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours',
+                'fridayHours', 'saturdayHours', 'sundayHours'
+            ];
+            
+            foreach ($hoursMapping as $property) {
+                $getter = 'get' . ucfirst($property);
+                $setter = 'set' . ucfirst($property);
+                $hours = $storeSetting->$getter();
+                
+                if (!$hours) {
+                    // Create default BusinessHours based on day
+                    if ($property === 'sundayHours') {
+                        $newHours = new \App\Entity\BusinessHours(null, null, true); // Closed
+                    } else {
+                        $newHours = new \App\Entity\BusinessHours('09:00', '18:00', false);
+                    }
+                    $storeSetting->$setter($newHours);
+                    $needsFlush = true;
+                }
+            }
+            
+            if ($needsFlush) {
+                $this->entityManager->persist($storeSetting);
+                $this->entityManager->flush();
+                // Refresh the entity to ensure all relationships are loaded
+                $this->entityManager->refresh($storeSetting);
+            }
+        }
+        
+        // Store references to existing BusinessHours IDs before form processing
+        $existingHoursIds = [];
+        $hoursMapping = [
+            'mondayHours' => 'getMondayHours',
+            'tuesdayHours' => 'getTuesdayHours',
+            'wednesdayHours' => 'getWednesdayHours',
+            'thursdayHours' => 'getThursdayHours',
+            'fridayHours' => 'getFridayHours',
+            'saturdayHours' => 'getSaturdayHours',
+            'sundayHours' => 'getSundayHours',
+        ];
+        
+        foreach ($hoursMapping as $property => $getter) {
+            $hours = $storeSetting->$getter();
+            if ($hours && $hours->getId()) {
+                $existingHoursIds[$property] = $hours->getId();
+            }
+        }
+        
+        $form = $this->createForm(StoreSettingType::class, $storeSetting);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // After form processing, ensure we're updating existing entities, not creating new ones
+            // If the form created new BusinessHours entities, we need to restore the existing ones
+            $this->restoreExistingBusinessHours($storeSetting, $existingHoursIds);
+            
+            // Now update the existing BusinessHours with form data
+            $this->updateBusinessHoursFromForm($storeSetting, $form);
+            
+            $this->entityManager->flush();
+            $this->addSuccessToast('Store settings updated!', 'The store settings have been successfully updated.');
+
+            if ($request->headers->has('turbo-frame')) {
+                $stream = $this->renderBlockView("admin/store/edit.html.twig", 'stream_success', [
+                    'store' => $store
+                ]);
+                $this->addFlash('stream', $stream);
+            }
+
+            return $this->redirectToRoute('admin_store_edit', ['id' => $id], Response::HTTP_SEE_OTHER);
+        }
+
+        // If form has errors, redirect back to edit page
+        return $this->redirectToRoute('admin_store_edit', ['id' => $id], Response::HTTP_SEE_OTHER);
+    }
+
+    private function updateBusinessHoursFromForm(\App\Entity\StoreSetting $storeSetting, $form): void
+    {
+        $hoursMapping = [
+            'mondayHours' => ['getMondayHours', 'setMondayHours'],
+            'tuesdayHours' => ['getTuesdayHours', 'setTuesdayHours'],
+            'wednesdayHours' => ['getWednesdayHours', 'setWednesdayHours'],
+            'thursdayHours' => ['getThursdayHours', 'setThursdayHours'],
+            'fridayHours' => ['getFridayHours', 'setFridayHours'],
+            'saturdayHours' => ['getSaturdayHours', 'setSaturdayHours'],
+            'sundayHours' => ['getSundayHours', 'setSundayHours'],
+        ];
+
+        foreach ($hoursMapping as $property => $methods) {
+            $getter = $methods[0];
+            $setter = $methods[1];
+            
+            $dayForm = $form->get($property);
+            if (!$dayForm) {
+                continue;
+            }
+            
+            // Get the existing BusinessHours entity (from database)
+            $existingHours = $storeSetting->$getter();
+            
+            // If existing hours don't exist, create new ones
+            if ($existingHours === null) {
+                $existingHours = new \App\Entity\BusinessHours();
+                $storeSetting->$setter($existingHours);
+                $this->entityManager->persist($existingHours);
+            }
+            
+            // Get form data
+            $isClosed = $dayForm->get('isClosed')->getData() ?? false;
+            $openTime = $dayForm->get('openTime')->getData();
+            $closeTime = $dayForm->get('closeTime')->getData();
+            
+            // Update existing BusinessHours properties (don't create new entity)
+            $existingHours->setIsClosed($isClosed);
+            $existingHours->setOpenTime($openTime);
+            $existingHours->setCloseTime($closeTime);
+            
+            // Note: We don't need to persist if the entity is already managed (has an ID)
+            // The entity manager will track changes automatically
+        }
+    }
+
+    private function restoreExistingBusinessHours(\App\Entity\StoreSetting $storeSetting, array $existingHoursIds): void
+    {
+        // This method restores existing BusinessHours entities if the form created new ones
+        $hoursMapping = [
+            'mondayHours' => ['getMondayHours', 'setMondayHours'],
+            'tuesdayHours' => ['getTuesdayHours', 'setTuesdayHours'],
+            'wednesdayHours' => ['getWednesdayHours', 'setWednesdayHours'],
+            'thursdayHours' => ['getThursdayHours', 'setThursdayHours'],
+            'fridayHours' => ['getFridayHours', 'setFridayHours'],
+            'saturdayHours' => ['getSaturdayHours', 'setSaturdayHours'],
+            'sundayHours' => ['getSundayHours', 'setSundayHours'],
+        ];
+
+        foreach ($hoursMapping as $property => $methods) {
+            $getter = $methods[0];
+            $setter = $methods[1];
+            $hours = $storeSetting->$getter();
+            
+            // If we have an existing ID for this day but the current entity doesn't have one,
+            // it means a new entity was created by the form
+            if (isset($existingHoursIds[$property]) && ($hours === null || $hours->getId() === null || $hours->getId() !== $existingHoursIds[$property])) {
+                // Find the existing BusinessHours entity from database
+                $existingHours = $this->entityManager->find(\App\Entity\BusinessHours::class, $existingHoursIds[$property]);
+                if ($existingHours) {
+                    // Replace the new entity with the existing one
+                    $storeSetting->$setter($existingHours);
+                }
+            }
+        }
     }
 
     #[Route('/store/{id}/product/add', name: 'admin_store_product_add', defaults: ['title' => 'Add Product to Store'])]

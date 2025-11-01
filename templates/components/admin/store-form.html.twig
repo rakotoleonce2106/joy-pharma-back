@@ -43,25 +43,9 @@
         </div>
     </div>
 
-    {# Location Section #}
+    {# Location Section - Widget handles the entire UI including map #}
     <div class="space-y-4">
-        <div class="flex items-center gap-2 pb-2 border-b">
-            <twig:ux:icon name="lucide:map-pin" class="h-5 w-5 text-primary"/>
-            <h3 class="text-lg font-semibold">Store Location</h3>
-        </div>
-        <div class="bg-muted/50 rounded-lg p-4 space-y-4">
-            <p class="text-sm text-muted-foreground">
-                Physical address and coordinates for delivery and customer visits
-            </p>
-            {{ form_row(form.location) }}
-            <div class="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <twig:ux:icon name="lucide:info" class="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
-                <div class="text-sm text-blue-900 dark:text-blue-100">
-                    <p class="font-medium mb-1">Tip for accurate location</p>
-                    <p class="text-blue-700 dark:text-blue-300">Use Google Maps to get precise latitude and longitude coordinates</p>
-                </div>
-            </div>
-        </div>
+        {{ form_row(form.location) }}
     </div>
 
     {# Store Image Section #}

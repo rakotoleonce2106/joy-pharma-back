@@ -46,6 +46,15 @@
                     </button>
                     <button type="button" 
                             class="tab-button px-4 py-3 text-sm font-medium border-b-2 transition-colors" 
+                            data-tab="settings"
+                            onclick="switchTab('settings')">
+                        <div class="flex items-center gap-2">
+                            <twig:ux:icon name="lucide:clock" class="h-4 w-4"/>
+                            Store Settings
+                        </div>
+                    </button>
+                    <button type="button" 
+                            class="tab-button px-4 py-3 text-sm font-medium border-b-2 transition-colors" 
                             data-tab="products"
                             onclick="switchTab('products')">
                         <div class="flex items-center gap-2">
@@ -101,6 +110,36 @@
                             } %}
                         </twig:ui:card:content>
                             </twig:ui:card:root>
+                </div>
+
+                {# Store Settings Tab #}
+                <div id="tab-settings" class="tab-content hidden">
+                    <twig:ui:card:root>
+                        <twig:ui:card:header>
+                            <twig:ui:card:title>{{ 'Store Settings'|trans }}</twig:ui:card:title>
+                            <twig:ui:card:description>
+                                {{ 'Manage business hours and store settings'|trans }}
+                            </twig:ui:card:description>
+                        </twig:ui:card:header>
+                        <twig:ui:card:content>
+                            {% if storeSettingForm is defined and storeSettingForm %}
+                                {% include 'components/admin/store-settings-form.html.twig' with {
+                                    'store': store,
+                                    'form': storeSettingForm
+                                } %}
+                            {% else %}
+                                <div class="flex flex-col items-center justify-center py-12 text-center">
+                                    <div class="rounded-full bg-muted p-4 mb-4">
+                                        <twig:ux:icon name="lucide:settings" class="h-12 w-12 text-muted-foreground"/>
+                                    </div>
+                                    <h3 class="text-lg font-semibold mb-2">{{ 'No Settings Found'|trans }}</h3>
+                                    <p class="text-sm text-muted-foreground">
+                                        {{ 'Store settings are not available for this store.'|trans }}
+                                    </p>
+                                </div>
+                            {% endif %}
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
                 </div>
 
                 {# Store Products Tab #}
@@ -182,10 +221,28 @@
 
             // Show/hide save button based on tab
             const saveBtn = document.getElementById('save-store-btn');
-            if (tabName === 'products') {
+            if (tabName === 'products' || tabName === 'settings') {
                 saveBtn.classList.add('hidden');
             } else {
                 saveBtn.classList.remove('hidden');
+            }
+
+            // Refresh map when info tab becomes visible (map is in location section)
+            if (tabName === 'info') {
+                setTimeout(() => {
+                    // Dispatch custom event to refresh maps
+                    const event = new CustomEvent('location-map:refresh');
+                    document.dispatchEvent(event);
+                    
+                    // Also try to manually trigger initialization
+                    document.querySelectorAll('[data-controller*="location-map"]').forEach(element => {
+                        if (!element.querySelector('.leaflet-container')) {
+                            // Map not initialized, trigger connect
+                            const event = new Event('connect', { bubbles: true });
+                            element.dispatchEvent(event);
+                        }
+                    });
+                }, 300);
             }
         }
 

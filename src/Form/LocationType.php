@@ -53,7 +53,11 @@ class LocationType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Location::class,
-            'empty_data' => null,  // Return null instead of empty Location object
+            'empty_data' => function () {
+                // Create a new Location object when form is empty
+                // This ensures we always have an object to bind to, even if empty
+                return new Location();
+            },
             'required' => false,
         ]);
     }

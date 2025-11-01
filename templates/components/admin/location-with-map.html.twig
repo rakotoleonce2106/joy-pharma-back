@@ -4,30 +4,58 @@
         <div class="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
             <div 
                 data-location-map-target="map" 
-                class="w-full"
-                style="height: 400px;"
-            ></div>
+                id="location-map-{{ locationForm.vars.id|default(random()) }}"
+                class="w-full location-map-container"
+                style="height: 400px !important; min-height: 400px !important; width: 100% !important; position: relative; z-index: 1;"
+            >
+                <div class="flex items-center justify-center h-full text-muted-foreground">
+                    <div class="text-center">
+                        <twig:ux:icon name="lucide:map-pin" class="h-12 w-12 mx-auto mb-2 opacity-50"/>
+                        <p class="text-sm">Loading map...</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {# Location Form Fields #}
         <div class="grid gap-4 md:grid-cols-2">
-            <div class="md:col-span-2">
-                {{ form_row(locationForm.address, {
-                    'label': 'Address',
-                    'help': 'Click on the map to select a location, or enter an address and press Enter to search'
+            <div class="md:col-span-2 space-y-2">
+                {{ form_label(locationForm.address, 'Address') }}
+                {{ form_widget(locationForm.address, {
+                    'attr': {
+                        'data-location-map-target': 'address',
+                        'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm',
+                        'placeholder': 'Click on map to select location or enter address manually'
+                    }
                 }) }}
+                {{ form_errors(locationForm.address) }}
+                <p class="text-xs text-muted-foreground">
+                    Click on the map to select a location, or enter an address and press Enter to search
+                </p>
             </div>
-            <div>
-                {{ form_row(locationForm.latitude, {
-                    'label': 'Latitude',
-                    'help': 'Auto-filled from map'
+            <div class="space-y-2">
+                {{ form_label(locationForm.latitude, 'Latitude') }}
+                {{ form_widget(locationForm.latitude, {
+                    'attr': {
+                        'data-location-map-target': 'latitude',
+                        'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm bg-muted/30',
+                        'readonly': true
+                    }
                 }) }}
+                {{ form_errors(locationForm.latitude) }}
+                <p class="text-xs text-muted-foreground">Auto-filled from map</p>
             </div>
-            <div>
-                {{ form_row(locationForm.longitude, {
-                    'label': 'Longitude',
-                    'help': 'Auto-filled from map'
+            <div class="space-y-2">
+                {{ form_label(locationForm.longitude, 'Longitude') }}
+                {{ form_widget(locationForm.longitude, {
+                    'attr': {
+                        'data-location-map-target': 'longitude',
+                        'class': 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm bg-muted/30',
+                        'readonly': true
+                    }
                 }) }}
+                {{ form_errors(locationForm.longitude) }}
+                <p class="text-xs text-muted-foreground">Auto-filled from map</p>
             </div>
         </div>
 

@@ -6,7 +6,7 @@ App\Entity\StoreSetting:
             security: 'is_granted("ROLE_STORE")'
             provider: App\State\Store\StoreSettingProvider
             normalizationContext:
-                groups: ['store_setting:read']
+                groups: ['id:read','store_setting:read']
             openapi:
                 summary: 'Get store settings by ID'
                 description: 'Get store settings by ID. If ID matches user store setting, returns it; otherwise falls back to user store setting.'
@@ -26,10 +26,10 @@ App\Entity\StoreSetting:
             denormalizationContext:
                 groups: ['store_setting:write']
             normalizationContext:
-                groups: ['store_setting:read']
+                groups: ['id:read','store_setting:read']
             openapi:
                 summary: 'Update store settings'
-                description: 'Update store settings including business hours by ID'
+                description: 'Update store settings including business hours by ID. Include @id for existing BusinessHours to update them, or omit @id to create new ones.'
                 parameters:
                     - name: id
                       in: path

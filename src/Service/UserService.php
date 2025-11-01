@@ -31,8 +31,11 @@ readonly class UserService
 
     public function hashPassword(User $user, string $password = null): User
     {
+        // If no password provided, use default
+        $plainPassword = $password ?? 'JoyPharma2025!';
+        
         // Hash the password
-        $hashedPassword = $this->passwordHasher->hashPassword($user, $password ?? $user->getPlainPassword() ?? 'JoyPharma2025');
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $plainPassword);
         $user->setPassword($hashedPassword);
         return $user;
     }

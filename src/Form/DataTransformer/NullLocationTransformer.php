@@ -20,14 +20,21 @@ class NullLocationTransformer implements DataTransformerInterface
     public function reverseTransform($location): ?Location
     {
         // Transform from view to model (form to Location entity)
+        // Handle case where location might be null or not an instance
         if (!$location instanceof Location) {
+            // If form data was submitted but location is null, create a new Location
+            // This handles the case where form starts with null empty_data
             return null;
         }
 
         // If all location fields are empty, return null instead of empty object
-        if (empty($location->getAddress()) && 
-            ($location->getLatitude() === null || $location->getLatitude() === 0.0) && 
-            ($location->getLongitude() === null || $location->getLongitude() === 0.0)) {
+        $address = $location->getAddress();
+        $latitude = $location->getLatitude();
+        $longitude = $location->getLongitude();
+        
+        if (empty($address) && 
+            ($latitude === null || $latitude === 0.0) && 
+            ($longitude === null || $longitude === 0.0)) {
             return null;
         }
 
