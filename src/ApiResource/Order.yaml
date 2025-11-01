@@ -37,7 +37,29 @@ App\Entity\Order:
                 summary: 'Get all orders'
                 description: 'Get all orders'
                 security:
-                    -   JWT: [ 'ROLE_ADMIN','ROLE_USER','ROLE_STORE','ROLE_DELIVER' ]                
+                    -   JWT: [ 'ROLE_ADMIN','ROLE_USER','ROLE_STORE','ROLE_DELIVER' ]
+
+        store_update_order:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/store/order/{id}'
+            input: App\Dto\StoreUpdateOrderInput
+            processor: App\State\Store\StoreUpdateOrderProcessor
+            format: 'json'
+            security: 'is_granted("ROLE_STORE")'
+            normalizationContext:
+                groups: ['order:read','location:read','user:read','product:read','image:read']
+            openapi:
+                summary: 'Store updates order with order item actions'
+                description: 'Store owner updates an order by accepting, refusing, or suggesting alternatives for multiple order items in one request'
+                security:
+                    - JWT: ['ROLE_STORE']
+                parameters:
+                    - name: id
+                      in: path
+                      required: true
+                      description: 'The ID of the order to update'
+                      schema:
+                          type: integer
 
     normalizationContext:
         groups: ['id:read','order:read']

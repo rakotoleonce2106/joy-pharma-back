@@ -1,71 +1,7 @@
 App\Entity\OrderItem:
     operations:
-        get_pending_order_items:
-            class: ApiPlatform\Metadata\GetCollection
-            uriTemplate: "/store/order-items/pending"
-            security: 'is_granted("ROLE_STORE")'
-            provider: App\State\Store\PendingOrderItemsProvider
-            normalizationContext:
-                groups: ['order:read', 'product:read']
-            openapi:
-                summary: 'Get pending order items'
-                description: 'Get list of order items pending store action for the authenticated store owner'
-                parameters:
-                    - name: page
-                      in: query
-                      schema:
-                          type: integer
-                          default: 1
-                      description: 'Page number'
-                    - name: limit
-                      in: query
-                      schema:
-                          type: integer
-                          default: 20
-                          maximum: 100
-                      description: 'Items per page'
-
-        accept_order_item:
-            class: ApiPlatform\Metadata\Post
-            uriTemplate: "/store/order-item/accept"
-            input: App\Dto\AcceptOrderItemInput
-            processor: App\State\OrderItem\AcceptOrderItemProcessor
-            format: 'json'
-            normalizationContext:
-                groups: ['order:read', 'product:read']
-            openapi:
-                summary: 'Store accepts an order item'
-                description: 'Store owner accepts an order item with their store price'
-                security:
-                    - JWT: ['ROLE_STORE']
-
-        refuse_order_item:
-            class: ApiPlatform\Metadata\Post
-            uriTemplate: "/store/order-item/refuse"
-            input: App\Dto\RefuseOrderItemInput
-            processor: App\State\OrderItem\RefuseOrderItemProcessor
-            format: 'json'
-            normalizationContext:
-                groups: ['order:read', 'product:read']
-            openapi:
-                summary: 'Store refuses an order item'
-                description: 'Store owner refuses an order item with a reason'
-                security:
-                    - JWT: ['ROLE_STORE']
-
-        suggest_order_item:
-            class: ApiPlatform\Metadata\Post
-            uriTemplate: "/store/order-item/suggest"
-            input: App\Dto\SuggestOrderItemInput
-            processor: App\State\OrderItem\SuggestOrderItemProcessor
-            format: 'json'
-            normalizationContext:
-                groups: ['order:read', 'product:read']
-            openapi:
-                summary: 'Store suggests alternative for order item'
-                description: 'Store owner suggests an alternative product/price (requires admin approval)'
-                security:
-                    - JWT: ['ROLE_STORE']
+        # Removed: get_pending_order_items, accept_order_item, refuse_order_item, suggest_order_item
+        # Use PUT /store/order/{id} instead (see Order.yaml)
 
         approve_order_item_suggestion:
             class: ApiPlatform\Metadata\Post
