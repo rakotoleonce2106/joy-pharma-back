@@ -24,11 +24,22 @@ class StoreProductType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'Product',
                 'required' => true,
-                'placeholder' => 'Choose a product from the list...',
+                'placeholder' => 'Search and choose a product...',
                 'attr' => [
                     'class' => 'w-full',
+                    'data-searchable' => 'true',
                 ],
-                'help' => 'Select the product to add to this store',
+                'query_builder' => function ($repository) {
+                    return $repository->createQueryBuilder('p')
+                        ->orderBy('p.name', 'ASC');
+                },
+                'choice_attr' => function(Product $product) {
+                    return [
+                        'data-unit-price' => $product->getUnitPrice() ?? '',
+                        'data-total-price' => $product->getTotalPrice() ?? '',
+                    ];
+                },
+                'help' => 'Type to search products by name',
                 'constraints' => [
                     new NotBlank(['message' => 'Please select a product'])
                 ]

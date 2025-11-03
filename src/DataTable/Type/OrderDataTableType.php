@@ -73,7 +73,7 @@ class OrderDataTableType extends AbstractDataTableType
             ->addColumn('location', TextColumnType::class, [
                 'label' => 'order.datatable.location',
                 'sort' => true,
-                'property_path' => 'location.address',
+                'getter' => fn(Order $order) => $order->getLocation()?->getAddress() ?? '-',
                 'value_attr' => [
                     'class' => 'px-4'
                 ]
@@ -114,6 +114,20 @@ class OrderDataTableType extends AbstractDataTableType
 
         // Row actions
         $builder
+            ->addRowAction('view', LinkActionType::class, [
+                'label' => 'View',
+                'href' => fn(Order $order) => $this->urlGenerator->generate('admin_order_view', ['id' => $order->getId()]),
+                'attr' => [
+                    'size' => 'sm',
+                    'variant' => 'ghost',
+                    'data-turbo-frame' => '_top',
+                    'class' => 'whitespace-nowrap'
+                ],
+                'icon_attr' => [
+                    'name' => 'lucide:eye',
+                    'class' => 'w-4 h-4 mr-1'
+                ]
+            ])
             ->addRowAction('edit', LinkActionType::class, [
                 'label' => 'edit_datatable.edit',
                 'href' => fn(Order $order) => $this->urlGenerator->generate('admin_order_edit', ['id' => $order->getId()]),

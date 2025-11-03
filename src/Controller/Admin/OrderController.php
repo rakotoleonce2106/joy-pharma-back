@@ -46,6 +46,10 @@ class OrderController extends AbstractController
     public function createAction(Request $request): Response
     {
         $order = new Order();
+        // Set default scheduled date to today if not set
+        if (!$order->getScheduledDate()) {
+            $order->setScheduledDate(new \DateTime('today'));
+        }
         $form = $this->createForm(OrderType::class, $order, ['action' => $this->generateUrl('admin_order_new')]);
         $form->handleRequest($request);
 

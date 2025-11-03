@@ -52,6 +52,7 @@ class Order
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     #[Groups(['order:create','order:read'])]
+    #[Assert\GreaterThanOrEqual('today', message: 'Scheduled date cannot be in the past')]
     private ?\DateTimeInterface $scheduledDate = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -188,7 +189,7 @@ class Order
         return $this->scheduledDate;
     }
 
-    public function setScheduledDate(\DateTime $scheduledDate): static
+    public function setScheduledDate(?\DateTimeInterface $scheduledDate): static
     {
         $this->scheduledDate = $scheduledDate;
 

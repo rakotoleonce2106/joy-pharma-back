@@ -18,7 +18,7 @@
 
 {%- block form_rows -%}
     {% for child in form|filter(child => not child.rendered) %}
-        {{- form_row(child, {label: false}) -}}
+        {{- form_row(child) -}}
     {% endfor %}
 {%- endblock form_rows -%}
 
@@ -276,7 +276,7 @@
 
     {% set attrs = {id, name: full_name} %}
     {% if multiple %}{% set attrs = attrs|merge({multiple: true}) %}{% endif %}
-    {% if (required is defined and required)     %}{% set attrs = attrs|merge({required: true}) %}{% endif %}
+    {% if (required is defined and required) %}{% set attrs = attrs|merge({required: true}) %}{% endif %}
     {% if disabled %}{% set attrs = attrs|merge({disabled: true}) %}{% endif %}
 
     {%- for attrname, attrvalue in attr -%}
@@ -289,12 +289,14 @@
         {%- endif -%}
     {%- endfor -%}
 
-    <twig:ui:select:root {{ ...attrs }} :target="attrs.id">
+    {% set isSearchable = attr['data-searchable'] is defined and attr['data-searchable'] == 'true' %}
+    
+    <twig:ui:select:root {{ ...attrs }} :target="attrs.id" :searchable="isSearchable">
         {% with {id: attrs.id, full_name: attrs.name, required: attrs.required ?? false} %}{{ block(outerBlocks._choice_widget) }}{% endwith %}
 
         {% set triggerAttrs = { class:'w-full' } %}
         {% if errors|length > 0 %}
-            {% set triggerAttrs = triggerAttrs|merge({class: (errorAttrs.class|default('w-full') ~ ' border border-destructive focus:ring-destructive text-destructive')|trim}) %}
+            {% set triggerAttrs = triggerAttrs|merge({class: (triggerAttrs.class|default('w-full') ~ ' border border-destructive focus:ring-destructive text-destructive')|trim}) %}
         {% endif %}
 
         <twig:ui:select:trigger {{ ...triggerAttrs }} >
@@ -326,9 +328,7 @@
                 {% set currentValue = value|filter_choice(choices) %}
 
                 {% if currentValue is not null %}
-                    <twig:ui:select:value
-                            placeholder="{{ placeholder != '' ? (translation_domain is same as(false) ? placeholder : placeholder|trans({}, translation_domain)) }}"
-                            id="{{ attrs.id }}">
+                    <twig:ui:select:value id="{{ attrs.id }}">
                         {{ currentValue.label|trans(currentValue.labelTranslationParameters, choice_translation_domain) }}
                     </twig:ui:select:value>
                 {% else %}
@@ -341,6 +341,10 @@
 
         {% with {content: outerBlocks.choice_widget_options} %}
             <twig:ui:select:content>
+                {% if isSearchable %}
+                    <twig:ui:select:search placeholder="Search products..." />
+                {% endif %}
+                
                 {%- if preferred_choices|length > 0 -%}
                     {% set options = preferred_choices %}
                     {% set render_preferred_choices = true %}
@@ -376,7 +380,7 @@
             {% if not render_preferred_choices|default(false) and choice is selectedchoice(value) %}
                 {% set attr = attr|merge({ selected: 'selected' }) %}
             {% endif %}
-            <twig:ui:select:item {{ ...choice.attr }} value="{{ choice.value }}">
+            <twig:ui:select:item {{ ...attr }} value="{{ choice.value }}">
                 {{ choice_translation_domain is same as(false) ? choice.label : choice.label|trans(choice.labelTranslationParameters, choice_translation_domain) }}
             </twig:ui:select:item>
         {%- endif -%}

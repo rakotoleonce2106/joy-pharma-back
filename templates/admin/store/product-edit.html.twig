@@ -3,8 +3,8 @@
 {% block title %}{{ 'Edit Store Product'|trans }}{% endblock %}
 
 {% block content %}
-    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
-        <div class="mx-auto grid w-full max-w-3xl gap-6">
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <div class="mx-auto grid w-full max-w-5xl gap-6">
             <div class="flex items-center gap-4">
                 <twig:ui:button:root href="{{ path('admin_store_edit', {id: store.id}) }}" variant="outline" size="icon" class="h-8 w-8">
                     <twig:ux:icon name="radix-icons:chevron-left" class="h-4 w-4"/>

@@ -67,13 +67,23 @@ class StoreController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // After form processing, check if location should be null (empty location)
+            // After form processing, check if location should be null (empty location or missing coordinates)
             $location = $store->getLocation();
-            if ($location && empty($location->getAddress()) && 
-                ($location->getLatitude() === null || $location->getLatitude() === 0.0) && 
-                ($location->getLongitude() === null || $location->getLongitude() === 0.0)) {
-                // All location fields are empty, set to null
-                $store->setLocation(null);
+            if ($location) {
+                $latitude = $location->getLatitude();
+                $longitude = $location->getLongitude();
+                
+                // If latitude or longitude is null, we cannot save the location (database constraint)
+                // Set location to null even if address has a value - coordinates are required
+                if (($latitude === null || $latitude === 0.0) || 
+                    ($longitude === null || $longitude === 0.0)) {
+                    $store->setLocation(null);
+                } elseif (empty($location->getAddress()) && 
+                    ($latitude === null || $latitude === 0.0) && 
+                    ($longitude === null || $longitude === 0.0)) {
+                    // All location fields are empty, set to null
+                    $store->setLocation(null);
+                }
             }
             /** @var UploadedFile|null $uploadedFile */
             $image = $form->get('image')->getData();

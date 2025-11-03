@@ -1,0 +1,7 @@
+<input 
+    {{ attributes.add(stimulus_target('ui--select', 'search')).without('class') }}
+    type="text"
+    placeholder="{{ placeholder|default('Search...') }}"
+    class="{{ ['h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring mb-1', attributes.render('class')] | tailwind_merge }}"
+/>
+

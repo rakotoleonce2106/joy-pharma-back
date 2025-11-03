@@ -167,14 +167,16 @@
                                     }
                                 }) }}
                             </div>
-                            <div class="md:col-span-2">
-                                {{ form_row(item.product, {
-                                    'label': 'Product',
+                            <div class="md:col-span-2 space-y-2">
+                                {{ form_label(item.product, 'Product') }}
+                                {{ form_widget(item.product, {
                                     'attr': {
                                         'class': 'select2-enable',
                                         'data-action': 'change->order-total#itemChanged'
                                     }
                                 }) }}
+                                {{ form_help(item.product) }}
+                                {{ form_errors(item.product) }}
                             </div>
                             <div>
                                 {{ form_row(item.store, {

@@ -32,6 +32,14 @@ class NullLocationTransformer implements DataTransformerInterface
         $latitude = $location->getLatitude();
         $longitude = $location->getLongitude();
         
+        // If latitude or longitude is null, we cannot save the location (database constraint)
+        // So return null even if address has a value - coordinates are required
+        if (($latitude === null || $latitude === 0.0) || 
+            ($longitude === null || $longitude === 0.0)) {
+            return null;
+        }
+        
+        // If all location fields are empty, return null instead of empty object
         if (empty($address) && 
             ($latitude === null || $latitude === 0.0) && 
             ($longitude === null || $longitude === 0.0)) {

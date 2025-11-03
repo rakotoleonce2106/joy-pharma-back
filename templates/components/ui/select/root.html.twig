@@ -1,6 +1,8 @@
-{% props placement = 'bottom-start', trigger = 'click', dismissAfter = null, matchWidth = true, target = null, multiple = false %}
+{% props placement = 'bottom-start', trigger = 'click', dismissAfter = null, matchWidth = true, target = null, multiple = false, searchable = false %}
 
-<div {{ attributes.add(stimulus_controller(controllerName='ui--select', controllerValues={placement, trigger, dismissAfter, matchWidth, isMultiple: multiple}, controllerOutlets={
+{% set searchableValue = searchable == true or searchable == 'true' %}
+
+<div {{ attributes.add(stimulus_controller(controllerName='ui--select', controllerValues={placement, trigger, dismissAfter, matchWidth, isMultiple: multiple, searchable: searchableValue}, controllerOutlets={
     'ui--input': '#' ~ target,
     'ui--text': '#' ~ target,
 })).without('class') }} class="{{ attributes.render('class') }}">

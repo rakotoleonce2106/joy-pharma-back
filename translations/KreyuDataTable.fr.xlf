@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file source-language="en" target-language="fr" datatype="plaintext" original="file.ext">
+    <header>
+      <tool tool-id="symfony" tool-name="Symfony"/>
+    </header>
+    <body>
+      <trans-unit id="X1QN1Xn" resname="Equals">
+        <source>Equals</source>
+        <target>égal</target>
+      </trans-unit>
+      <trans-unit id="7FoNNj2" resname="Not equals">
+        <source>Not equals</source>
+        <target>différent</target>
+      </trans-unit>
+      <trans-unit id="RXk3ErM" resname="Contains">
+        <source>Contains</source>
+        <target>contient</target>
+      </trans-unit>
+      <trans-unit id="k50MEVo" resname="Not contains">
+        <source>Not contains</source>
+        <target>ne contient pas</target>
+      </trans-unit>
+      <trans-unit id="CbLDCyz" resname="Greater than">
+        <source>Greater than</source>
+        <target>supérieur à</target>
+      </trans-unit>
+      <trans-unit id="2hI.rtC" resname="Greater than or equals">
+        <source>Greater than or equals</source>
+        <target>supérieur ou égal à</target>
+      </trans-unit>
+      <trans-unit id="ybPoOJO" resname="Less than">
+        <source>Less than</source>
+        <target>inférieur à</target>
+      </trans-unit>
+      <trans-unit id="Xfkny95" resname="Less than or equals">
+        <source>Less than or equals</source>
+        <target>inférieur ou égal à</target>
+      </trans-unit>
+      <trans-unit id="VGhNcLG" resname="Starts with">
+        <source>Starts with</source>
+        <target>commence par</target>
+      </trans-unit>
+      <trans-unit id="R1UgG8n" resname="Ends with">
+        <source>Ends with</source>
+        <target>se termine par</target>
+      </trans-unit>
+      <trans-unit id="pRCwpOT" resname="Yes">
+        <source>Yes</source>
+        <target>Oui</target>
+      </trans-unit>
+      <trans-unit id="wd1MvZW" resname="No">
+        <source>No</source>
+        <target>Non</target>
+      </trans-unit>
+      <trans-unit id="VaLpF_G" resname="Before %date%">
+        <source>Before %date%</source>
+        <target>avant %date%</target>
+      </trans-unit>
+      <trans-unit id="y2gT2KT" resname="After %date%">
+        <source>After %date%</source>
+        <target>après %date%</target>
+      </trans-unit>
+      <trans-unit id="7i_T3Za" resname="Personalization">
+        <source>Personalization</source>
+        <target>Personnalisation</target>
+      </trans-unit>
+      <trans-unit id="K5Mma7C" resname="Drag items between columns to show/hide relevant data in the list or change their order">
+        <source>Drag items between columns to show/hide relevant data in the list or change their order</source>
+        <target>Faites glisser les éléments entre les colonnes pour afficher/masquer les données pertinentes dans la liste ou changer leur ordre</target>
+      </trans-unit>
+      <trans-unit id="NvQ.DOE" resname="Visible columns">
+        <source>Visible columns</source>
+        <target>Colonnes visibles</target>
+      </trans-unit>
+      <trans-unit id="c9.OOIs" resname="Hidden columns">
+        <source>Hidden columns</source>
+        <target>Colonnes cachées</target>
+      </trans-unit>
+      <trans-unit id="yQ5Hllb" resname="Showing %current_page_first_item_index% - %current_page_last_item_index% of %total_item_count%">
+        <source>Showing %current_page_first_item_index% - %current_page_last_item_index% of %total_item_count%</source>
+        <target>Affichage de %current_page_first_item_index% - %current_page_last_item_index% parmi %total_item_count%</target>
+      </trans-unit>
+      <trans-unit id="Jp3BFhF" resname="Export">
+        <source>Export</source>
+        <target>Exporter</target>
+      </trans-unit>
+      <trans-unit id="0XDVwZh" resname="Filename">
+        <source>Filename</source>
+        <target>Nom du fichier</target>
+      </trans-unit>
+      <trans-unit id="jaZgCCG" resname="Exporter">
+        <source>Exporter</source>
+        <target>Exporter</target>
+      </trans-unit>
+      <trans-unit id="Bp7CVlI" resname="Strategy">
+        <source>Strategy</source>
+        <target>Stratégie</target>
+      </trans-unit>
+      <trans-unit id="11eBu06" resname="Include personalization">
+        <source>Include personalization</source>
+        <target>Inclure la personnalisation</target>
+      </trans-unit>
+      <trans-unit id="XmCi78j" resname="Include current page">
+        <source>Include current page</source>
+        <target>Inclure la page actuelle</target>
+      </trans-unit>
+      <trans-unit id="mnZdTbB" resname="Include all">
+        <source>Include all</source>
+        <target>Inclure tout</target>
+      </trans-unit>
+      <trans-unit id="v.UOjhX" resname="Selected">
+        <source>Selected</source>
+        <target>Sélectionné</target>
+      </trans-unit>
+      <trans-unit id="o7tHpZ5" resname="Filter">
+        <source>Filter</source>
+        <target>Filtrer</target>
+      </trans-unit>
+      <trans-unit id="ap5cmeq" resname="Apply">
+        <source>Apply</source>
+        <target>Appliquer</target>
+      </trans-unit>
+      <trans-unit id="Nzb_A.4" resname="No results found">
+        <source>No results found</source>
+        <target>Aucun résultat</target>
+      </trans-unit>
+      <trans-unit id="igxxPRP" resname="Try adjusting your search or filter to find what you're looking for">
+        <source>Try adjusting your search or filter to find what you're looking for</source>
+        <target>Essayez d'ajuster votre recherche ou votre filtre pour trouver ce que vous cherchez</target>
+      </trans-unit>
+      <trans-unit id="R080Li7" resname="Clear filter">
+        <source>Clear filter</source>
+        <target>Effacer le filtre</target>
+      </trans-unit>
+      <trans-unit id="WmSmhBn" resname="Clear all filters">
+        <source>Clear all filters</source>
+        <target>Effacer tous les filtres</target>
+      </trans-unit>
+      <trans-unit id="kblRU_x" resname="Action confirmation">
+        <source>Action confirmation</source>
+        <target>Confirmation de l'action</target>
+      </trans-unit>
+      <trans-unit id="DdQqFPk" resname="Are you sure you want to execute this action?">
+        <source>Are you sure you want to execute this action?</source>
+        <target>Êtes-vous sûr de vouloir exécuter cette action ?</target>
+      </trans-unit>
+      <trans-unit id="pl9ndg." resname="Confirm">
+        <source>Confirm</source>
+        <target>Confirmer</target>
+      </trans-unit>
+      <trans-unit id="EhytB4v" resname="Cancel">
+        <source>Cancel</source>
+        <target>Annuler</target>
+      </trans-unit>
+      <trans-unit id="a5w5Bbx" resname="Loading">
+        <source>Loading</source>
+        <target>Chargement</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

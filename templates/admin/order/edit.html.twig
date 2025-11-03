@@ -37,47 +37,149 @@
                     </twig:ui:card:content>
                 </twig:ui:card:root>
 
-                {# Order Summary Card #}
-                <twig:ui:card:root>
-                    <twig:ui:card:header>
-                        <twig:ui:card:title>{{ 'Order Summary'|trans }}</twig:ui:card:title>
-                    </twig:ui:card:header>
-                    <twig:ui:card:content class="grid gap-4">
-                        <div class="grid gap-2">
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-muted-foreground">{{ 'Reference'|trans }}</span>
-                                <span class="font-medium">{{ order.reference }}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-muted-foreground">{{ 'Status'|trans }}</span>
-                                {% set statusClass = order.status.value == 'delivered' ? 'bg-green-100 text-green-800' : (order.status.value == 'cancelled' ? 'bg-red-100 text-red-800' : (order.status.value == 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')) %}
-                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ statusClass }}">
-                                    {{ order.status.value|capitalize }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-muted-foreground">{{ 'Total Amount'|trans }}</span>
-                                <span class="font-medium">{{ order.totalAmount|number_format(2, '.', ',') }} Ar</span>
-                            </div>
-                            {% if order.owner %}
-                                <div class="flex items-center justify-between text-sm">
-                                    <span class="text-muted-foreground">{{ 'Customer'|trans }}</span>
-                                    <span class="font-medium">{{ order.owner.fullName }}</span>
+                {# Order Summary Card - Enhanced #}
+                <div class="grid gap-6 h-fit">
+                    <twig:ui:card:root>
+                        <twig:ui:card:header>
+                            <twig:ui:card:title>{{ 'Order Summary'|trans }}</twig:ui:card:title>
+                        </twig:ui:card:header>
+                        <twig:ui:card:content class="grid gap-4">
+                            <div class="grid gap-2">
+                                <div class="flex items-center justify-between text-sm pb-2 border-b">
+                                    <span class="text-muted-foreground">{{ 'Reference'|trans }}</span>
+                                    <span class="font-medium">{{ order.reference }}</span>
                                 </div>
-                            {% endif %}
-                            {% if order.deliver %}
-                                <div class="flex items-center justify-between text-sm">
-                                    <span class="text-muted-foreground">{{ 'Delivery Person'|trans }}</span>
-                                    <span class="font-medium">{{ order.deliver.fullName }}</span>
+                                <div class="flex items-center justify-between text-sm pb-2 border-b">
+                                    <span class="text-muted-foreground">{{ 'Status'|trans }}</span>
+                                    {% set statusClass = order.status.value == 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' : (order.status.value == 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' : (order.status.value == 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400')) %}
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ statusClass }}">
+                                        {{ order.status.value|capitalize }}
+                                    </span>
                                 </div>
-                            {% endif %}
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-muted-foreground">{{ 'Created'|trans }}</span>
-                                <span class="font-medium">{{ order.createdAt|date('Y-m-d H:i') }}</span>
+                                <div class="flex items-center justify-between text-sm pb-2 border-b">
+                                    <span class="text-muted-foreground">{{ 'Total Amount'|trans }}</span>
+                                    <span class="font-bold text-lg">{{ order.totalAmount|number_format(2, '.', ',') }} Ar</span>
+                                </div>
+                                {% if order.storeTotalAmount %}
+                                    <div class="flex items-center justify-between text-sm pb-2 border-b">
+                                        <span class="text-muted-foreground">{{ 'Store Total'|trans }}</span>
+                                        <span class="font-semibold text-green-600 dark:text-green-400">{{ order.storeTotalAmount|number_format(2, '.', ',') }} Ar</span>
+                                    </div>
+                                {% endif %}
+                                {% if order.owner %}
+                                    <div class="flex items-center justify-between text-sm pb-2 border-b">
+                                        <span class="text-muted-foreground">{{ 'Customer'|trans }}</span>
+                                        <span class="font-medium">{{ order.owner.fullName }}</span>
+                                    </div>
+                                {% endif %}
+                                {% if order.deliver %}
+                                    <div class="flex items-center justify-between text-sm pb-2 border-b">
+                                        <span class="text-muted-foreground">{{ 'Delivery Person'|trans }}</span>
+                                        <span class="font-medium">{{ order.deliver.fullName }}</span>
+                                    </div>
+                                {% else %}
+                                    <div class="flex items-center justify-between text-sm pb-2 border-b">
+                                        <span class="text-muted-foreground">{{ 'Delivery Person'|trans }}</span>
+                                        <span class="text-yellow-600 dark:text-yellow-400 text-xs font-medium">{{ 'Not Assigned'|trans }}</span>
+                                    </div>
+                                {% endif %}
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-muted-foreground">{{ 'Created'|trans }}</span>
+                                    <span class="font-medium">{{ order.createdAt|date('Y-m-d H:i') }}</span>
+                                </div>
                             </div>
-                        </div>
-                    </twig:ui:card:content>
-                </twig:ui:card:root>
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
+
+                    {# Store Status Summary #}
+                    {% if order.items|length > 0 %}
+                        {% set unique_stores_edit = [] %}
+                        {% set unique_store_ids_edit = [] %}
+                        {% for item in order.items %}
+                            {% if item.store and item.store.id not in unique_store_ids_edit %}
+                                {% set unique_stores_edit = unique_stores_edit|merge([item.store]) %}
+                                {% set unique_store_ids_edit = unique_store_ids_edit|merge([item.store.id]) %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if unique_stores_edit|length > 0 %}
+                            <twig:ui:card:root>
+                                <twig:ui:card:header>
+                                    <twig:ui:card:title>{{ 'Store Status'|trans }}</twig:ui:card:title>
+                                </twig:ui:card:header>
+                                <twig:ui:card:content class="grid gap-3">
+                                    {% for store in unique_stores_edit %}
+                                        {% set accepted_count = order.items|filter(item => item.store and item.store.id == store.id and item.storeStatus.value == 'accepted')|length %}
+                                        {% set refused_count = order.items|filter(item => item.store and item.store.id == store.id and item.storeStatus.value == 'refused')|length %}
+                                        {% set suggested_count = order.items|filter(item => item.store and item.store.id == store.id and item.storeStatus.value == 'suggested')|length %}
+                                        {% set pending_count = order.items|filter(item => item.store and item.store.id == store.id and item.storeStatus.value == 'pending')|length %}
+                                        
+                                        <div class="p-3 bg-card rounded-lg border text-sm">
+                                            <div class="font-medium mb-2">{{ store.name }}</div>
+                                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                                {% if accepted_count > 0 %}
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-muted-foreground">{{ 'Accepted'|trans }}:</span>
+                                                        <span class="font-medium text-green-600">{{ accepted_count }}</span>
+                                                    </div>
+                                                {% endif %}
+                                                {% if refused_count > 0 %}
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-muted-foreground">{{ 'Refused'|trans }}:</span>
+                                                        <span class="font-medium text-red-600">{{ refused_count }}</span>
+                                                    </div>
+                                                {% endif %}
+                                                {% if suggested_count > 0 %}
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-muted-foreground">{{ 'Suggested'|trans }}:</span>
+                                                        <span class="font-medium text-yellow-600">{{ suggested_count }}</span>
+                                                    </div>
+                                                {% endif %}
+                                                {% if pending_count > 0 %}
+                                                    <div class="flex items-center justify-between">
+                                                        <span class="text-muted-foreground">{{ 'Pending'|trans }}:</span>
+                                                        <span class="font-medium text-gray-600">{{ pending_count }}</span>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </twig:ui:card:content>
+                            </twig:ui:card:root>
+                        {% endif %}
+                    {% endif %}
+
+                    {# QR Code #}
+                    {% if order.qrCode %}
+                        <twig:ui:card:root>
+                            <twig:ui:card:header>
+                                <twig:ui:card:title>{{ 'QR Code'|trans }}</twig:ui:card:title>
+                            </twig:ui:card:header>
+                            <twig:ui:card:content>
+                                <div class="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border-2 border-blue-200 dark:border-blue-800 text-center">
+                                    <div class="font-mono text-sm font-bold text-blue-900 dark:text-blue-100 break-all mb-2">
+                                        {{ order.qrCode }}
+                                    </div>
+                                    {% if order.qrCodeValidatedAt %}
+                                        <div class="text-xs text-green-600 dark:text-green-400">✓ {{ 'Validated'|trans }} {{ order.qrCodeValidatedAt|date('Y-m-d H:i') }}</div>
+                                    {% else %}
+                                        <div class="text-xs text-yellow-600 dark:text-yellow-400">{{ 'Pending Validation'|trans }}</div>
+                                    {% endif %}
+                                </div>
+                            </twig:ui:card:content>
+                        </twig:ui:card:root>
+                    {% endif %}
+
+                    {# View Full Details Link #}
+                    <twig:ui:card:root>
+                        <twig:ui:card:content class="grid gap-2">
+                            <twig:ui:button:root href="{{ path('admin_order_view', {id: order.id}) }}" variant="outline" class="w-full">
+                                <twig:ux:icon name="lucide:eye" class="h-4 w-4 mr-2"/>
+                                {{ 'View Full Details'|trans }}
+                            </twig:ui:button:root>
+                        </twig:ui:card:content>
+                    </twig:ui:card:root>
+                </div>
             </div>
 
             <div class="flex items-center justify-end gap-2 md:hidden">

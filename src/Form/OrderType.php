@@ -17,6 +17,7 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 
 class OrderType extends AbstractType
 {
@@ -86,6 +87,18 @@ class OrderType extends AbstractType
             ->add('scheduledDate', DateTimeType::class, [
                 'label' => 'order.form.scheduled_date',
                 'required' => false,
+                'widget' => 'single_text',
+                'html5' => true,
+                'empty_data' => new \DateTime('today'),
+                'constraints' => [
+                    new GreaterThanOrEqual([
+                        'value' => 'today',
+                        'message' => 'Scheduled date cannot be in the past',
+                    ]),
+                ],
+                'attr' => [
+                    'min' => (new \DateTime('today'))->format('Y-m-d\TH:i'),
+                ],
             ])
             ->add('phone', TextType::class, [
                 'label' => 'order.form.phone',

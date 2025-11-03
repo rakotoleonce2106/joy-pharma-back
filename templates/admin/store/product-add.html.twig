@@ -3,8 +3,8 @@
 {% block title %}{{ 'Add Product to Store'|trans }}{% endblock %}
 
 {% block content %}
-    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
-        <div class="mx-auto grid w-full max-w-3xl gap-6">
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <div class="mx-auto grid w-full max-w-5xl gap-6">
             <div class="flex items-center gap-4">
                 <twig:ui:button:root href="{{ path('admin_store_edit', {id: store.id}) }}" variant="outline" size="icon" class="h-8 w-8">
                     <twig:ux:icon name="radix-icons:chevron-left" class="h-4 w-4"/>
@@ -43,7 +43,7 @@
                         }
                     }) }}
 
-                    <div class="space-y-4">
+                    <div class="space-y-4" data-controller="store-product-prices">
                         <div class="flex items-center gap-2 pb-2 border-b">
                             <twig:ux:icon name="lucide:package-search" class="h-5 w-5 text-primary"/>
                             <h3 class="text-lg font-semibold">Product Selection</h3>
@@ -53,16 +53,44 @@
                             <twig:ux:icon name="lucide:info" class="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
                             <div class="text-sm text-blue-900 dark:text-blue-100">
                                 <p class="text-blue-700 dark:text-blue-300">
-                                    Choose from available products in the system. Each product can have different pricing and stock levels per store.
+                                    <strong>Tip:</strong> Use the search box in the dropdown to quickly find products by name. Each product can have different pricing and stock levels per store.
                                 </p>
                             </div>
                         </div>
 
-                        <div>
+                        <div class="space-y-2">
                             {{ form_label(form.product, 'Select Product') }}
-                            {{ form_widget(form.product, {'attr': {'class': 'mt-1'}}) }}
+                            {{ form_widget(form.product) }}
                             {{ form_help(form.product) }}
-                            {{ form_errors(form.product) }}
+                            {% if form.product.vars.errors|length > 0 %}
+                                <div class="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                                    <twig:ux:icon name="lucide:alert-circle" class="h-4 w-4 text-destructive flex-shrink-0 mt-0.5"/>
+                                    <div class="flex-1">
+                                        {{ form_errors(form.product) }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {# Product Price Display - Shown when product is selected #}
+                        <div class="hidden items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg border border-blue-200 dark:border-blue-800 shadow-sm" data-store-product-prices-target="unitPriceDisplay">
+                            <div class="flex-shrink-0 p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                                <twig:ux:icon name="lucide:tag" class="h-5 w-5 text-blue-600 dark:text-blue-400"/>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-medium text-blue-900 dark:text-blue-100 uppercase tracking-wide mb-1">Product Unit Price</p>
+                                <p class="text-lg font-bold text-blue-700 dark:text-blue-300" data-store-product-prices-target="unitPriceValue">-</p>
+                            </div>
+                        </div>
+                        
+                        <div class="hidden items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg border border-green-200 dark:border-green-800 shadow-sm" data-store-product-prices-target="totalPriceDisplay">
+                            <div class="flex-shrink-0 p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                                <twig:ux:icon name="lucide:dollar-sign" class="h-5 w-5 text-green-600 dark:text-green-400"/>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-medium text-green-900 dark:text-green-100 uppercase tracking-wide mb-1">Product Total Price</p>
+                                <p class="text-lg font-bold text-green-700 dark:text-green-300" data-store-product-prices-target="totalPriceValue">-</p>
+                            </div>
                         </div>
                     </div>
 
@@ -78,6 +106,16 @@
                             </div>
                             <div>
                                 {{ form_row(form.price) }}
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-2 p-3 bg-info/10 border border-info/20 rounded-lg">
+                            <twig:ux:icon name="lucide:info" class="h-4 w-4 text-info flex-shrink-0 mt-0.5"/>
+                            <div class="text-sm">
+                                <p class="font-medium text-info mb-1">Default Product Prices</p>
+                                <p class="text-info/80">
+                                    When you select a product, the fields above will be automatically filled with the product's default prices. You can modify these prices for this specific store.
+                                </p>
                             </div>
                         </div>
 
