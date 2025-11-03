@@ -43,12 +43,23 @@ class RegisterDeliveryProcessor implements ProcessorInterface
             $user->setVehiclePlate($data->vehiclePlate);
         }
 
-        // Set roles for delivery person
-        $user->setRoles(['ROLE_USER', 'ROLE_DELIVER']);
+        // Set roles for delivery person (no ROLE_USER as requested)
+        $user->setRoles(['ROLE_DELIVER']);
+
+        // Newly created delivery accounts require admin activation
+        $user->setActive(false);
 
         // Hash password
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data->password);
         $user->setPassword($hashedPassword);
+
+        // Attach verification documents if provided
+        if (!empty($data->residenceDocument)) {
+            $user->setResidenceDocumentFile($data->residenceDocument);
+        }
+        if (!empty($data->vehicleDocument)) {
+            $user->setVehicleDocumentFile($data->vehicleDocument);
+        }
 
         // Save user
         $this->entityManager->persist($user);

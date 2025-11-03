@@ -22,6 +22,7 @@ security:
             stateless: true
             provider: users
             entry_point: App\Security\CustomEntryPoint
+            user_checker: App\Security\ApiUserChecker
             jwt: ~
             refresh_jwt:
                 check_path: /api/token/refresh
@@ -44,6 +45,7 @@ security:
     access_control:
        - { path: ^/login, roles: PUBLIC_ACCESS }
        - { path: ^/admin, roles: ROLE_ADMIN }
+       - { path: ^/api/register/delivery, roles: PUBLIC_ACCESS }
        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
        - { path: ^/api/register, roles: PUBLIC_ACCESS }
        - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }

@@ -58,12 +58,14 @@ App\Dto\RegisterDeliveryInput:
             uriTemplate: '/register/delivery'
             processor: App\State\Auth\RegisterDeliveryProcessor
             read: false
+            input_formats:
+                multipart: [ 'multipart/form-data' ]
             openapi:
                 summary: 'Register as delivery person'
                 description: 'Register a new delivery person account and receive JWT token'
                 requestBody:
                     content:
-                        application/json:
+                        multipart/form-data:
                             schema:
                                 type: object
                                 properties:
@@ -84,6 +86,12 @@ App\Dto\RegisterDeliveryInput:
                                         enum: [bike, motorcycle, car, van]
                                     vehiclePlate:
                                         type: string
+                                    residenceDocument:
+                                        type: string
+                                        format: binary
+                                    vehicleDocument:
+                                        type: string
+                                        format: binary
                                 required:
                                     - email
                                     - password

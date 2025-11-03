@@ -12,6 +12,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Vich\UploaderBundle\Entity\File as EmbeddedFile;
 use Vich\UploaderBundle\Mapping\Annotation as Vich;
 use App\Repository\UserRepository;
@@ -142,6 +143,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:update'])]
     private ?string $vehiclePlate = null;
 
+    // Delivery verification documents
+    #[Vich\UploadableField(mapping: 'delivery_residence', fileNameProperty: 'residenceDocument.name', size: 'residenceDocument.size')]
+    private ?File $residenceDocumentFile = null;
+
+    #[ORM\Embedded(class: 'Vich\\UploaderBundle\\Entity\\File')]
+    #[Groups(['user:read'])]
+    private ?EmbeddedFile $residenceDocument = null;
+
+    #[Vich\UploadableField(mapping: 'delivery_vehicle', fileNameProperty: 'vehicleDocument.name', size: 'vehicleDocument.size')]
+    private ?File $vehicleDocumentFile = null;
+
+    #[ORM\Embedded(class: 'Vich\\UploaderBundle\\Entity\\File')]
+    #[Groups(['user:read'])]
+    private ?EmbeddedFile $vehicleDocument = null;
+
     /**
      * @var Collection<int, Notification>
      */
@@ -171,6 +187,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->notifications = new ArrayCollection();
         $this->deliverySchedules = new ArrayCollection();
         $this->invoices = new ArrayCollection();
+        $this->residenceDocument = new EmbeddedFile();
+        $this->vehicleDocument = new EmbeddedFile();
     }
 
     public function getEmail(): ?string
@@ -333,6 +351,52 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getImage(): ?EmbeddedFile
     {
         return $this->image;
+    }
+
+    public function setResidenceDocumentFile(?File $file = null): void
+    {
+        $this->residenceDocumentFile = $file;
+        if ($file !== null) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+    }
+
+    public function getResidenceDocumentFile(): ?File
+    {
+        return $this->residenceDocumentFile;
+    }
+
+    public function getResidenceDocument(): ?EmbeddedFile
+    {
+        return $this->residenceDocument;
+    }
+
+    public function setResidenceDocument(EmbeddedFile $file): void
+    {
+        $this->residenceDocument = $file;
+    }
+
+    public function setVehicleDocumentFile(?File $file = null): void
+    {
+        $this->vehicleDocumentFile = $file;
+        if ($file !== null) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+    }
+
+    public function getVehicleDocumentFile(): ?File
+    {
+        return $this->vehicleDocumentFile;
+    }
+
+    public function getVehicleDocument(): ?EmbeddedFile
+    {
+        return $this->vehicleDocument;
+    }
+
+    public function setVehicleDocument(EmbeddedFile $file): void
+    {
+        $this->vehicleDocument = $file;
     }
 
     /**

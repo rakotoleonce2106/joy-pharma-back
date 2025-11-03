@@ -3,6 +3,7 @@
 namespace App\Dto;
 
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class RegisterDeliveryInput
 {
@@ -28,5 +29,17 @@ class RegisterDeliveryInput
     public string $vehicleType;
 
     public ?string $vehiclePlate = null;
+
+    /**
+     * Residence proof document (PDF or image)
+     */
+    #[Assert\File(maxSize: '10M', mimeTypes: ['application/pdf','image/jpeg','image/png','image/webp'])]
+    public ?UploadedFile $residenceDocument = null;
+
+    /**
+     * Vehicle paper document (PDF or image)
+     */
+    #[Assert\File(maxSize: '10M', mimeTypes: ['application/pdf','image/jpeg','image/png','image/webp'])]
+    public ?UploadedFile $vehicleDocument = null;
 }
 
