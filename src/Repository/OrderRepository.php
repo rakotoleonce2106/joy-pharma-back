@@ -45,6 +45,9 @@ class OrderRepository extends ServiceEntityRepository
 
     /**
      * Find current active order for a delivery person
+     * Includes orders that are assigned to the delivery person and have status:
+     * - pending (if assigned, means accepted but status not yet updated)
+     * - confirmed, processing, or shipped (active delivery states)
      */
     public function findCurrentOrderForDeliveryPerson(User $deliveryPerson): ?Order
     {
@@ -53,6 +56,7 @@ class OrderRepository extends ServiceEntityRepository
             ->andWhere('o.status IN (:statuses)')
             ->setParameter('deliveryPerson', $deliveryPerson)
             ->setParameter('statuses', [
+                OrderStatus::STATUS_PENDING,    // Include pending if assigned (means accepted)
                 OrderStatus::STATUS_CONFIRMED,
                 OrderStatus::STATUS_PROCESSING,
                 OrderStatus::STATUS_SHIPPED

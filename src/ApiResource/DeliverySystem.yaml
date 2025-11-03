@@ -144,4 +144,3 @@ App\Dto\LogoutResponse:
                 summary: 'Logout'
                 description: 'Logout delivery person (client should remove token)'
 
-

@@ -49,7 +49,7 @@ App\Entity\User:
             openapi:
                 security:
                     -   JWT: [ 'ROLE_ADMIN' ]
-            
+
         current_user:
             class: ApiPlatform\Metadata\Get
             security: 'is_granted("ROLE_USER")'
