@@ -19,7 +19,7 @@ App\Entity\Order:
             security: 'is_granted("ROLE_DELIVER")'
             provider: App\State\Order\CurrentOrderProvider
             normalizationContext:
-                groups: ['order:read', 'location:read', 'user:read']
+                groups: ['id:read','order:read','image:read','product:read', 'location:read', 'user:read','store:read']
             openapi:
                 summary: 'Get current active order'
                 description: 'Get the current order being delivered by the authenticated delivery person (ROLE_DELIVER required)'
@@ -30,7 +30,7 @@ App\Entity\Order:
             class: ApiPlatform\Metadata\Get
             uriTemplate: '/order/{id}'
             normalizationContext:
-                groups: ['id:read','order:read','location:read','user:read','product:read','image:read']
+                groups: ['id:read','order:read','location:read','user:read','product:read','image:read','store:read']
             openapi:
                 summary: 'Get a order'
                 description: 'Get a order by id'
@@ -50,6 +50,20 @@ App\Entity\Order:
                 description: 'Get all orders'
                 security:
                     -   JWT: [ 'ROLE_ADMIN','ROLE_USER','ROLE_STORE','ROLE_DELIVER' ]
+
+        # Available orders for delivery (no pagination)
+        get_available_orders:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/orders/available'
+            security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\Order\AvailableOrdersProvider
+            paginationEnabled: false
+            normalizationContext:
+                groups: ['id:read','order:read','location:read','user:read','product:read','image:read']
+            openapi:
+                summary: 'Get available orders for delivery'
+                description: 'List all orders with status pending and no assigned deliver (no pagination)'
 
         store_update_order:
             class: ApiPlatform\Metadata\Put

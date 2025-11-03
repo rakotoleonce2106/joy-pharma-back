@@ -44,6 +44,21 @@ class OrderRepository extends ServiceEntityRepository
     }
 
     /**
+     * Find all available orders for delivery (no pagination)
+     */
+    public function findAllAvailableOrders(): array
+    {
+        return $this->createQueryBuilder('o')
+            ->where('o.status = :status')
+            ->andWhere('o.deliver IS NULL')
+            ->setParameter('status', OrderStatus::STATUS_PENDING)
+            ->orderBy('o.priority', 'DESC')
+            ->addOrderBy('o.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Find current active order for a delivery person
      * Includes orders that are assigned to the delivery person and have status:
      * - pending (if assigned, means accepted but status not yet updated)
