@@ -5,6 +5,7 @@ namespace App\State\Order;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\UpdateOrderStatusInput;
+use App\Entity\Delivery;
 use App\Entity\OrderStatus;
 use App\Entity\User;
 use App\Repository\OrderRepository;
@@ -87,9 +88,12 @@ class UpdateOrderStatusProcessor implements ProcessorInterface
                     $order->setActualDeliveryTime(new \DateTime());
                     
                     // Update delivery person stats
-                    $user->incrementTotalDeliveries();
+                    $delivery = $user->getDelivery();
+                    if ($delivery) {
+                        $delivery->incrementTotalDeliveries();
                     if ($order->getDeliveryFee()) {
-                        $user->addEarnings((float) $order->getDeliveryFee());
+                            $delivery->addEarnings((float) $order->getDeliveryFee());
+                        }
                     }
                 }
                 break;
@@ -97,9 +101,14 @@ class UpdateOrderStatusProcessor implements ProcessorInterface
 
         // Update location if provided
         if ($input->latitude && $input->longitude) {
-            $user->setCurrentLatitude((string) $input->latitude);
-            $user->setCurrentLongitude((string) $input->longitude);
-            $user->setLastLocationUpdate(new \DateTime());
+            $delivery = $user->getDelivery();
+            if (!$delivery) {
+                $delivery = new Delivery();
+                $user->setDelivery($delivery);
+            }
+            $delivery->setCurrentLatitude((string) $input->latitude);
+            $delivery->setCurrentLongitude((string) $input->longitude);
+            $delivery->setLastLocationUpdate(new \DateTime());
         }
 
         // Add notes if provided

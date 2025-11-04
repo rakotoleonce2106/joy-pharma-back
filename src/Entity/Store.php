@@ -11,7 +11,10 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Vich\UploaderBundle\Entity\File as EmbeddedFile;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 enum BoutiqueStatus: string
 {
@@ -47,6 +50,7 @@ enum BoutiqueStatus: string
 
 #[ORM\Entity(repositoryClass: StoreRepository::class)]
 #[ApiResource]
+#[Vich\Uploadable]
 class Store
 {
     use EntityIdTrait;
@@ -63,12 +67,13 @@ class Store
     #[Groups(['store:read'])]
     private ?string $description = null;
 
-    /**
-     * @var Collection<int, MediaFile>
-     */
-    #[ORM\OneToMany(targetEntity: MediaFile::class, mappedBy: 'store')]
+    #[Vich\UploadableField(mapping: 'store', fileNameProperty: 'image.name', size: 'image.size')]
+    #[Groups(['store:create', 'store:update'])]
+    private ?File $imageFile = null;
+
+    #[ORM\Embedded(class: 'Vich\UploaderBundle\Entity\File')]
     #[Groups(['store:read'])]
-    private Collection $image;
+    private ?EmbeddedFile $image = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     #[Groups(['store:read'])]
@@ -107,9 +112,9 @@ class Store
 
     public function __construct()
     {
-        $this->image = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->image = new EmbeddedFile();
         $this->categories = new ArrayCollection();
         $this->storeProducts = new ArrayCollection();
         $this->qrCode = $this->generateQRCode();
@@ -144,34 +149,28 @@ class Store
         return $this;
     }
 
-    /**
-     * @return Collection<int, MediaFile>
-     */
-    public function getImage(): Collection
+    public function setImageFile(?File $imageFile = null): void
+    {
+        $this->imageFile = $imageFile;
+
+        if (null !== $imageFile) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+    }
+
+    public function getImageFile(): ?File
+    {
+        return $this->imageFile;
+    }
+
+    public function setImage(EmbeddedFile $image): void
+    {
+        $this->image = $image;
+    }
+
+    public function getImage(): ?EmbeddedFile
     {
         return $this->image;
-    }
-
-    public function addImage(MediaFile $image): static
-    {
-        if (!$this->image->contains($image)) {
-            $this->image->add($image);
-            $image->setStore($this);
-        }
-
-        return $this;
-    }
-
-    public function removeImage(MediaFile $image): static
-    {
-        if ($this->image->removeElement($image)) {
-            // set the owning side to null (unless already changed)
-            if ($image->getStore() === $this) {
-                $image->setStore(null);
-            }
-        }
-
-        return $this;
     }
 
     public function getSetting(): ?StoreSetting

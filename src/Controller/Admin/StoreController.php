@@ -15,7 +15,6 @@ use App\Form\StoreType;
 use App\Repository\StoreProductRepository;
 use App\Repository\StoreRepository;
 use App\Service\StoreService;
-use App\Service\MediaFileService;
 use App\Service\UserService;
 use App\Traits\ToastTrait;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,7 +23,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class StoreController extends AbstractController
 {
@@ -34,7 +32,6 @@ class StoreController extends AbstractController
     public  function __construct(
         private  readonly StoreRepository $StoreRepository,
         private readonly StoreService $storeService,
-        private readonly MediaFileService $mediaFileService,
         private readonly UserService $userService,
         private readonly EntityManagerInterface $entityManager,
         private readonly StoreProductRepository $storeProductRepository,
@@ -84,12 +81,6 @@ class StoreController extends AbstractController
                     // All location fields are empty, set to null
                     $store->setLocation(null);
                 }
-            }
-            /** @var UploadedFile|null $uploadedFile */
-            $image = $form->get('image')->getData();
-            if ($image) {
-                $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
-                $store->addImage($mediaFile);
             }
 
             // Get login credentials from form
@@ -151,7 +142,6 @@ class StoreController extends AbstractController
             ->leftJoin('s.owner', 'o')
             ->leftJoin('s.contact', 'c')
             ->leftJoin('s.location', 'l')
-            ->leftJoin('s.image', 'si')
             ->leftJoin('s.setting', 'st')
             ->leftJoin('st.mondayHours', 'mh')
             ->leftJoin('st.tuesdayHours', 'th')
@@ -160,7 +150,7 @@ class StoreController extends AbstractController
             ->leftJoin('st.fridayHours', 'fh')
             ->leftJoin('st.saturdayHours', 'sah')
             ->leftJoin('st.sundayHours', 'suh')
-            ->addSelect('o', 'c', 'l', 'si', 'st', 'mh', 'th', 'wh', 'thh', 'fh', 'sah', 'suh')
+            ->addSelect('o', 'c', 'l', 'st', 'mh', 'th', 'wh', 'thh', 'fh', 'sah', 'suh')
             ->where('s.id = :id')
             ->setParameter('id', $id)
             ->getQuery()
@@ -341,13 +331,6 @@ class StoreController extends AbstractController
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var UploadedFile|null $uploadedFile */
-            $image = $form->get('image')->getData();
-            if ($image) {
-                $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/store/');
-                $store->addImage($mediaFile);
-            }
-
             // Get login credentials from form
             $ownerEmail = $form->get('ownerEmail')->getData();
             $ownerPasswordField = $form->get('ownerPassword');

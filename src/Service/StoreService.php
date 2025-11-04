@@ -119,12 +119,6 @@ readonly class StoreService
         }
         $this->manager->flush();
         
-        // Handle images/MediaFiles
-        foreach ($store->getImage() as $image) {
-            $image->setStore(null);
-        }
-        $this->manager->flush();
-        
         // Handle owner relationship (clear the bidirectional reference)
         $owner = $store->getOwner();
         if ($owner) {

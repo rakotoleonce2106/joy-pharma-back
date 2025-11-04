@@ -18,6 +18,7 @@ use Symfony\Component\Validator\Constraints\Email;
 use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Vich\UploaderBundle\Form\Type\VichImageType;
 
 class StoreType extends AbstractType
 {
@@ -64,25 +65,16 @@ class StoreType extends AbstractType
                     'placeholder' => 'store.form.location_placeholder',
                 ]
             ])
-            ->add('image', FileType::class, [
+            ->add('imageFile', VichImageType::class, [
                 'label' => 'store.form.image',
-                'mapped' => false,
                 'required' => false,
-                'constraints' => [
-                    new File([
-                        'maxSize' => '5M',
-                        'mimeTypes' => [
-                            'image/jpeg',
-                            'image/jpg',
-                            'image/png',
-                            'image/webp',
-                        ],
-                        'mimeTypesMessage' => 'Please upload a valid image file (JPEG, PNG, or WebP)',
-                    ])
-                ],
-                'attr' => [
-                    'accept' => '.jpg,.jpeg,.png,.webp',
-                ],
+                'allow_delete' => true,
+                'delete_label' => 'Remove image',
+                'download_label' => 'View image',
+                'download_uri' => true,
+                'image_uri' => true,
+                'imagine_pattern' => null,
+                'asset_helper' => true,
             ])
             ->add('ownerEmail', EmailType::class, [
                 'label' => 'Login Email',

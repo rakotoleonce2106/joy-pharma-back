@@ -81,7 +81,10 @@ class RatingProcessor implements ProcessorInterface
 
         // Update delivery person's average rating
         $avgRating = $this->ratingRepository->getAverageRatingForDeliveryPerson($deliveryPerson);
-        $deliveryPerson->setAverageRating($avgRating);
+        $delivery = $deliveryPerson->getDelivery();
+        if ($delivery) {
+            $delivery->setAverageRating($avgRating);
+        }
         $this->em->flush();
 
         return [

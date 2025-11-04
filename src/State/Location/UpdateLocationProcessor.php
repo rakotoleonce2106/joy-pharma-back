@@ -5,9 +5,11 @@ namespace App\State\Location;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\UpdateLocationInput;
+use App\Entity\Delivery;
 use App\Entity\DeliveryLocation;
 use App\Entity\User;
 use App\Repository\DeliveryLocationRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -15,7 +17,8 @@ class UpdateLocationProcessor implements ProcessorInterface
 {
     public function __construct(
         private readonly DeliveryLocationRepository $locationRepository,
-        private readonly Security $security
+        private readonly Security $security,
+        private readonly EntityManagerInterface $entityManager
     ) {
     }
 
@@ -31,10 +34,17 @@ class UpdateLocationProcessor implements ProcessorInterface
         /** @var UpdateLocationInput $input */
         $input = $data;
 
-        // Update user's current location
-        $user->setCurrentLatitude((string) $input->latitude);
-        $user->setCurrentLongitude((string) $input->longitude);
-        $user->setLastLocationUpdate(new \DateTime());
+        // Get or create Delivery entity
+        $delivery = $user->getDelivery();
+        if (!$delivery) {
+            $delivery = new Delivery();
+            $user->setDelivery($delivery);
+        }
+
+        // Update delivery's current location
+        $delivery->setCurrentLatitude((string) $input->latitude);
+        $delivery->setCurrentLongitude((string) $input->longitude);
+        $delivery->setLastLocationUpdate(new \DateTime());
 
         // Save location history
         $location = new DeliveryLocation();
@@ -47,6 +57,7 @@ class UpdateLocationProcessor implements ProcessorInterface
             $location->setTimestamp(new \DateTime($input->timestamp));
         }
 
+        $this->entityManager->persist($delivery);
         $this->locationRepository->save($location, true);
 
         return [

@@ -4,6 +4,7 @@ namespace App\State\Auth;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Entity\Delivery;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -36,11 +37,6 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         $user->setFirstName($data->firstName);
         $user->setLastName($data->lastName);
         $user->setPhone($data->phone);
-        $user->setVehicleType($data->vehicleType);
-
-        if (!empty($data->vehiclePlate)) {
-            $user->setVehiclePlate($data->vehiclePlate);
-        }
 
         // Set roles for delivery person (no ROLE_USER as requested)
         $user->setRoles(['ROLE_DELIVER']);
@@ -52,15 +48,26 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         $hashedPassword = $this->passwordHasher->hashPassword($user, $data->password);
         $user->setPassword($hashedPassword);
 
-        // Attach verification documents if provided
-        if (!empty($data->residenceDocument)) {
-            $user->setResidenceDocumentFile($data->residenceDocument);
-        }
-        if (!empty($data->vehicleDocument)) {
-            $user->setVehicleDocumentFile($data->vehicleDocument);
+        // Create Delivery entity
+        $delivery = new Delivery();
+        $delivery->setVehicleType($data->vehicleType);
+
+        if (!empty($data->vehiclePlate)) {
+            $delivery->setVehiclePlate($data->vehiclePlate);
         }
 
-        // Save user
+        // Attach verification documents if provided
+        if (!empty($data->residenceDocument)) {
+            $delivery->setResidenceDocumentFile($data->residenceDocument);
+        }
+        if (!empty($data->vehicleDocument)) {
+            $delivery->setVehicleDocumentFile($data->vehicleDocument);
+        }
+
+        // Link Delivery to User
+        $user->setDelivery($delivery);
+
+        // Save user (Delivery will be saved via cascade)
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
@@ -79,14 +86,14 @@ class RegisterDeliveryProcessor implements ProcessorInterface
                 'roles' => $user->getRoles(),
                 'userType' => 'delivery',
                 'isActive' => $user->getActive(),
-                'delivery' => [
-                    'vehicleType' => $user->getVehicleType(),
-                    'vehiclePlate' => $user->getVehiclePlate(),
-                    'isOnline' => $user->getIsOnline(),
-                    'totalDeliveries' => $user->getTotalDeliveries(),
-                    'averageRating' => $user->getAverageRating(),
-                    'totalEarnings' => $user->getTotalEarnings(),
-                ]
+                'delivery' => $delivery ? [
+                    'vehicleType' => $delivery->getVehicleType(),
+                    'vehiclePlate' => $delivery->getVehiclePlate(),
+                    'isOnline' => $delivery->getIsOnline(),
+                    'totalDeliveries' => $delivery->getTotalDeliveries(),
+                    'averageRating' => $delivery->getAverageRating(),
+                    'totalEarnings' => $delivery->getTotalEarnings(),
+                ] : null
             ]
         ];
     }

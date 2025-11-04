@@ -35,17 +35,23 @@ class DashboardProvider implements ProviderInterface
         $totalEarnings = $this->orderRepository->calculateEarningsForPerson($user, $startDate, $endDate);
         $currentOrder = $this->orderRepository->findCurrentOrderForDeliveryPerson($user);
 
+        $delivery = $user->getDelivery();
+        $averageRating = $delivery?->getAverageRating();
+        $isOnline = $delivery?->getIsOnline() ?? false;
+        $lifetimeTotalDeliveries = $delivery?->getTotalDeliveries() ?? 0;
+        $lifetimeTotalEarnings = $delivery?->getTotalEarnings() ?? '0.00';
+
         return new DashboardStats(
             period: $period,
             totalDeliveries: $totalDeliveries,
             totalEarnings: number_format($totalEarnings, 2),
-            averageRating: $user->getAverageRating(),
-            isOnline: $user->getIsOnline(),
+            averageRating: $averageRating,
+            isOnline: $isOnline,
             hasActiveOrder: $currentOrder !== null,
             lifetimeStats: [
-                'totalDeliveries' => $user->getTotalDeliveries(),
-                'totalEarnings' => $user->getTotalEarnings(),
-                'averageRating' => $user->getAverageRating()
+                'totalDeliveries' => $lifetimeTotalDeliveries,
+                'totalEarnings' => $lifetimeTotalEarnings,
+                'averageRating' => $averageRating
             ]
         );
     }

@@ -5,6 +5,7 @@ namespace App\State\User;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Entity\Delivery;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -51,12 +52,22 @@ class UserUpdateProcessor implements ProcessorInterface
             if ($data->getPhone() !== null) {
                 $user->setPhone($data->getPhone());
             }
+            // Handle delivery updates if user has ROLE_DELIVER
+            if (in_array('ROLE_DELIVER', $user->getRoles())) {
+                $delivery = $user->getDelivery();
+                if (!$delivery) {
+                    // Create delivery if it doesn't exist
+                    $delivery = new Delivery();
+                    $user->setDelivery($delivery);
+                }
+
             // Handle isOnline - check request content to see if it was provided
             $content = $request->getContent();
             if ($content && $request->getContentTypeFormat() === 'json') {
                 $jsonData = json_decode($content, true);
                 if (isset($jsonData['isOnline'])) {
-                    $user->setIsOnline(filter_var($jsonData['isOnline'], FILTER_VALIDATE_BOOLEAN));
+                        $delivery->setIsOnline(filter_var($jsonData['isOnline'], FILTER_VALIDATE_BOOLEAN));
+                    }
                 }
             }
         }
@@ -93,9 +104,27 @@ class UserUpdateProcessor implements ProcessorInterface
             $user->setPhone($request->request->get('phone'));
         }
 
+        // Handle delivery updates if user has ROLE_DELIVER
+        if (in_array('ROLE_DELIVER', $user->getRoles())) {
+            $delivery = $user->getDelivery();
+            if (!$delivery) {
+                // Create delivery if it doesn't exist
+                $delivery = new Delivery();
+                $user->setDelivery($delivery);
+        }
+
         if ($request->request->has('isOnline')) {
             $isOnline = filter_var($request->request->get('isOnline'), FILTER_VALIDATE_BOOLEAN);
-            $user->setIsOnline($isOnline);
+                $delivery->setIsOnline($isOnline);
+            }
+
+            if ($request->request->has('vehicleType')) {
+                $delivery->setVehicleType($request->request->get('vehicleType'));
+            }
+
+            if ($request->request->has('vehiclePlate')) {
+                $delivery->setVehiclePlate($request->request->get('vehiclePlate'));
+            }
         }
 
         // Handle file upload for profile image

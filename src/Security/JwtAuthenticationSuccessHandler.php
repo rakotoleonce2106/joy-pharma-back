@@ -44,17 +44,20 @@ class JwtAuthenticationSuccessHandler implements EventSubscriberInterface
 
         // Add role-specific data for DELIVERY PERSONS
         if (in_array('ROLE_DELIVER', $user->getRoles())) {
+            $delivery = $user->getDelivery();
+            if ($delivery) {
             $userData['delivery'] = [
-                'vehicleType' => $user->getVehicleType(),
-                'vehiclePlate' => $user->getVehiclePlate(),
-                'isOnline' => $user->getIsOnline(),
-                'totalDeliveries' => $user->getTotalDeliveries(),
-                'averageRating' => $user->getAverageRating(),
-                'totalEarnings' => $user->getTotalEarnings(),
-                'currentLatitude' => $user->getCurrentLatitude(),
-                'currentLongitude' => $user->getCurrentLongitude(),
-                'lastLocationUpdate' => $user->getLastLocationUpdate()?->format('c'),
+                    'vehicleType' => $delivery->getVehicleType(),
+                    'vehiclePlate' => $delivery->getVehiclePlate(),
+                    'isOnline' => $delivery->getIsOnline(),
+                    'totalDeliveries' => $delivery->getTotalDeliveries(),
+                    'averageRating' => $delivery->getAverageRating(),
+                    'totalEarnings' => $delivery->getTotalEarnings(),
+                    'currentLatitude' => $delivery->getCurrentLatitude(),
+                    'currentLongitude' => $delivery->getCurrentLongitude(),
+                    'lastLocationUpdate' => $delivery->getLastLocationUpdate()?->format('c'),
             ];
+            }
         }
 
         // Add role-specific data for STORE OWNERS
@@ -82,6 +85,11 @@ class JwtAuthenticationSuccessHandler implements EventSubscriberInterface
                     $storeData['city'] = $location->getCity();
                     $storeData['latitude'] = $location->getLatitude();
                     $storeData['longitude'] = $location->getLongitude();
+                }
+
+                // Add image if exists
+                if ($store->getImage() && $store->getImage()->getName()) {
+                    $storeData['image'] = '/images/store/' . $store->getImage()->getName();
                 }
 
                 $userData['store'] = $storeData;
