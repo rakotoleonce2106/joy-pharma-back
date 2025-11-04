@@ -34,7 +34,68 @@ class UserController extends AbstractController
         $datatable->handleRequest($request);
 
         return $this->render('admin/user/index.html.twig', [
-            'datatable' => $datatable->createView()
+            'datatable' => $datatable->createView(),
+            'section' => 'all',
+        ]);
+    }
+
+    #[Route('/user/delivers', name: 'admin_user_delivers')]
+    public function delivers(Request $request): Response
+    {
+        // Get all users and filter in PHP
+        $allUsers = $this->userRepository->findByRole('ROLE_DELIVER');
+        
+        // Create query from array - we'll use a custom approach
+        $query = $this->userRepository->createQueryBuilder('u')
+            ->where('u.id IN (:ids)')
+            ->setParameter('ids', array_map(fn(User $u) => $u->getId(), $allUsers));
+
+        $datatable = $this->createNamedDataTable('users_delivers', \App\DataTable\Type\DeliverDataTableType::class, $query);
+        $datatable->handleRequest($request);
+
+        return $this->render('admin/user/index.html.twig', [
+            'datatable' => $datatable->createView(),
+            'section' => 'delivers',
+        ]);
+    }
+
+    #[Route('/user/stores', name: 'admin_user_stores')]
+    public function stores(Request $request): Response
+    {
+        // Get all users and filter in PHP
+        $allUsers = $this->userRepository->findByRole('ROLE_STORE');
+        
+        // Create query from array
+        $query = $this->userRepository->createQueryBuilder('u')
+            ->where('u.id IN (:ids)')
+            ->setParameter('ids', array_map(fn(User $u) => $u->getId(), $allUsers));
+
+        $datatable = $this->createNamedDataTable('users_stores', UserDataTableType::class, $query);
+        $datatable->handleRequest($request);
+
+        return $this->render('admin/user/index.html.twig', [
+            'datatable' => $datatable->createView(),
+            'section' => 'stores',
+        ]);
+    }
+
+    #[Route('/user/customers', name: 'admin_user_customers')]
+    public function customers(Request $request): Response
+    {
+        // Get all customers and filter in PHP
+        $allUsers = $this->userRepository->findCustomersForDataTable();
+        
+        // Create query from array
+        $query = $this->userRepository->createQueryBuilder('u')
+            ->where('u.id IN (:ids)')
+            ->setParameter('ids', array_map(fn(User $u) => $u->getId(), $allUsers));
+
+        $datatable = $this->createNamedDataTable('users_customers', UserDataTableType::class, $query);
+        $datatable->handleRequest($request);
+
+        return $this->render('admin/user/index.html.twig', [
+            'datatable' => $datatable->createView(),
+            'section' => 'customers',
         ]);
     }
 
@@ -48,6 +109,14 @@ class UserController extends AbstractController
         return $this->handleUserForm($request, $form, $user, 'edit');
     }
 
+    #[Route('/user/{id}/toggle-active', name: 'admin_user_toggle_active', methods: ['POST'])]
+    public function toggleActive(User $user): Response
+    {
+        $user->setActive(!$user->isActive());
+        $this->userService->updateUser($user);
+        $this->addSuccessToast('Status updated', 'The user activation status has been updated.');
+        return $this->redirectToRoute('admin_user');
+    }
         #[Route('/user/{id}/delete', name: 'admin_user_delete', methods: ['POST'])]
     public  function deleteAction(User $user): Response
     {
@@ -62,6 +131,10 @@ class UserController extends AbstractController
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
+            // Ensure the active field is properly set (handle unchecked checkboxes)
+            if (!$form->get('active')->getData()) {
+                $user->setActive(false);
+            }
 
             if ($action === 'create') {
                 $this->userService->createUser($user);

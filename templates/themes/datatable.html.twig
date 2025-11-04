@@ -168,9 +168,52 @@
     <twig:ui:table:cell {{ ...attr }}>
         {%- if translation_domain is not same as false -%}
             {{- value|trans({}, translation_domain) -}}
+        {%- elseif value is iterable and value is not same as(value|first) -%}
+            {# Handle arrays/collections #}
+            {{- value|join(', ') -}}
+        {%- elseif value is null -%}
+            {# Handle null values - render empty #}
         {%- else -%}
-            {{- value -}}
+            {# Render scalar values (strings, numbers, etc.) #}
+            {# Note: Objects should be handled by specific column blocks (column_image_value, column_active_value, etc.) #}
+            {# If an object reaches here, check if it has entity-like properties (id, email, etc.) #}
+            {%- if value.id is defined or value.email is defined -%}
+                {# This is likely an object/entity - custom block should handle this, skip rendering #}
+            {%- else -%}
+                {{- value -}}
+            {%- endif -%}
         {%- endif -%}
+    </twig:ui:table:cell>
+{% endblock %}
+
+{% block column_image_value %}
+    <twig:ui:table:cell {{ ...attr }}>
+        {% if value and value.image and value.image.name %}
+            {% set imageUrl = '/images/profile/' ~ value.image.name %}
+            <twig:ui:avatar:root class="h-10 w-10">
+                <twig:ui:avatar:image src="{{ imageUrl }}" alt="{{ value.getFullName() ?? 'User' }}" />
+                <twig:ui:avatar:fallback>{{ value.firstName|first|upper }}{{ value.lastName|first|upper }}</twig:ui:avatar:fallback>
+            </twig:ui:avatar:root>
+        {% else %}
+            <twig:ui:avatar:root class="h-10 w-10">
+                <twig:ui:avatar:image src="{{ asset('images/placeholder-user.png') }}" alt="{{ value.getFullName() ?? 'User' }}" />
+                <twig:ui:avatar:fallback>{{ value.firstName|first|upper }}{{ value.lastName|first|upper }}</twig:ui:avatar:fallback>
+            </twig:ui:avatar:root>
+        {% endif %}
+    </twig:ui:table:cell>
+{% endblock %}
+
+{% block column_active_value %}
+    <twig:ui:table:cell {{ ...attr }}>
+        {% if value and value.isActive() %}
+            <span class="inline-flex items-center justify-center rounded-full text-xs font-medium bg-green-100 text-green-800 h-6 px-2.5">
+                Active
+            </span>
+        {% else %}
+            <span class="inline-flex items-center justify-center rounded-full text-xs font-medium bg-gray-100 text-gray-800 h-6 px-2.5">
+                Inactive
+            </span>
+        {% endif %}
     </twig:ui:table:cell>
 {% endblock %}
 

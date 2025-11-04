@@ -245,8 +245,8 @@ user:
         phone_placeholder: 'Enter phone'
         image: 'Image'
         image_placeholder: 'Upload image'
-        isActive: 'Status Active'
-        isActive_placeholder: 'Choose status'
+        active: 'Status Active'
+        active_placeholder: 'Choose status'
 
     # DataTable translations
     datatable:

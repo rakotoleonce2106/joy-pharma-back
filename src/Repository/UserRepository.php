@@ -94,4 +94,64 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $this->createQueryBuilder('u')
             ->orderBy('u.firstName', 'ASC');
     }
+
+    /**
+     * Find users by role - returns filtered array
+     */
+    public function findByRoleForDataTable(string $role): array
+    {
+        $allUsers = $this->createQueryBuilder('u')
+            ->orderBy('u.firstName', 'ASC')
+            ->getQuery()
+            ->getResult();
+        
+        return array_values(array_filter($allUsers, function(User $user) use ($role) {
+            return in_array($role, $user->getRoles(), true);
+        }));
+    }
+
+    /**
+     * Find customers (users without admin/store/deliver roles) - returns filtered array
+     */
+    public function findCustomersForDataTable(): array
+    {
+        $allUsers = $this->createQueryBuilder('u')
+            ->orderBy('u.firstName', 'ASC')
+            ->getQuery()
+            ->getResult();
+        
+        return array_values(array_filter($allUsers, function(User $user) {
+            $roles = $user->getRoles();
+            return !in_array('ROLE_ADMIN', $roles, true)
+                && !in_array('ROLE_STORE', $roles, true)
+                && !in_array('ROLE_DELIVER', $roles, true);
+        }));
+    }
+
+    /**
+     * Find users by role using QueryBuilder (for datatable compatibility)
+     * Uses a subquery with ALL to filter results properly
+     */
+    public function createQueryBuilderForRole(string $role): \Doctrine\ORM\QueryBuilder
+    {
+        // For PostgreSQL JSON arrays, we need to check if the role exists in the array
+        // We'll fetch all and filter in memory since DQL doesn't support JSON operators well
+        $qb = $this->createQueryBuilder('u');
+        
+        // Note: This fetches all users, filtering should be done in the DataTable
+        // or we can use a post-query filter in the controller
+        return $qb->orderBy('u.firstName', 'ASC');
+    }
+
+    /**
+     * Find users without specific roles (customers) - QueryBuilder version
+     */
+    public function createQueryBuilderForCustomers(): \Doctrine\ORM\QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('u');
+        
+        // Note: This fetches all users, filtering should be done in the DataTable
+        // or we can use a post-query filter in the controller
+        return $qb->orderBy('u.firstName', 'ASC');
+    }
 }

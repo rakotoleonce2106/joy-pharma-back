@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\User;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -41,6 +42,10 @@ class UserType extends AbstractType
                 'attr' => [
                     'placeholder' => 'user.form.phone_placeholder',
                 ],
+            ])
+            ->add('active', CheckboxType::class, [
+                'label' => 'user.form.active',
+                'required' => false,
             ])
             ->add('imageFile', FileType::class, [
                 'label' => 'user.form.image',

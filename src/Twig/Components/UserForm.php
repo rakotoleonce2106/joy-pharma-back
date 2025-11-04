@@ -28,7 +28,7 @@ final class UserForm extends AbstractController
         $user = $this->initialFormData ?? new User();
         $action = $user->getId()
             ? $this->generateUrl('admin_user_edit', ['id' => $user->getId()])
-            : $this->generateUrl('admin_user_new');
+            : $this->generateUrl('admin_user'); // Fallback to list if no ID (shouldn't happen in edit context)
 
         return $this->createForm(UserType::class, $user, [
             'action' => $action,

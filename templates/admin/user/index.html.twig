@@ -2,12 +2,30 @@
 
 {% block content %}
     <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
-        <div class="gap-4  md:gap-8">
+        <div class="gap-4 md:gap-8">
+            <div class="flex items-center gap-2 mb-6">
+                <a href="{{ path('admin_user') }}" 
+                   class="px-4 py-2 rounded-md text-sm font-medium transition-colors {{ section == 'all' ? 'bg-primary text-white hover:bg-primary/90' : 'bg-muted text-muted-foreground hover:bg-muted/80' }}">
+                    All
+                </a>
+                <a href="{{ path('admin_user_customers') }}" 
+                   class="px-4 py-2 rounded-md text-sm font-medium transition-colors {{ section == 'customers' ? 'bg-primary text-white hover:bg-primary/90' : 'bg-muted text-muted-foreground hover:bg-muted/80' }}">
+                    Customers
+                </a>
+                <a href="{{ path('admin_user_stores') }}" 
+                   class="px-4 py-2 rounded-md text-sm font-medium transition-colors {{ section == 'stores' ? 'bg-primary text-white hover:bg-primary/90' : 'bg-muted text-muted-foreground hover:bg-muted/80' }}">
+                    Stores
+                </a>
+                <a href="{{ path('admin_user_delivers') }}" 
+                   class="px-4 py-2 rounded-md text-sm font-medium transition-colors {{ section == 'delivers' ? 'bg-primary text-white hover:bg-primary/90' : 'bg-muted text-muted-foreground hover:bg-muted/80' }}">
+                    Delivers
+                </a>
+            </div>
             <twig:ui:card:root class="w-full h-full">
                 <twig:ui:card:header>
-                    <twig:ui:card:title>{{ 'User'|trans }}</twig:ui:card:title>
+                    <twig:ui:card:title>{{ 'User Management'|trans }}</twig:ui:card:title>
                     <twig:ui:card:description>
-                        {{ 'Manage User'|trans }}
+                        {{ 'Manage and view all users in the system'|trans }}
                     </twig:ui:card:description>
                 </twig:ui:card:header>
                 <twig:ui:card:content>
