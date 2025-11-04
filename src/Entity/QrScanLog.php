@@ -23,9 +23,14 @@ class QrScanLog
     private ?User $agent = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['qr_scan_log:read'])]
-    private ?Store $store = null;
+    private ?Store $store = null; // For store pickup scans
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['qr_scan_log:read'])]
+    private ?User $customer = null; // For customer delivery scans
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
@@ -47,6 +52,18 @@ class QrScanLog
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     #[Groups(['qr_scan_log:read'])]
     private ?\DateTimeInterface $scannedAt = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 8, nullable: true)]
+    #[Groups(['qr_scan_log:read'])]
+    private ?string $latitude = null;
+
+    #[ORM\Column(type: Types::DECIMAL, precision: 11, scale: 8, nullable: true)]
+    #[Groups(['qr_scan_log:read'])]
+    private ?string $longitude = null;
+
+    #[ORM\Column(type: Types::STRING, length: 50, nullable: true)]
+    #[Groups(['qr_scan_log:read'])]
+    private ?string $scanType = null; // 'store_pickup' or 'customer_delivery'
 
     public function __construct()
     {
@@ -134,6 +151,54 @@ class QrScanLog
     public function setScannedAt(?\DateTimeInterface $scannedAt): static
     {
         $this->scannedAt = $scannedAt;
+
+        return $this;
+    }
+
+    public function getCustomer(): ?User
+    {
+        return $this->customer;
+    }
+
+    public function setCustomer(?User $customer): static
+    {
+        $this->customer = $customer;
+
+        return $this;
+    }
+
+    public function getLatitude(): ?string
+    {
+        return $this->latitude;
+    }
+
+    public function setLatitude(?string $latitude): static
+    {
+        $this->latitude = $latitude;
+
+        return $this;
+    }
+
+    public function getLongitude(): ?string
+    {
+        return $this->longitude;
+    }
+
+    public function setLongitude(?string $longitude): static
+    {
+        $this->longitude = $longitude;
+
+        return $this;
+    }
+
+    public function getScanType(): ?string
+    {
+        return $this->scanType;
+    }
+
+    public function setScanType(?string $scanType): static
+    {
+        $this->scanType = $scanType;
 
         return $this;
     }

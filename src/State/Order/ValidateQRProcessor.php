@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\ValidateQRInput;
 use App\Entity\OrderStatus;
+use App\Entity\QrScanLog;
 use App\Entity\User;
 use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -32,6 +33,11 @@ class ValidateQRProcessor implements ProcessorInterface
             throw new AccessDeniedHttpException('User not found');
         }
 
+        // Check if user is a delivery agent
+        if (!in_array('ROLE_DELIVER', $user->getRoles(), true)) {
+            throw new AccessDeniedHttpException('Only delivery agents can scan QR codes');
+        }
+
         $orderId = $uriVariables['id'] ?? null;
         if (!$orderId) {
             throw new NotFoundHttpException('Order ID not provided');
@@ -51,20 +57,48 @@ class ValidateQRProcessor implements ProcessorInterface
         /** @var ValidateQRInput $input */
         $input = $data;
 
-        // Validate QR code
-        if ($order->getQrCode() !== $input->qrCode) {
-            throw new BadRequestHttpException('Invalid QR code');
+        // Create log entry for this scan attempt
+        $scanLog = new QrScanLog();
+        $scanLog->setAgent($user);
+        $scanLog->setOrder($order);
+        $scanLog->setCustomer($order->getOwner()); // Customer who owns the order
+        $scanLog->setScannedQrCode($input->qrCode);
+        $scanLog->setScannedAt(new \DateTime());
+        $scanLog->setScanType('customer_delivery');
+
+        // Add geolocation if provided
+        if ($input->latitude !== null) {
+            $scanLog->setLatitude((string) $input->latitude);
+        }
+        if ($input->longitude !== null) {
+            $scanLog->setLongitude((string) $input->longitude);
         }
 
-        // Check if already validated
+        // Verify QR code matches the order
+        if ($order->getQrCode() !== $input->qrCode) {
+            $scanLog->setSuccess(false);
+            $scanLog->setErrorMessage('QR Code invalide pour cette commande');
+            $this->em->persist($scanLog);
+            $this->em->flush();
+            
+            throw new BadRequestHttpException('QR Code invalide pour cette commande');
+        }
+
+        // Check if already validated/delivered
         if ($order->getQrCodeValidatedAt()) {
-            throw new BadRequestHttpException('QR code already validated');
+            $scanLog->setSuccess(true);
+            $scanLog->setErrorMessage(null);
+            $this->em->persist($scanLog);
+            $this->em->flush();
+            
+            // Return order even if already validated
+            return $order;
         }
 
         // Mark QR code as validated
         $order->setQrCodeValidatedAt(new \DateTime());
         
-        // Automatically mark as delivered
+        // Mark order as delivered / Commande Récupérée
         if ($order->getStatus() !== OrderStatus::STATUS_DELIVERED) {
             $order->setStatus(OrderStatus::STATUS_DELIVERED);
             $order->setDeliveredAt(new \DateTime());
@@ -77,6 +111,10 @@ class ValidateQRProcessor implements ProcessorInterface
             }
         }
 
+        // Log successful scan
+        $scanLog->setSuccess(true);
+        $scanLog->setErrorMessage(null);
+        $this->em->persist($scanLog);
         $this->em->flush();
 
         return $order;

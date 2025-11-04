@@ -68,6 +68,7 @@ class StoreQRScanProcessor implements ProcessorInterface
         $scanLog->setOrder($order);
         $scanLog->setScannedQrCode($input->qrCode);
         $scanLog->setScannedAt(new \DateTime());
+        $scanLog->setScanType('store_pickup');
 
         // Verify QR code matches a store
         if (!$store) {

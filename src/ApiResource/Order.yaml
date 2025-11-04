@@ -151,18 +151,25 @@ App\Entity\Order:
                 summary: 'Update order status'
                 description: 'Update delivery order status (processing, shipped, delivered, etc.)'
 
-        # Validate QR code
+        # Validate QR code for delivery
         validate_qr:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/orders/{id}/validate-qr'
-            security: 'is_granted("ROLE_USER")'
+            security: 'is_granted("ROLE_DELIVER")'
             processor: App\State\Order\ValidateQRProcessor
             input: App\Dto\ValidateQRInput
             normalizationContext:
                 groups: ['order:read', 'location:read', 'user:read']
             openapi:
-                summary: 'Validate QR code'
-                description: 'Validate order QR code and mark as delivered'
+                summary: 'Validate QR code for delivery'
+                description: 'Scan and validate customer QR code to confirm order delivery. Verifies QR code matches the order, logs the scan attempt, and marks order as delivered if valid. Returns error message in French if QR code is invalid.'
+                parameters:
+                    - name: id
+                      in: path
+                      required: true
+                      description: 'The ID of the order to deliver'
+                      schema:
+                          type: integer
 
         # Scan store QR code for pickup
         scan_store_qr:

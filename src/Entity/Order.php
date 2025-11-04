@@ -123,10 +123,12 @@ class Order
     private ?\DateTimeInterface $actualDeliveryTime = null;
 
     #[ORM\Column(length: 255, nullable: true, unique: true)]
-    private ?string $qrCode = null; // Not exposed in API - QR codes are store-only
+    #[Groups(['order:read'])]
+    private ?string $qrCode = null; // Unique QR code for customer delivery verification
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    private ?\DateTimeInterface $qrCodeValidatedAt = null; // Not exposed in API
+    #[Groups(['order:read'])]
+    private ?\DateTimeInterface $qrCodeValidatedAt = null; // Timestamp when QR code was validated
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     #[Groups(['order:read'])]
