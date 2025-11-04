@@ -46,6 +46,10 @@ services:
     App\Serializer\EmbeddedFileNormalizer:
         tags: ['serializer.normalizer']
     
+    App\Serializer\OrderNormalizer:
+        tags: 
+            - { name: 'serializer.normalizer', priority: 100 }
+    
     App\Service\DownlaodFileService:
         arguments:
             $projectDir: '%kernel.project_dir%'

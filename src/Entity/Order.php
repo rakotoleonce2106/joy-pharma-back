@@ -148,8 +148,9 @@ class Order
         $this->priority = PriorityType::PRIORITY_STANDARD;
         $this->createdAt = new \DateTime();
         $this->reference = $this->generateReference();
-        $this->qrCode = $this->generateQRCode();
         $this->items = new ArrayCollection();
+        // QR code will be generated after reference is set
+        $this->qrCode = $this->generateQRCode();
     }
 
 
@@ -311,7 +312,9 @@ class Order
 
     private function generateQRCode(): string
     {
-        return 'QR-' . strtoupper(bin2hex(random_bytes(16)));
+        // Generate QR code that includes order reference for verification
+        // Format: ORDER-{reference}-{random}
+        return 'ORDER-' . $this->reference . '-' . strtoupper(bin2hex(random_bytes(8)));
     }
 
     /**

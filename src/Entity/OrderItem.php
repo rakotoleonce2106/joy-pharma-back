@@ -16,6 +16,7 @@ enum OrderItemStatus: string
     case SUGGESTED = 'suggested';       // Store suggested alternative (needs admin approval)
     case APPROVED = 'approved';         // Admin approved the suggestion
     case REJECTED = 'rejected';         // Admin rejected the suggestion
+    case RECUPERATED = 'recuperated';   // Recuperée - Item collected by delivery person
 }
 
 #[ORM\Entity(repositoryClass: OrderItemRepository::class)]
