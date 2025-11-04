@@ -5,8 +5,10 @@ namespace App\State\Order;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
 use App\Entity\User;
+use App\Exception\ApiException;
 use App\Repository\OrderRepository;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CurrentOrderProvider implements ProviderInterface
 {
@@ -33,6 +35,11 @@ class CurrentOrderProvider implements ProviderInterface
         // Get the order where this delivery person is assigned
         $order = $this->orderRepository->findCurrentOrderForDeliveryPerson($user);
 
-        return $order;
+        // If no current order found, throw a proper exception with a clear message
+        if (!$order) {
+            return [];
+        }
+
+        return [$order];
     }
 }
