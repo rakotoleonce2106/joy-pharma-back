@@ -44,7 +44,7 @@ App\Entity\Order:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/orders'
             normalizationContext:
-                groups: ['id:read','order:read','location:read','user:read','product:read','image:read']
+                groups: ['id:read','order:read','location:read','user:read','product:read','image:read','store:read']
             openapi:
                 summary: 'Get all orders'
                 description: 'Get all orders'
@@ -163,6 +163,26 @@ App\Entity\Order:
             openapi:
                 summary: 'Validate QR code'
                 description: 'Validate order QR code and mark as delivered'
+
+        # Scan store QR code for pickup
+        scan_store_qr:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/orders/{id}/scan-store-qr'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\Order\StoreQRScanProcessor
+            input: App\Dto\StoreQRScanInput
+            normalizationContext:
+                groups: ['order:read', 'location:read', 'user:read', 'store:read']
+            openapi:
+                summary: 'Scan store QR code for order pickup'
+                description: 'Scan the store QR code to verify order pickup. Verifies that the QR code matches the store assigned to the order and marks the order as collected.'
+                parameters:
+                    - name: id
+                      in: path
+                      required: true
+                      description: 'The ID of the order to collect'
+                      schema:
+                          type: integer
 
         # Submit rating
         submit_rating:

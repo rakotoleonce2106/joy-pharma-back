@@ -18,6 +18,7 @@ enum OrderStatus :string
     case STATUS_CONFIRMED = 'confirmed';
     case STATUS_PROCESSING = 'processing';
     case STATUS_SHIPPED = 'shipped';
+    case STATUS_COLLECTED = 'collected'; // Recuperée - Order picked up from store
     case STATUS_DELIVERED = 'delivered';
     case STATUS_CANCELLED = 'cancelled';
 }
@@ -122,12 +123,10 @@ class Order
     private ?\DateTimeInterface $actualDeliveryTime = null;
 
     #[ORM\Column(length: 255, nullable: true, unique: true)]
-    #[Groups(['order:read'])]
-    private ?string $qrCode = null;
+    private ?string $qrCode = null; // Not exposed in API - QR codes are store-only
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    #[Groups(['order:read'])]
-    private ?\DateTimeInterface $qrCodeValidatedAt = null;
+    private ?\DateTimeInterface $qrCodeValidatedAt = null; // Not exposed in API
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     #[Groups(['order:read'])]
@@ -521,6 +520,55 @@ class Order
 
         $this->rating = $rating;
         return $this;
+    }
+
+    /**
+     * Get all unique stores associated with this order through order items
+     * 
+     * @return Store[]
+     */
+    public function getStores(): array
+    {
+        $stores = [];
+        foreach ($this->items as $item) {
+            $store = $item->getStore();
+            if ($store && !in_array($store, $stores, true)) {
+                $stores[] = $store;
+            }
+        }
+        return $stores;
+    }
+
+    /**
+     * Get the primary store (first store) from order items
+     * 
+     * @return Store|null
+     */
+    public function getPrimaryStore(): ?Store
+    {
+        foreach ($this->items as $item) {
+            $store = $item->getStore();
+            if ($store) {
+                return $store;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Check if the order belongs to a specific store
+     * 
+     * @param Store $store
+     * @return bool
+     */
+    public function belongsToStore(Store $store): bool
+    {
+        foreach ($this->items as $item) {
+            if ($item->getStore() === $store) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 

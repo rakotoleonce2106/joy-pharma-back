@@ -57,6 +57,7 @@ class UpdateOrderStatusProcessor implements ProcessorInterface
             'confirmed' => OrderStatus::STATUS_CONFIRMED,
             'processing' => OrderStatus::STATUS_PROCESSING,
             'shipped' => OrderStatus::STATUS_SHIPPED,
+            'collected' => OrderStatus::STATUS_COLLECTED,
             'delivered' => OrderStatus::STATUS_DELIVERED,
             'cancelled' => OrderStatus::STATUS_CANCELLED,
             default => null
@@ -71,6 +72,11 @@ class UpdateOrderStatusProcessor implements ProcessorInterface
         // Set timestamps based on status
         switch ($statusEnum) {
             case OrderStatus::STATUS_PROCESSING:
+                if (!$order->getPickedUpAt()) {
+                    $order->setPickedUpAt(new \DateTime());
+                }
+                break;
+            case OrderStatus::STATUS_COLLECTED:
                 if (!$order->getPickedUpAt()) {
                     $order->setPickedUpAt(new \DateTime());
                 }

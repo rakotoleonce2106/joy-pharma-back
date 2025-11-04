@@ -101,6 +101,10 @@ class Store
     #[ORM\ManyToOne(inversedBy: 'store')]
     private ?OrderItem $orderItem = null;
 
+    #[ORM\Column(length: 255, unique: true, nullable: true)]
+    #[Groups(['store:read'])]
+    private ?string $qrCode = null;
+
     public function __construct()
     {
         $this->image = new ArrayCollection();
@@ -108,6 +112,7 @@ class Store
         $this->updatedAt = new \DateTimeImmutable();
         $this->categories = new ArrayCollection();
         $this->storeProducts = new ArrayCollection();
+        $this->qrCode = $this->generateQRCode();
     }
 
     public function getId(): ?int
@@ -283,5 +288,25 @@ class Store
         $this->orderItem = $orderItem;
 
         return $this;
+    }
+
+    public function getQrCode(): ?string
+    {
+        return $this->qrCode;
+    }
+
+    public function setQrCode(?string $qrCode): static
+    {
+        $this->qrCode = $qrCode;
+
+        return $this;
+    }
+
+    /**
+     * Generate a unique QR code for the store
+     */
+    private function generateQRCode(): string
+    {
+        return 'STORE-' . strtoupper(bin2hex(random_bytes(16)));
     }
 }
