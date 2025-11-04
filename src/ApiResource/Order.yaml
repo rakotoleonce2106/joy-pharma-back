@@ -94,7 +94,7 @@ App\Entity\Order:
             security: 'is_granted("ROLE_USER")'
             provider: App\State\Order\OrderHistoryProvider
             normalizationContext:
-                groups: ['order:read', 'location:read', 'user:read']
+                groups: ['id:read','order:read', 'location:read', 'user:read','store:read']
             openapi:
                 summary: 'Get order history'
                 description: 'Get delivery history for current user'
