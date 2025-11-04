@@ -106,7 +106,7 @@ class RegisterStoreProcessor implements ProcessorInterface
                 'phone' => $user->getPhone(),
                 'roles' => $user->getRoles(),
                 'userType' => 'store',
-                'isActive' => $user->isActive(),
+                'isActive' => $user->getActive(),
                 'store' => [
                     'id' => $store->getId(),
                     'name' => $store->getName(),

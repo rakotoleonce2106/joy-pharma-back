@@ -34,7 +34,7 @@ class ActivateDeliverProcessor implements ProcessorInterface
 
         return [
             'id' => $user->getId(),
-            'isActive' => $user->isActive(),
+            'isActive' => $user->getActive(),
         ];
     }
 }

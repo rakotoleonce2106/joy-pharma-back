@@ -16,7 +16,7 @@ class ApiUserChecker implements UserCheckerInterface
         }
 
         // Block inactive delivery accounts from logging in
-        if (in_array('ROLE_DELIVER', $user->getRoles(), true) && !$user->isActive()) {
+        if (in_array('ROLE_DELIVER', $user->getRoles(), true) && !$user->getActive()) {
             throw new ApiException(
                 'Your delivery account is awaiting activation.',
                 ApiException::REQUEST_ACTIVATION,

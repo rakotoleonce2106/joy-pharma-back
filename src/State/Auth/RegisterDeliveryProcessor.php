@@ -16,13 +16,12 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
         private JWTTokenManagerInterface $jwtManager
-    ) {
-    }
+    ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
     {
         // $data is the DTO with registration info
-        
+
         // Check if email already exists
         $existingUser = $this->entityManager->getRepository(User::class)
             ->findOneBy(['email' => $data->email]);
@@ -38,7 +37,7 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         $user->setLastName($data->lastName);
         $user->setPhone($data->phone);
         $user->setVehicleType($data->vehicleType);
-        
+
         if (!empty($data->vehiclePlate)) {
             $user->setVehiclePlate($data->vehiclePlate);
         }
@@ -79,11 +78,11 @@ class RegisterDeliveryProcessor implements ProcessorInterface
                 'phone' => $user->getPhone(),
                 'roles' => $user->getRoles(),
                 'userType' => 'delivery',
-                'isActive' => $user->isActive(),
+                'isActive' => $user->getActive(),
                 'delivery' => [
                     'vehicleType' => $user->getVehicleType(),
                     'vehiclePlate' => $user->getVehiclePlate(),
-                    'isOnline' => $user->isOnline(),
+                    'isOnline' => $user->getIsOnline(),
                     'totalDeliveries' => $user->getTotalDeliveries(),
                     'averageRating' => $user->getAverageRating(),
                     'totalEarnings' => $user->getTotalEarnings(),
@@ -92,4 +91,3 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         ];
     }
 }
-

@@ -40,7 +40,7 @@ class DashboardProvider implements ProviderInterface
             totalDeliveries: $totalDeliveries,
             totalEarnings: number_format($totalEarnings, 2),
             averageRating: $user->getAverageRating(),
-            isOnline: $user->isOnline(),
+            isOnline: $user->getIsOnline(),
             hasActiveOrder: $currentOrder !== null,
             lifetimeStats: [
                 'totalDeliveries' => $user->getTotalDeliveries(),

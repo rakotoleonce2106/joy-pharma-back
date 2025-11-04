@@ -59,7 +59,7 @@ class RegisterCustomerProcessor implements ProcessorInterface
                 'phone' => $user->getPhone(),
                 'roles' => $user->getRoles(),
                 'userType' => 'customer',
-                'isActive' => $user->isActive(),
+                'isActive' => $user->getActive(),
             ]
         ];
     }

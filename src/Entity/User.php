@@ -20,6 +20,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Validator\Constraints as Assert;
 
 
@@ -109,7 +110,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     // Delivery Person Fields
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:update'])]
     private bool $isOnline = false;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 8, nullable: true)]
@@ -556,11 +557,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // Delivery Person Methods
-    public function isOnline(): bool
+    public function getIsOnline(): bool
     {
         return $this->isOnline;
     }
+
 
     public function setIsOnline(bool $isOnline): static
     {

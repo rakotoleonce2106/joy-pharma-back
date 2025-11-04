@@ -34,7 +34,7 @@ class JwtAuthenticationSuccessHandler implements EventSubscriberInterface
             'phone' => $user->getPhone(),
             'roles' => $user->getRoles(),
             'userType' => $this->getUserType($user),
-            'isActive' => $user->isActive(),
+            'isActive' => $user->getActive(),
         ];
 
         // Add image if exists
@@ -47,7 +47,7 @@ class JwtAuthenticationSuccessHandler implements EventSubscriberInterface
             $userData['delivery'] = [
                 'vehicleType' => $user->getVehicleType(),
                 'vehiclePlate' => $user->getVehiclePlate(),
-                'isOnline' => $user->isOnline(),
+                'isOnline' => $user->getIsOnline(),
                 'totalDeliveries' => $user->getTotalDeliveries(),
                 'averageRating' => $user->getAverageRating(),
                 'totalEarnings' => $user->getTotalEarnings(),
@@ -65,7 +65,7 @@ class JwtAuthenticationSuccessHandler implements EventSubscriberInterface
                     'id' => $store->getId(),
                     'name' => $store->getName(),
                     'description' => $store->getDescription(),
-                    'isActive' => $user->isActive(),
+                    'isActive' => $user->getActive(),
                 ];
 
                 // Add contact info if exists

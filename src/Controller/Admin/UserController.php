@@ -112,7 +112,7 @@ class UserController extends AbstractController
     #[Route('/user/{id}/toggle-active', name: 'admin_user_toggle_active', methods: ['POST'])]
     public function toggleActive(User $user): Response
     {
-        $user->setActive(!$user->isActive());
+        $user->setActive(!$user->getActive());
         $this->userService->updateUser($user);
         $this->addSuccessToast('Status updated', 'The user activation status has been updated.');
         return $this->redirectToRoute('admin_user');

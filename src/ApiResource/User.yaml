@@ -6,8 +6,8 @@ App\Entity\User:
                 security:
                     -   JWT: [ 'ROLE_ADMIN' ]
 
-        patch:
-            class: ApiPlatform\Metadata\Post
+        put:
+            class: ApiPlatform\Metadata\Put
             uriTemplate: "/user/update"
             validationContext:
                 groups: ['user:update' ]
@@ -68,29 +68,6 @@ App\Entity\User:
                 summary: "Get  current user."
                 description: "Get  current user."
 
-        # List all delivery users (admin only)
-        list_delivers:
-            class: ApiPlatform\Metadata\GetCollection
-            uriTemplate: '/admin/delivers'
-            security: 'is_granted("ROLE_ADMIN")'
-            provider: App\State\User\DeliversListProvider
-            paginationEnabled: false
-            normalizationContext:
-                groups: ['id:read','user:read']
-            openapi:
-                summary: 'List all delivery users'
-                description: 'List all users with ROLE_DELIVER'
-
-        # Activate/deactivate a delivery user (admin only)
-        activate_deliver:
-            class: ApiPlatform\Metadata\Put
-            uriTemplate: '/admin/delivers/{id}/activation'
-            security: 'is_granted("ROLE_ADMIN")'
-            processor: App\State\User\ActivateDeliverProcessor
-            input: false
-            openapi:
-                summary: 'Activate or deactivate a delivery user'
-                description: 'Toggle deliver active status with { "isActive": true|false }'
 
     normalizationContext:
         groups: ['id:read','user:read']

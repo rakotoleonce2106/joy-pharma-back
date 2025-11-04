@@ -14,7 +14,7 @@ trait EntityStatusTrait
     #[Assert\Type(type: 'bool', groups: ['admin:write'])]
     private bool $active = true;
 
-    public function isActive(): bool
+    public function getActive(): bool
     {
         return $this->active;
     }

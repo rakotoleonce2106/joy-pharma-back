@@ -39,6 +39,28 @@ class UserUpdateProcessor implements ProcessorInterface
 
         $user = $token->getUser();
 
+        // Handle JSON body data if available
+        if ($data instanceof User) {
+            // Data is already denormalized by API Platform
+            if ($data->getFirstName() !== null) {
+                $user->setFirstName($data->getFirstName());
+            }
+            if ($data->getLastName() !== null) {
+                $user->setLastName($data->getLastName());
+            }
+            if ($data->getPhone() !== null) {
+                $user->setPhone($data->getPhone());
+            }
+            // Handle isOnline - check request content to see if it was provided
+            $content = $request->getContent();
+            if ($content && $request->getContentTypeFormat() === 'json') {
+                $jsonData = json_decode($content, true);
+                if (isset($jsonData['isOnline'])) {
+                    $user->setIsOnline(filter_var($jsonData['isOnline'], FILTER_VALIDATE_BOOLEAN));
+                }
+            }
+        }
+
         // Handle multipart form data
         $this->processFormData($user, $request);
 
@@ -69,6 +91,11 @@ class UserUpdateProcessor implements ProcessorInterface
 
         if ($request->request->has('phone')) {
             $user->setPhone($request->request->get('phone'));
+        }
+
+        if ($request->request->has('isOnline')) {
+            $isOnline = filter_var($request->request->get('isOnline'), FILTER_VALIDATE_BOOLEAN);
+            $user->setIsOnline($isOnline);
         }
 
         // Handle file upload for profile image
