@@ -28,7 +28,9 @@ class UserController extends AbstractController
     #[Route('/user', name: 'admin_user')]
     public function index(Request $request): Response
     {
-        $query = $this->userRepository->createQueryBuilder('user');
+        $query = $this->userRepository->createQueryBuilder('user')
+            ->leftJoin('user.delivery', 'delivery')
+            ->addSelect('delivery');
 
         $datatable = $this->createNamedDataTable('users', UserDataTableType::class, $query);
         $datatable->handleRequest($request);
@@ -47,6 +49,8 @@ class UserController extends AbstractController
         
         // Create query from array - we'll use a custom approach
         $query = $this->userRepository->createQueryBuilder('u')
+            ->leftJoin('u.delivery', 'delivery')
+            ->addSelect('delivery')
             ->where('u.id IN (:ids)')
             ->setParameter('ids', array_map(fn(User $u) => $u->getId(), $allUsers));
 
@@ -67,6 +71,8 @@ class UserController extends AbstractController
         
         // Create query from array
         $query = $this->userRepository->createQueryBuilder('u')
+            ->leftJoin('u.delivery', 'delivery')
+            ->addSelect('delivery')
             ->where('u.id IN (:ids)')
             ->setParameter('ids', array_map(fn(User $u) => $u->getId(), $allUsers));
 
@@ -87,6 +93,8 @@ class UserController extends AbstractController
         
         // Create query from array
         $query = $this->userRepository->createQueryBuilder('u')
+            ->leftJoin('u.delivery', 'delivery')
+            ->addSelect('delivery')
             ->where('u.id IN (:ids)')
             ->setParameter('ids', array_map(fn(User $u) => $u->getId(), $allUsers));
 

@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Delivery;
 use App\Entity\User;
+use App\Exception\ValidationFailedException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -79,7 +80,7 @@ class UserUpdateProcessor implements ProcessorInterface
         $violations = $this->validator->validate($user, null, ['Default', 'user:update']);
         
         if (count($violations) > 0) {
-            throw new BadRequestHttpException('Validation failed: ' . (string) $violations);
+            throw new ValidationFailedException($violations);
         }
 
         // Persist the changes

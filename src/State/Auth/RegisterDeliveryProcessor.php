@@ -8,6 +8,7 @@ use App\Entity\Delivery;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -21,7 +22,56 @@ class RegisterDeliveryProcessor implements ProcessorInterface
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
     {
-        // $data is the DTO with registration info
+        try {
+            // $data is the DTO with registration info
+            
+            // Check if data is properly formed
+            if (!is_object($data)) {
+                throw new BadRequestHttpException('Invalid request data');
+            }
+
+            // Validate required fields with proper checks
+            if (!property_exists($data, 'email') || empty(trim($data->email ?? ''))) {
+                throw new BadRequestHttpException('Email is required');
+            }
+
+            if (!property_exists($data, 'firstName') || empty(trim($data->firstName ?? ''))) {
+                throw new BadRequestHttpException('First name is required');
+            }
+
+            if (!property_exists($data, 'lastName') || empty(trim($data->lastName ?? ''))) {
+                throw new BadRequestHttpException('Last name is required');
+            }
+
+            if (!property_exists($data, 'phone') || empty(trim($data->phone ?? ''))) {
+                throw new BadRequestHttpException('Phone is required');
+            }
+
+            if (!property_exists($data, 'password') || empty($data->password ?? '')) {
+                throw new BadRequestHttpException('Password is required');
+            }
+
+            if (!property_exists($data, 'vehicleType') || empty(trim($data->vehicleType ?? ''))) {
+                throw new BadRequestHttpException('Vehicle type is required');
+            }
+
+            // Validate required documents
+            if (!property_exists($data, 'residenceDocument') || $data->residenceDocument === null) {
+                throw new BadRequestHttpException('Residence document is required');
+            }
+
+            if (!property_exists($data, 'vehicleDocument') || $data->vehicleDocument === null) {
+                throw new BadRequestHttpException('Vehicle document is required');
+            }
+            
+            // Check if files are UploadedFile instances
+            if (!($data->residenceDocument instanceof \Symfony\Component\HttpFoundation\File\UploadedFile)) {
+                throw new BadRequestHttpException('Residence document must be a valid file');
+            }
+
+            if (!($data->vehicleDocument instanceof \Symfony\Component\HttpFoundation\File\UploadedFile)) {
+                throw new BadRequestHttpException('Vehicle document must be a valid file');
+            }
 
         // Check if email already exists
         $existingUser = $this->entityManager->getRepository(User::class)
@@ -56,13 +106,25 @@ class RegisterDeliveryProcessor implements ProcessorInterface
             $delivery->setVehiclePlate($data->vehiclePlate);
         }
 
-        // Attach verification documents if provided
-        if (!empty($data->residenceDocument)) {
-            $delivery->setResidenceDocumentFile($data->residenceDocument);
-        }
-        if (!empty($data->vehicleDocument)) {
-            $delivery->setVehicleDocumentFile($data->vehicleDocument);
-        }
+            // Attach verification documents (required)
+            // Check if files are valid before setting
+            try {
+                if (!$data->residenceDocument->isValid()) {
+                    throw new BadRequestHttpException('Residence document is not valid');
+                }
+
+                if (!$data->vehicleDocument->isValid()) {
+                    throw new BadRequestHttpException('Vehicle document is not valid');
+                }
+
+                $delivery->setResidenceDocumentFile($data->residenceDocument);
+                $delivery->setVehicleDocumentFile($data->vehicleDocument);
+            } catch (\Exception $fileException) {
+                if ($fileException instanceof BadRequestHttpException) {
+                    throw $fileException;
+                }
+                throw new BadRequestHttpException('Error processing documents: ' . $fileException->getMessage(), $fileException);
+            }
 
         // Link Delivery to User
         $user->setDelivery($delivery);
@@ -96,5 +158,20 @@ class RegisterDeliveryProcessor implements ProcessorInterface
                 ] : null
             ]
         ];
+        } catch (ConflictHttpException | BadRequestHttpException $e) {
+            // Re-throw HTTP exceptions as-is
+            throw $e;
+        } catch (\TypeError $e) {
+            // Handle type errors (e.g., accessing undefined properties)
+            throw new BadRequestHttpException('Invalid request data: ' . $e->getMessage(), $e);
+        } catch (\Exception $e) {
+            // Log the actual error and throw a more user-friendly error
+            // Include the exception class and message for debugging
+            $errorMessage = 'Registration failed';
+            if ($e->getMessage()) {
+                $errorMessage .= ': ' . $e->getMessage();
+            }
+            throw new BadRequestHttpException($errorMessage, $e);
+        }
     }
 }

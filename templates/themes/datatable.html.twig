@@ -217,6 +217,26 @@
     </twig:ui:table:cell>
 {% endblock %}
 
+{% block column_deliveryOnline_value %}
+    <twig:ui:table:cell {{ ...attr }}>
+        {% if value and value.delivery %}
+            {% if value.delivery.isOnline %}
+                <span class="inline-flex items-center justify-center rounded-full text-xs font-medium bg-blue-100 text-blue-800 h-6 px-2.5">
+                    Online
+                </span>
+            {% else %}
+                <span class="inline-flex items-center justify-center rounded-full text-xs font-medium bg-gray-100 text-gray-800 h-6 px-2.5">
+                    Offline
+                </span>
+            {% endif %}
+        {% else %}
+            <span class="inline-flex items-center justify-center rounded-full text-xs font-medium bg-gray-100 text-gray-400 h-6 px-2.5">
+                N/A
+            </span>
+        {% endif %}
+    </twig:ui:table:cell>
+{% endblock %}
+
 {% block pagination_widget %}
     <div
             class="grid sm:flex items-center sm:text-start space-y-2 sm:space-y-0 text-center justify-center sm:justify-between px-2">

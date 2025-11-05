@@ -257,6 +257,9 @@ user:
         last_name: 'Last Name'
         phone: 'Phone'
         created_at: 'Created At'
+        delivery_online: 'Delivery Online'
+        status: 'Status'
+        name: 'Name'
 
 
 # Plan form translations

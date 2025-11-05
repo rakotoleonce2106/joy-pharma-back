@@ -89,6 +89,17 @@ class UserDataTableType extends AbstractDataTableType
                     'class' => 'text-center'
                 ]
             ])
+            ->addColumn('deliveryOnline', TextColumnType::class, [
+                'label' => 'user.datatable.delivery_online',
+                'sort' => false,
+                'getter' => fn (User $user) => $user,
+                'value_attr' => [
+                    'class' => 'px-4 text-center'
+                ],
+                'header_attr' => [
+                    'class' => 'text-center'
+                ]
+            ])
             ->addColumn('createdAt', DateColumnType::class, [
                 'label' => 'user.datatable.created_at',
                 'sort' => true,

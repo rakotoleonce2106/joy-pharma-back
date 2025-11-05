@@ -33,13 +33,15 @@ class RegisterDeliveryInput
     /**
      * Residence proof document (PDF or image)
      */
+    #[Assert\NotBlank]
     #[Assert\File(maxSize: '10M', mimeTypes: ['application/pdf','image/jpeg','image/png','image/webp'])]
-    public ?UploadedFile $residenceDocument = null;
+    public UploadedFile $residenceDocument;
 
     /**
      * Vehicle paper document (PDF or image)
      */
+    #[Assert\NotBlank]
     #[Assert\File(maxSize: '10M', mimeTypes: ['application/pdf','image/jpeg','image/png','image/webp'])]
-    public ?UploadedFile $vehicleDocument = null;
+    public UploadedFile $vehicleDocument;
 }
 
