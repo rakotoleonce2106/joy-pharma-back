@@ -80,7 +80,7 @@ class StoreProductDataTableType extends AbstractDataTableType
                 'label' => 'Status',
                 'sort' => true,
                 'getter' => function (StoreProduct $storeProduct) {
-                    return $storeProduct->isActive() ? 'Active' : 'Inactive';
+                    return $storeProduct->getActive() ? 'Active' : 'Inactive';
                 }
             ])
             ->addRowAction('edit', ButtonActionType::class, [

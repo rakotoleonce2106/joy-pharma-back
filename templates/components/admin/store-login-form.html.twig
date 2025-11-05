@@ -43,22 +43,11 @@
                 {{ form_errors(form.ownerEmail) }}
             </div>
             
-            <div data-controller="password-repeat">
-                <div class="text-xs text-muted-foreground mb-2">
-                    Leave empty to keep existing password or auto-generate for new accounts
-                </div>
-                {{ form_row(form.ownerPassword) }}
-            </div>
-            
             <div class="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <twig:ux:icon name="lucide:info" class="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
                 <div class="text-sm text-blue-900 dark:text-blue-100">
-                    <p class="font-medium mb-1">Password Requirements</p>
-                    <ul class="text-blue-700 dark:text-blue-300 list-disc list-inside space-y-1">
-                        <li>Minimum 8 characters</li>
-                        <li>Mix of letters, numbers recommended</li>
-                        <li>Default: <strong>JoyPharma2025!</strong> if left empty</li>
-                    </ul>
+                    <p class="font-medium mb-1">Password Information</p>
+                    <p class="text-blue-700 dark:text-blue-300">The default password <strong>!Joy2025Pharam!</strong> will be used for store owner login</p>
                 </div>
             </div>
         </div>

@@ -85,16 +85,6 @@ class StoreController extends AbstractController
 
             // Get login credentials from form
             $ownerEmail = $form->get('ownerEmail')->getData();
-            $ownerPasswordField = $form->get('ownerPassword');
-            $ownerPasswordData = $ownerPasswordField->getData();
-            
-            // Extract password from RepeatedType (returns array with 'first' key)
-            $ownerPassword = null;
-            if ($ownerPasswordData && is_array($ownerPasswordData) && isset($ownerPasswordData['first'])) {
-                $ownerPassword = $ownerPasswordData['first'];
-            } elseif (is_string($ownerPasswordData) && !empty($ownerPasswordData)) {
-                $ownerPassword = $ownerPasswordData;
-            }
             
             // Check if user already exists with this email
             $user = $this->userService->getUserByEmail($ownerEmail);
@@ -105,8 +95,8 @@ class StoreController extends AbstractController
                 $user->setLastName('Store Owner');
                 $user->setRoles(['ROLE_STORE']);
                 
-                // Use provided password or auto-generate
-                $password = $ownerPassword ?: 'JoyPharma2025!';
+                // Use default password
+                $password = '!Joy2025Pharam!';
                 
                 // Hash and set password
                 $user = $this->userService->hashPassword($user, $password);
@@ -333,21 +323,10 @@ class StoreController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             // Get login credentials from form
             $ownerEmail = $form->get('ownerEmail')->getData();
-            $ownerPasswordField = $form->get('ownerPassword');
-            $ownerPasswordData = $ownerPasswordField->getData();
-            
-            // Extract password from RepeatedType (returns array with 'first' key)
-            $ownerPassword = null;
-            if ($ownerPasswordData && is_array($ownerPasswordData) && isset($ownerPasswordData['first'])) {
-                $ownerPassword = $ownerPasswordData['first'];
-            } elseif (is_string($ownerPasswordData) && !empty($ownerPasswordData)) {
-                $ownerPassword = $ownerPasswordData;
-            }
             
             // Get or create user
             $user = $store->getOwner();
             $isNewUser = false;
-            $passwordUpdated = false;
             
             if (!$user) {
                 $user = $this->userService->getUserByEmail($ownerEmail);
@@ -363,15 +342,14 @@ class StoreController extends AbstractController
             $user->setLastName('Store Owner');
             $user->setRoles(['ROLE_STORE']);
             
-            // Update password if provided
-            if ($ownerPassword && !empty(trim($ownerPassword))) {
-                // Hash and set password
-                $user = $this->userService->hashPassword($user, $ownerPassword);
-                $passwordUpdated = true;
+            // Set default password for new users
+            if ($isNewUser) {
+                $password = '!Joy2025Pharam!';
+                $user = $this->userService->hashPassword($user, $password);
             }
             
-            // Persist user if it's new or password was updated
-            if ($isNewUser || $passwordUpdated) {
+            // Persist user if it's new or if details changed
+            if ($isNewUser) {
                 $this->userService->persistUser($user);
             } else {
                 // Still need to persist user in case email or other details changed
