@@ -17,7 +17,7 @@ class StoreProduct
     use EntityTimestampTrait;
 
     #[ORM\ManyToOne(inversedBy: 'storeProducts')]
-    #[Groups(['store-product:read'])]
+    #[Groups(['store-product:read', 'store-product:write'])]
     private ?Product $product = null;
 
     #[ORM\ManyToOne(inversedBy: 'storeProducts')]
@@ -25,15 +25,15 @@ class StoreProduct
     private ?Store $store = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['store-product:read'])]
+    #[Groups(['store-product:read', 'store-product:write'])]
     private ?float $unitPrice = null;
 
     #[ORM\Column]
-    #[Groups(['store-product:read'])]
+    #[Groups(['store-product:read', 'store-product:write'])]
     private ?int $stock = null;
 
     #[ORM\Column]
-    #[Groups(['store-product:read'])]
+    #[Groups(['store-product:read', 'store-product:write'])]
     private ?float $price = null;
 
 

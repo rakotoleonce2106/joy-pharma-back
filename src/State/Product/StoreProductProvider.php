@@ -25,11 +25,15 @@ class StoreProductProvider implements ProviderInterface
     {
         $user = $this->security->getUser();
 
-        if ($user instanceof User && $this->security->isGranted('ROLE_STORE')) {
-            $store = $this->storeRepository->findOneBy(['owner' => $user]);
-            return $this->storeProductRepository->findAll(['store' => $store]);
+        if (!$user instanceof User || !$this->security->isGranted('ROLE_STORE')) {
+            return [];
         }
-        
-        return [];
+
+        $store = $this->storeRepository->findOneBy(['owner' => $user]);
+        if (!$store) {
+            return [];
+        }
+
+        return $this->storeProductRepository->findBy(['store' => $store]);
     }
 }
