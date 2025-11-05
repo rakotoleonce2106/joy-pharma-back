@@ -3,6 +3,7 @@
 namespace App\EventSubscriber;
 
 use App\Exception\ApiException;
+use App\Exception\ValidationFailedException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,6 +17,7 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Security\Core\Exception\AuthenticationCredentialsNotFoundException;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
+use Symfony\Component\Validator\ConstraintViolationListInterface;
 
 class ApiExceptionSubscriber implements EventSubscriberInterface
 {
@@ -45,6 +47,17 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
 
     private function handleException(\Throwable $exception): ?JsonResponse
     {
+        // Handle ValidationFailedException first (our custom exception with violations)
+        if ($exception instanceof ValidationFailedException) {
+            return $this->createValidationErrorResponse($exception->getViolations());
+        }
+
+        // Check if exception has violations in previous exception
+        $violations = $this->extractViolations($exception);
+        if ($violations !== null) {
+            return $this->createValidationErrorResponse($violations);
+        }
+
         // Handle our custom ApiException
         if ($exception instanceof ApiException) {
             return new JsonResponse(
@@ -130,19 +143,108 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
 
         // Handle BadRequestHttpException
         if ($exception instanceof BadRequestHttpException) {
+            // Check if message contains validation info or if previous exception has violations
+            $violations = $this->extractViolations($exception);
+            if ($violations !== null) {
+                return $this->createValidationErrorResponse($violations);
+            }
+
+            // Try to parse validation errors from message
+            $message = $exception->getMessage();
+            if (str_contains(strtolower($message), 'validation') || str_contains(strtolower($message), 'violation')) {
+                return $this->createValidationErrorResponse(null, $message);
+            }
+
             return new JsonResponse([
                 'code' => Response::HTTP_BAD_REQUEST,
                 'status' => ApiException::VALIDATION_ERROR,
-                'message' => $exception->getMessage() ?: 'Invalid request.',
+                'message' => $message ?: 'Invalid request.',
             ], Response::HTTP_BAD_REQUEST);
         }
 
         // Default: server error for unhandled exceptions
+        // Log the actual exception for debugging but return a user-friendly error
+        $message = 'An internal server error occurred.';
+        
+        // In dev mode, include more details
+        if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'dev') {
+            $message = $exception->getMessage() ?: $message;
+            $message .= ' (' . get_class($exception) . ')';
+        }
+        
         return new JsonResponse([
             'code' => Response::HTTP_INTERNAL_SERVER_ERROR,
             'status' => ApiException::SERVER_ERROR,
-            'message' => 'An internal server error occurred.',
+            'message' => $message,
+            'exception' => $exception->getMessage(),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
         ], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+
+    /**
+     * Extract ConstraintViolationListInterface from exception chain
+     */
+    private function extractViolations(\Throwable $exception): ?ConstraintViolationListInterface
+    {
+        // Check if exception has a getViolations method
+        if (method_exists($exception, 'getViolations')) {
+            /** @var mixed $violations */
+            $violations = $exception->{'getViolations'}();
+            if ($violations instanceof ConstraintViolationListInterface) {
+                return $violations;
+            }
+        }
+
+        // Check previous exception
+        $previous = $exception->getPrevious();
+        if ($previous !== null) {
+            return $this->extractViolations($previous);
+        }
+
+        return null;
+    }
+
+    /**
+     * Create a validation error response with violations
+     */
+    private function createValidationErrorResponse(
+        ?ConstraintViolationListInterface $violations = null,
+        ?string $fallbackMessage = null
+    ): JsonResponse {
+        $violationsArray = [];
+        $messages = [];
+
+        if ($violations !== null && $violations->count() > 0) {
+            foreach ($violations as $violation) {
+                $propertyPath = $violation->getPropertyPath();
+                $message = $violation->getMessage();
+
+                // Format property path (remove brackets if present)
+                $field = str_replace(['[', ']'], '', $propertyPath);
+                if (empty($field)) {
+                    $field = 'root';
+                }
+
+                $violationsArray[] = [
+                    'propertyPath' => $field,
+                    'message' => $message,
+                ];
+
+                $messages[] = $message;
+            }
+        }
+
+        $mainMessage = !empty($messages) 
+            ? implode('. ', array_unique($messages))
+            : ($fallbackMessage ?: 'Validation failed.');
+
+        return new JsonResponse([
+            'code' => Response::HTTP_BAD_REQUEST,
+            'status' => ApiException::VALIDATION_ERROR,
+            'message' => $mainMessage,
+            'violations' => $violationsArray,
+        ], Response::HTTP_BAD_REQUEST);
     }
 
     private function mapHttpExceptionToStatus(HttpException $exception): string
