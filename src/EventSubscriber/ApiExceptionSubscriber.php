@@ -8,6 +8,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -24,7 +25,8 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            'kernel.exception' => 'onKernelException',
+            'kernel.exception' => ['onKernelException', -10], // Lower priority to run after API Platform/Lexik error handlers
+            'kernel.response' => ['onKernelResponse', -10], // Also catch responses after they're set
         ];
     }
 
@@ -37,11 +39,70 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
             return;
         }
 
+        // Check if a response is already set (e.g., by API Platform or Lexik)
+        $existingResponse = $event->getResponse();
+        if ($existingResponse) {
+            $content = $existingResponse->getContent();
+            $contentType = $existingResponse->headers->get('Content-Type', '');
+            
+            // Check if response is JSON (either JsonResponse or Response with JSON content)
+            if (str_contains($contentType, 'application/json') || $existingResponse instanceof JsonResponse) {
+                $data = json_decode($content, true);
+                
+                // If response has 'code' and 'message' but no 'status', add it
+                if (is_array($data) && isset($data['code']) && isset($data['message']) && !isset($data['status'])) {
+                    $status = $this->mapStatusCodeToStatus($data['code']);
+                    $data['status'] = $status;
+                    $event->setResponse(new JsonResponse($data, $data['code']));
+                    return;
+                }
+                // If response already has status, don't modify it
+                if (is_array($data) && isset($data['status'])) {
+                    return;
+                }
+            }
+        }
+
+        // If no response is set yet, handle the exception
         $exception = $event->getThrowable();
         $response = $this->handleException($exception);
         
         if ($response) {
             $event->setResponse($response);
+        }
+    }
+
+    public function onKernelResponse(ResponseEvent $event): void
+    {
+        $request = $event->getRequest();
+        
+        // Only handle API routes
+        if (!str_starts_with($request->getPathInfo(), '/api')) {
+            return;
+        }
+
+        $response = $event->getResponse();
+        if (!$response) {
+            return;
+        }
+
+        $content = $response->getContent();
+        if (empty($content)) {
+            return;
+        }
+
+        $contentType = $response->headers->get('Content-Type', '');
+        
+        // Check if response is JSON (either JsonResponse or Response with JSON content)
+        if (str_contains($contentType, 'application/json') || $response instanceof JsonResponse) {
+            $data = json_decode($content, true);
+            
+            // If response has 'code' and 'message' but no 'status', add it
+            if (is_array($data) && isset($data['code']) && isset($data['message']) && !isset($data['status'])) {
+                $status = $this->mapStatusCodeToStatus($data['code']);
+                $data['status'] = $status;
+                $event->setResponse(new JsonResponse($data, $data['code']));
+            }
         }
     }
 
@@ -90,6 +151,17 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
                 'code' => Response::HTTP_UNAUTHORIZED,
                 'status' => ApiException::INVALID_CREDENTIALS,
                 'message' => $exception->getMessage() ?: 'Authentication failed.',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Handle UnauthorizedHttpException (used by Lexik JWT for expired tokens)
+        if ($exception instanceof UnauthorizedHttpException) {
+            $message = $exception->getMessage() ?: 'Invalid credentials.';
+            
+            return new JsonResponse([
+                'code' => Response::HTTP_UNAUTHORIZED,
+                'status' => ApiException::INVALID_CREDENTIALS,
+                'message' => $message,
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -251,6 +323,18 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
     {
         $statusCode = $exception->getStatusCode();
 
+        return match ($statusCode) {
+            401 => ApiException::INVALID_CREDENTIALS,
+            403 => ApiException::FORBIDDEN,
+            404 => ApiException::NOT_FOUND,
+            409 => ApiException::CONFLICT,
+            400 => ApiException::VALIDATION_ERROR,
+            default => ApiException::SERVER_ERROR,
+        };
+    }
+
+    private function mapStatusCodeToStatus(int $statusCode): string
+    {
         return match ($statusCode) {
             401 => ApiException::INVALID_CREDENTIALS,
             403 => ApiException::FORBIDDEN,
