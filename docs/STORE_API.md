@@ -5,11 +5,17 @@ This document describes the API endpoints available for store owners (users with
 ## Table of Contents
 
 1. [Authentication](#authentication)
-2. [Order Management](#order-management)
+2. [Product Management](#product-management)
+   - [Search Products (for Adding to Store)](#search-products-for-adding-to-store)
+   - [List Store Products](#list-store-products)
+   - [Get Store Product Details](#get-store-product-details)
+   - [Create Store Product](#create-store-product)
+   - [Update Store Product](#update-store-product)
+3. [Order Management](#order-management)
    - [List All Orders](#list-all-orders)
    - [Get Order Details](#get-order-details)
    - [Update Order with Order Item Actions](#update-order-with-order-item-actions)
-3. [Store Settings](#store-settings)
+4. [Store Settings](#store-settings)
    - [Get Store Settings](#get-store-settings)
    - [Update Store Settings](#update-store-settings)
 
@@ -21,6 +27,713 @@ All store API endpoints require JWT authentication with the `ROLE_STORE` role.
 ```
 Authorization: Bearer {JWT_TOKEN}
 ```
+
+## Product Management
+
+Store owners can manage their store's product inventory, including adding products, updating prices, managing stock levels, and removing products.
+
+### Workflow for Managing Store Products
+
+1. **Search for Products**: Use the `/api/products/search` endpoint to find products you want to add to your store
+2. **Create Store Product**: Use the `/api/store_products` POST endpoint to add a product to your store with pricing and stock information
+3. **List Store Products**: Use the `/api/store_products` GET endpoint to view all products in your store
+4. **Update Store Product**: Use the `/api/store_products/{id}` PUT endpoint to update prices, stock, or status
+5. **View Store Product Details**: Use the `/api/store_products/{id}` GET endpoint to get detailed information about a specific store product
+
+### Search Products (for Adding to Store)
+
+Search for products to add to your store. This endpoint uses Elasticsearch for fast, full-text search with filtering capabilities.
+
+**Endpoint:** `GET /api/products/search`
+
+**Authentication:** Optional (public endpoint, but recommended for better results)
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `q` or `query` | string | No | Search query for product name, code, or description |
+| `category` | integer | No | Filter by category ID |
+| `brand` | integer | No | Filter by brand ID |
+| `manufacturer` | integer | No | Filter by manufacturer ID |
+| `isActive` | boolean | No | Filter by active status (true/false) |
+| `page` | integer | No | Page number for pagination (default: 1) |
+| `perPage` or `itemsPerPage` | integer | No | Number of items per page (default: 10, max: 50) |
+
+**Example Request:**
+```bash
+# Search for products by name
+curl -X GET "https://api.example.com/api/products/search?q=paracetamol" \
+  -H "Authorization: Bearer {JWT_TOKEN}"
+
+# Search with filters
+curl -X GET "https://api.example.com/api/products/search?q=aspirin&category=3&brand=5&page=1&perPage=20" \
+  -H "Authorization: Bearer {JWT_TOKEN}"
+
+# Search all products in a category
+curl -X GET "https://api.example.com/api/products/search?category=3&page=1&perPage=10" \
+  -H "Authorization: Bearer {JWT_TOKEN}"
+```
+
+**Success Response (200 OK):**
+```json
+[
+  {
+    "id": 45,
+    "name": "Paracetamol 500mg",
+    "code": "PAR-500",
+    "description": "Pain reliever and fever reducer",
+    "images": [
+      {
+        "id": 12,
+        "name": "paracetamol.jpg",
+        "size": 102400,
+        "mimeType": "image/jpeg",
+        "originalName": "paracetamol.jpg"
+      }
+    ],
+    "form": {
+      "id": 1,
+      "name": "Tablet"
+    },
+    "brand": {
+      "id": 5,
+      "name": "PharmaBrand"
+    },
+    "manufacturer": {
+      "id": 2,
+      "name": "PharmaManufacturer Inc."
+    },
+    "category": [
+      {
+        "id": 3,
+        "name": "Pain Relief"
+      }
+    ],
+    "isActive": true,
+    "unit": {
+      "id": 1,
+      "name": "Box"
+    },
+    "quantity": 10,
+    "unitPrice": 100.00,
+    "totalPrice": 1000.00,
+    "currency": {
+      "id": 1,
+      "code": "MGA",
+      "name": "Malagasy Ariary"
+    },
+    "stock": 500,
+    "createdAt": "2025-01-10T08:00:00+00:00",
+    "updatedAt": "2025-01-15T10:30:00+00:00"
+  },
+  {
+    "id": 46,
+    "name": "Aspirin 100mg",
+    "code": "ASP-100",
+    "description": "Blood thinner and pain reliever",
+    "images": [],
+    "form": {
+      "id": 1,
+      "name": "Tablet"
+    },
+    "brand": {
+      "id": 5,
+      "name": "PharmaBrand"
+    },
+    "category": [
+      {
+        "id": 3,
+        "name": "Pain Relief"
+      }
+    ],
+    "isActive": true,
+    "unit": {
+      "id": 1,
+      "name": "Box"
+    },
+    "quantity": 20,
+    "unitPrice": 50.00,
+    "totalPrice": 1000.00,
+    "currency": {
+      "id": 1,
+      "code": "MGA",
+      "name": "Malagasy Ariary"
+    },
+    "stock": 300,
+    "createdAt": "2025-01-10T08:00:00+00:00",
+    "updatedAt": "2025-01-15T10:30:00+00:00"
+  }
+]
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Product ID (use this when creating store products) |
+| `name` | string | Product name |
+| `code` | string | Product code/SKU |
+| `description` | string | Product description |
+| `images` | array | Array of product images |
+| `form` | object | Product form (e.g., Tablet, Capsule) |
+| `brand` | object | Product brand information |
+| `manufacturer` | object | Product manufacturer information |
+| `category` | array | Array of categories the product belongs to |
+| `isActive` | boolean | Whether the product is active |
+| `unit` | object | Product unit (e.g., Box, Bottle) |
+| `quantity` | integer | Quantity per unit |
+| `unitPrice` | float | Price per unit |
+| `totalPrice` | float | Total price for the product |
+| `currency` | object | Currency information |
+| `stock` | integer | Available stock |
+| `createdAt` | string | ISO 8601 creation date |
+| `updatedAt` | string | ISO 8601 update date |
+
+**Search Behavior:**
+- The search is case-insensitive and supports fuzzy matching
+- Searches across product name, code, and description
+- Returns results ordered by relevance score
+- Empty query returns all products (with pagination)
+
+**Error Responses:**
+
+- `400 Bad Request`: Invalid parameters
+  ```json
+  {
+    "type": "https://tools.ietf.org/html/rfc2616#section-10",
+    "title": "An error occurred",
+    "detail": "Invalid parameter: perPage must be between 1 and 50"
+  }
+  ```
+
+### List Store Products
+
+Get a list of all products in your store. This endpoint returns only products that belong to the authenticated store owner's store.
+
+**Endpoint:** `GET /api/store_products`
+
+**Authentication:** Required (`ROLE_STORE`)
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | integer | No | Page number for pagination (default: 1) |
+| `itemsPerPage` | integer | No | Number of items per page (default: 30) |
+
+**Example Request:**
+```bash
+curl -X GET "https://api.example.com/api/store_products" \
+  -H "Authorization: Bearer {JWT_TOKEN}"
+```
+
+**Success Response (200 OK):**
+```json
+[
+  {
+    "id": 15,
+    "product": {
+      "id": 45,
+      "name": "Paracetamol 500mg",
+      "code": "PAR-500",
+      "description": "Pain reliever and fever reducer",
+      "images": [
+        {
+          "id": 12,
+          "name": "paracetamol.jpg",
+          "size": 102400,
+          "mimeType": "image/jpeg",
+          "originalName": "paracetamol.jpg"
+        }
+      ],
+      "form": {
+        "id": 1,
+        "name": "Tablet"
+      },
+      "brand": {
+        "id": 5,
+        "name": "PharmaBrand"
+      },
+      "category": [
+        {
+          "id": 3,
+          "name": "Pain Relief"
+        }
+      ],
+      "isActive": true,
+      "unit": {
+        "id": 1,
+        "name": "Box"
+      }
+    },
+    "store": {
+      "id": 3,
+      "name": "Pharmacy ABC"
+    },
+    "unitPrice": 500.00,
+    "price": 1500.00,
+    "stock": 50,
+    "isActive": true,
+    "createdAt": "2025-01-10T08:00:00+00:00",
+    "updatedAt": "2025-01-15T10:30:00+00:00"
+  },
+  {
+    "id": 16,
+    "product": {
+      "id": 46,
+      "name": "Aspirin 100mg",
+      "code": "ASP-100",
+      "description": "Blood thinner and pain reliever",
+      "images": [],
+      "isActive": true
+    },
+    "store": {
+      "id": 3,
+      "name": "Pharmacy ABC"
+    },
+    "unitPrice": 300.00,
+    "price": 900.00,
+    "stock": 25,
+    "isActive": true,
+    "createdAt": "2025-01-10T08:00:00+00:00",
+    "updatedAt": "2025-01-15T10:30:00+00:00"
+  }
+]
+```
+
+**Error Responses:**
+
+- `401 Unauthorized`: Authentication required
+  ```json
+  {
+    "code": 401,
+    "message": "JWT Token not found"
+  }
+  ```
+
+- `403 Forbidden`: User is not a store owner
+  ```json
+  {
+    "code": 403,
+    "message": "Access Denied."
+  }
+  ```
+
+### Get Store Product Details
+
+Get detailed information about a specific product in your store.
+
+**Endpoint:** `GET /api/store_products/{id}`
+
+**Authentication:** Required (`ROLE_STORE`)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | The ID of the store product |
+
+**Example Request:**
+```bash
+curl -X GET "https://api.example.com/api/store_products/15" \
+  -H "Authorization: Bearer {JWT_TOKEN}"
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "id": 15,
+  "product": {
+    "id": 45,
+    "name": "Paracetamol 500mg",
+    "code": "PAR-500",
+    "description": "Pain reliever and fever reducer",
+    "images": [
+      {
+        "id": 12,
+        "name": "paracetamol.jpg",
+        "size": 102400,
+        "mimeType": "image/jpeg",
+        "originalName": "paracetamol.jpg"
+      }
+    ],
+    "form": {
+      "id": 1,
+      "name": "Tablet"
+    },
+    "brand": {
+      "id": 5,
+      "name": "PharmaBrand"
+    },
+    "manufacturer": {
+      "id": 2,
+      "name": "PharmaManufacturer Inc."
+    },
+    "category": [
+      {
+        "id": 3,
+        "name": "Pain Relief"
+      }
+    ],
+    "isActive": true,
+    "unit": {
+      "id": 1,
+      "name": "Box"
+    },
+    "quantity": 10,
+    "unitPrice": 100.00,
+    "totalPrice": 1000.00,
+    "currency": {
+      "id": 1,
+      "code": "MGA",
+      "name": "Malagasy Ariary"
+    }
+  },
+  "store": {
+    "id": 3,
+    "name": "Pharmacy ABC"
+  },
+  "unitPrice": 500.00,
+  "price": 1500.00,
+  "stock": 50,
+  "isActive": true,
+  "createdAt": "2025-01-10T08:00:00+00:00",
+  "updatedAt": "2025-01-15T10:30:00+00:00"
+}
+```
+
+**Error Responses:**
+
+- `404 Not Found`: Store product not found or doesn't belong to your store
+  ```json
+  {
+    "type": "https://tools.ietf.org/html/rfc2616#section-10",
+    "title": "An error occurred",
+    "detail": "Store product not found"
+  }
+  ```
+
+- `401 Unauthorized`: Authentication required
+- `403 Forbidden`: Access denied
+
+### Create Store Product
+
+Create a new store product in your inventory. This endpoint allows you to add a product to your store with pricing and stock information.
+
+**Endpoint:** `POST /api/store_products`
+
+**Authentication:** Required (`ROLE_STORE`)
+
+**Content-Type:** `application/json`
+
+**Request Body:**
+
+```json
+{
+  "product": "/api/product/45",
+  "price": 1500.00,
+  "unitPrice": 500.00,
+  "stock": 50
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `product` | string (IRI) | Yes | Product resource IRI (e.g., `/api/product/45`) or product ID as object |
+| `price` | float | Yes | Selling price for the product (must be greater than 0) |
+| `unitPrice` | float | No | Price per unit |
+| `stock` | integer | Yes | Available stock quantity (must be 0 or greater) |
+
+**Alternative Request Format (using product ID directly):**
+
+```json
+{
+  "product": 45,
+  "price": 1500.00,
+  "unitPrice": 500.00,
+  "stock": 50
+}
+```
+
+**Example Request:**
+```bash
+curl -X POST "https://api.example.com/api/store_products" \
+  -H "Authorization: Bearer {JWT_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product": "/api/product/45",
+    "price": 1500.00,
+    "unitPrice": 500.00,
+    "stock": 50
+  }'
+```
+
+**Success Response (201 Created):**
+```json
+{
+  "id": 15,
+  "product": {
+    "id": 45,
+    "name": "Paracetamol 500mg",
+    "code": "PAR-500",
+    "description": "Pain reliever and fever reducer",
+    "images": [
+      {
+        "id": 12,
+        "name": "paracetamol.jpg",
+        "size": 102400,
+        "mimeType": "image/jpeg",
+        "originalName": "paracetamol.jpg"
+      }
+    ],
+    "form": {
+      "id": 1,
+      "name": "Tablet"
+    },
+    "brand": {
+      "id": 5,
+      "name": "PharmaBrand"
+    },
+    "manufacturer": {
+      "id": 2,
+      "name": "PharmaManufacturer Inc."
+    },
+    "category": [
+      {
+        "id": 3,
+        "name": "Pain Relief"
+      }
+    ],
+    "isActive": true,
+    "unit": {
+      "id": 1,
+      "name": "Box"
+    },
+    "quantity": 10,
+    "unitPrice": 100.00,
+    "totalPrice": 1000.00,
+    "currency": {
+      "id": 1,
+      "code": "MGA",
+      "name": "Malagasy Ariary"
+    },
+    "stock": 500,
+    "createdAt": "2025-01-10T08:00:00+00:00",
+    "updatedAt": "2025-01-15T10:30:00+00:00"
+  },
+  "store": {
+    "id": 3,
+    "name": "Pharmacy ABC"
+  },
+  "unitPrice": 500.00,
+  "price": 1500.00,
+  "stock": 50,
+  "isActive": true,
+  "createdAt": "2025-01-15T10:30:00+00:00",
+  "updatedAt": "2025-01-15T10:30:00+00:00"
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Store product ID |
+| `product` | object | Full product details |
+| `store` | object | Store information (automatically set to your store) |
+| `unitPrice` | float | Price per unit |
+| `price` | float | Selling price |
+| `stock` | integer | Available stock |
+| `isActive` | boolean | Whether the store product is active |
+| `createdAt` | string | ISO 8601 creation date |
+| `updatedAt` | string | ISO 8601 update date |
+
+**Error Responses:**
+
+- `400 Bad Request`: Invalid request, validation failed, or product already exists
+  ```json
+  {
+    "type": "https://tools.ietf.org/html/rfc2616#section-10",
+    "title": "An error occurred",
+    "detail": "Product is required"
+  }
+  ```
+  
+  Common error messages:
+  - `"Product is required"` - Product field is missing
+  - `"Product not found"` - Product ID doesn't exist
+  - `"Product ID is required"` - Invalid product format
+  - `"Store product already exists for this product"` - Product already added to store
+  - `"Price must be greater than 0"` - Invalid price value
+  - `"Stock must be 0 or greater"` - Invalid stock value
+  - `"Validation failed: {field}: {message}"` - Validation errors
+
+- `401 Unauthorized`: Authentication required
+  ```json
+  {
+    "code": 401,
+    "message": "JWT Token not found"
+  }
+  ```
+
+- `403 Forbidden`: User must be a store owner
+  ```json
+  {
+    "code": 403,
+    "message": "User must be a store owner"
+  }
+  ```
+
+- `404 Not Found`: User doesn't have a store
+  ```json
+  {
+    "type": "https://tools.ietf.org/html/rfc2616#section-10",
+    "title": "An error occurred",
+    "detail": "User does not have a store"
+  }
+  ```
+
+### Update Store Product
+
+Update the price, stock level, or status of a product in your store.
+
+**Endpoint:** `PUT /api/store_products/{id}`
+
+**Authentication:** Required (`ROLE_STORE`)
+
+**Content-Type:** `application/json`
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | The ID of the store product to update |
+
+**Request Body:**
+
+```json
+{
+  "price": 1500.00,
+  "unitPrice": 500.00,
+  "stock": 50,
+  "isActive": true
+}
+```
+
+**Request Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `price` | float | No | Selling price for the product |
+| `unitPrice` | float | No | Price per unit |
+| `stock` | integer | No | Available stock quantity |
+| `isActive` | boolean | No | Whether the product is active/available |
+
+**Example Request:**
+```bash
+curl -X PUT "https://api.example.com/api/store_products/15" \
+  -H "Authorization: Bearer {JWT_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "price": 1500.00,
+    "unitPrice": 500.00,
+    "stock": 50,
+    "isActive": true
+  }'
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "id": 15,
+  "product": {
+    "id": 45,
+    "name": "Paracetamol 500mg"
+  },
+  "store": {
+    "id": 3,
+    "name": "Pharmacy ABC"
+  },
+  "unitPrice": 500.00,
+  "price": 1500.00,
+  "stock": 50,
+  "isActive": true,
+  "createdAt": "2025-01-10T08:00:00+00:00",
+  "updatedAt": "2025-01-15T10:35:00+00:00"
+}
+```
+
+**Error Responses:**
+
+- `404 Not Found`: Store product not found or doesn't belong to your store
+  ```json
+  {
+    "type": "https://tools.ietf.org/html/rfc2616#section-10",
+    "title": "An error occurred",
+    "detail": "Store product not found"
+  }
+  ```
+
+- `400 Bad Request`: Validation error
+  ```json
+  {
+    "type": "https://tools.ietf.org/html/rfc2616#section-10",
+    "title": "An error occurred",
+    "detail": "Validation failed",
+    "violations": [
+      {
+        "propertyPath": "stock",
+        "message": "Stock must be a positive integer"
+      }
+    ]
+  }
+  ```
+
+- `401 Unauthorized`: Authentication required
+- `403 Forbidden`: Access denied
+
+### Delete Store Product
+
+Remove a product from your store inventory.
+
+**Endpoint:** `DELETE /api/store_products/{id}`
+
+**Authentication:** Required (`ROLE_STORE`)
+
+**Path Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | The ID of the store product to delete |
+
+**Example Request:**
+```bash
+curl -X DELETE "https://api.example.com/api/store_products/15" \
+  -H "Authorization: Bearer {JWT_TOKEN}"
+```
+
+**Success Response (204 No Content):**
+
+The response body is empty.
+
+**Error Responses:**
+
+- `404 Not Found`: Store product not found or doesn't belong to your store
+  ```json
+  {
+    "type": "https://tools.ietf.org/html/rfc2616#section-10",
+    "title": "An error occurred",
+    "detail": "Store product not found"
+  }
+  ```
+
+- `401 Unauthorized`: Authentication required
+- `403 Forbidden`: Access denied
+
+**Note:** Deleting a store product does not delete the underlying product from the system. It only removes the product from your store's inventory.
 
 ## Order Management
 
@@ -528,6 +1241,16 @@ Error response format:
 
 ## Best Practices
 
+### Product Management
+
+1. **Set prices when adding products**: After adding products to your store, immediately update them with prices and stock levels
+2. **Keep stock levels updated**: Regularly update stock quantities to ensure accurate inventory management
+3. **Use isActive flag**: Set products to inactive when temporarily unavailable instead of deleting them
+4. **Monitor prices**: Keep prices competitive and update them regularly based on market conditions
+5. **Batch operations**: Use the add products endpoint to add multiple products at once
+
+### Order Management
+
 1. **Batch Operations**: Use the update order endpoint to process multiple order items in a single request for better performance
 2. **Always check inventory**: Before accepting, verify the product is in your store's inventory
 3. **Use notes effectively**: Provide helpful notes to customers when accepting items
@@ -535,6 +1258,58 @@ Error response format:
 5. **Suggest alternatives**: Instead of refusing, consider suggesting alternative products
 6. **Transaction Safety**: All order item actions are processed in a single transaction - if one fails, all are rolled back
 7. **Order Totals**: Order totals are automatically recalculated after processing all actions
+
+## Workflow Examples
+
+### Example 1: Adding Products to Store
+
+1. Store owner calls `GET /api/products` to see available products
+2. Store owner selects products and calls `POST /api/store_products` to add them:
+   ```json
+   {
+     "items": [45, 46, 47]
+   }
+   ```
+3. Store owner updates each product with prices and stock:
+   ```json
+   PUT /api/store_products/15
+   {
+     "price": 1500.00,
+     "unitPrice": 500.00,
+     "stock": 50,
+     "isActive": true
+   }
+   ```
+
+### Example 2: Updating Stock Levels
+
+1. Store owner receives new inventory
+2. Store owner calls `PUT /api/store_products/{id}` to update stock:
+   ```json
+   {
+     "stock": 100,
+     "price": 1500.00
+   }
+   ```
+
+### Example 3: Managing Product Availability
+
+1. Product is temporarily out of stock
+2. Store owner sets product to inactive:
+   ```json
+   PUT /api/store_products/15
+   {
+     "isActive": false
+   }
+   ```
+3. When product is back in stock:
+   ```json
+   PUT /api/store_products/15
+   {
+     "isActive": true,
+     "stock": 25
+   }
+   ```
 
 ## Integration Notes
 
@@ -544,3 +1319,5 @@ Error response format:
 - Store prices are automatically applied from StoreProduct when accepting items
 - The order total is recalculated automatically after all actions are processed
 - All order item actions in a single request are processed in one transaction
+- Store products are automatically filtered by the authenticated store owner's store
+- Products must exist in the system before they can be added to a store

@@ -16,8 +16,8 @@ Parameters (multipart):
 - phone (string, required)
 - vehicleType (string, required; one of: bike, motorcycle, car, van)
 - vehiclePlate (string, optional)
-- residenceDocument (file, optional; pdf/jpg/png/webp, max 10MB)
-- vehicleDocument (file, optional; pdf/jpg/png/webp, max 10MB)
+- residenceDocument (file, required; pdf/jpg/png/webp, max 10MB)
+- vehicleDocument (file, required; pdf/jpg/png/webp, max 10MB)
 
 201 Response:
 ```json

@@ -7,7 +7,7 @@ App\Entity\StoreProduct:
             security: 'is_granted("ROLE_STORE")'
             provider: App\State\Product\StoreProductItemProvider
             normalizationContext:
-                groups: ['id:read','store-product:read', 'product:read']
+                groups: ['id:read','store-product:read', 'product:read','image:read']
             openapi:
                 summary: 'Get a store product'
                 description: 'Get a store product by id (only accessible by store owner)'
@@ -23,7 +23,7 @@ App\Entity\StoreProduct:
             security: 'is_granted("ROLE_STORE")'
             provider: App\State\Product\StoreProductProvider
             normalizationContext:
-                groups:  ['id:read','store-product:read', 'product:read']
+                groups:  ['id:read','store-product:read', 'product:read','image:read']
             format: 'json'
             openapi:
                 summary: 'Get all store products'
@@ -38,7 +38,7 @@ App\Entity\StoreProduct:
             denormalizationContext:
                 groups: ['store-product:write']
             normalizationContext:
-                groups: ['id:read','store-product:read', 'product:read']
+                groups: ['id:read','store-product:read', 'product:read','image:read']
             format: 'json'
             openapi:
                 summary: 'Create a store product'
@@ -53,7 +53,7 @@ App\Entity\StoreProduct:
             denormalizationContext:
                 groups: ['store-product:write']
             normalizationContext:
-                groups: ['id:read','store-product:read', 'product:read']
+                groups: ['id:read','store-product:read', 'product:read','image:read']
             format: 'json'
             openapi:
                 summary: 'Update a store product'
@@ -64,7 +64,7 @@ App\Entity\StoreProduct:
                       description: 'The id of the store product'
 
     normalizationContext:
-        groups: ['id:read','store-product:read','product:read']
+        groups: ['id:read','store-product:read','product:read','image:read']
     denormalizationContext:
         groups: ['store-product:write']
                       

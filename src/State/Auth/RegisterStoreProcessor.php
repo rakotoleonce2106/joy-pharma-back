@@ -11,7 +11,7 @@ use App\Entity\Store;
 use App\Entity\StoreSetting;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Security\Http\Authentication\AuthenticationSuccessHandler;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -20,7 +20,7 @@ class RegisterStoreProcessor implements ProcessorInterface
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
-        private JWTTokenManagerInterface $jwtManager
+        private AuthenticationSuccessHandler $authenticationSuccessHandler
     ) {
     }
 
@@ -93,12 +93,16 @@ class RegisterStoreProcessor implements ProcessorInterface
         $this->entityManager->flush();
 
         // Generate JWT token
-        $token = $this->jwtManager->create($user);
+        $jwtResponse = $this->authenticationSuccessHandler->handleAuthenticationSuccess($user);
+        
+        // Extract token data from the response
+        $responseData = json_decode($jwtResponse->getContent(), true);
 
         // Return response with token and user data
         return [
-            'token' => $token,
-            'user' => [
+            'token' => $responseData['token'] ?? null,
+            'refresh_token' => $responseData['refresh_token'] ?? null,
+            'user' => $responseData['user'] ?? [
                 'id' => $user->getId(),
                 'email' => $user->getEmail(),
                 'firstName' => $user->getFirstName(),

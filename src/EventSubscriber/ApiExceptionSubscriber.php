@@ -230,7 +230,8 @@ class ApiExceptionSubscriber implements EventSubscriberInterface
             return new JsonResponse([
                 'code' => Response::HTTP_BAD_REQUEST,
                 'status' => ApiException::VALIDATION_ERROR,
-                'message' => $message ?: 'Invalid request.',
+                'message' => $message ?: 'Invalid reque
+                st.',
             ], Response::HTTP_BAD_REQUEST);
         }
 

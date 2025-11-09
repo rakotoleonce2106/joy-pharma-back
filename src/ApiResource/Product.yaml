@@ -46,6 +46,68 @@ App\Entity\Product:
                 summary: 'Get all products home'
                 description: 'Get all products home'
 
+        search_products:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/products/search'
+            provider: 'App\State\Product\ProductElasticsearchProvider'
+            normalizationContext:
+                groups: ['id:read','product:read','image:read']
+            openapi:
+                summary: 'Search products using Elasticsearch'
+                description: 'Search products with full-text search, filters, and pagination'
+                parameters:
+                    - name: 'q'
+                      in: 'query'
+                      description: 'Search query'
+                      required: false
+                      schema:
+                          type: string
+                    - name: 'query'
+                      in: 'query'
+                      description: 'Search query (alternative to q)'
+                      required: false
+                      schema:
+                          type: string
+                    - name: 'category'
+                      in: 'query'
+                      description: 'Filter by category ID'
+                      required: false
+                      schema:
+                          type: integer
+                    - name: 'brand'
+                      in: 'query'
+                      description: 'Filter by brand ID'
+                      required: false
+                      schema:
+                          type: integer
+                    - name: 'manufacturer'
+                      in: 'query'
+                      description: 'Filter by manufacturer ID'
+                      required: false
+                      schema:
+                          type: integer
+                    - name: 'isActive'
+                      in: 'query'
+                      description: 'Filter by active status'
+                      required: false
+                      schema:
+                          type: boolean
+                    - name: 'page'
+                      in: 'query'
+                      description: 'Page number'
+                      required: false
+                      schema:
+                          type: integer
+                          default: 1
+                    - name: 'perPage'
+                      in: 'query'
+                      description: 'Items per page'
+                      required: false
+                      schema:
+                          type: integer
+                          default: 10
+
     normalizationContext:
         groups: ['id:read','product:read']
                       

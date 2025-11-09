@@ -224,8 +224,8 @@ curl -X POST "https://api.example.com/api/register" \
 | `phone` | string | Yes | Phone number |
 | `vehicleType` | string | Yes | Vehicle type: `bike`, `motorcycle`, `car`, or `van` |
 | `vehiclePlate` | string | No | Vehicle license plate |
-| `residenceDocument` | file | No | Proof of residence (PDF/JPG/PNG/WEBP, max 10MB) |
-| `vehicleDocument` | file | No | Vehicle registration document (PDF/JPG/PNG/WEBP, max 10MB) |
+| `residenceDocument` | file | Yes | Proof of residence (PDF/JPG/PNG/WEBP, max 10MB) |
+| `vehicleDocument` | file | Yes | Vehicle registration document (PDF/JPG/PNG/WEBP, max 10MB) |
 
 **Example Request:**
 ```bash

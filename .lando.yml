@@ -18,6 +18,9 @@ services:
         # App
         APP_ENV: dev
         DATABASE_URL: postgresql://postgres:postgres@database:5432/postgres?serverVersion=16&charset=utf8
+        # Elasticsearch
+        ELASTICSEARCH_HOST: http://elasticsearch:9200
+        ELASTICSEARCH_INDEX_PREFIX: joy_pharma
     build_as_root:
       - apt update
       - >-
@@ -44,6 +47,10 @@ services:
         - ":80"
   database:
     portforward: 5433
+  elasticsearch:
+    type: elasticsearch
+    version: 8.11.0
+    portforward: 9200
   mailhog:
     type: mailhog
     portforward: false

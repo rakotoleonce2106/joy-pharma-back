@@ -1,0 +1,4 @@
+# Elasticsearch configuration
+# Parameters are defined in config/services.yaml
+# This file is reserved for future Elasticsearch-specific configuration if needed
+
