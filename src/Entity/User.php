@@ -4,6 +4,7 @@
 namespace App\Entity;
 
 
+use ApiPlatform\Metadata\ApiProperty;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityStatusTrait;
 use App\Entity\Traits\EntityTimestampTrait;
@@ -11,10 +12,6 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\HttpFoundation\File\File;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Vich\UploaderBundle\Entity\File as EmbeddedFile;
-use Vich\UploaderBundle\Mapping\Annotation as Vich;
 use App\Repository\UserRepository;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -27,7 +24,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[UniqueEntity('email')]
-#[Vich\Uploadable]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
 
@@ -66,13 +62,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phone = null;
 
 
-    #[Vich\UploadableField(mapping: 'profile', fileNameProperty: 'image.name', size: 'image.size')]
-    #[Groups(['user:create', 'user:update'])]
-    private ?File $imageFile = null;
-
-    #[ORM\Embedded(class: 'Vich\UploaderBundle\Entity\File')]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['user:read'])]
-    private ?EmbeddedFile $image = null;
+    #[ApiProperty(types: ['https://schema.org/image'])]
+    private ?MediaObject $image = null;
 
     /**
      * @var Collection<int, Order>
@@ -133,7 +127,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->image = new EmbeddedFile();
         $this->orders = new ArrayCollection();
         $this->deliverOrders = new ArrayCollection();
         $this->favorites = new ArrayCollection();
@@ -281,28 +274,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function setImageFile(?File $imageFile = null): void
-    {
-        $this->imageFile = $imageFile;
-
-        if (null !== $imageFile) {
-            $this->updatedAt = new \DateTimeImmutable();
-        }
-    }
-
-    public function getImageFile(): ?File
-    {
-        return $this->imageFile;
-    }
-
-    public function setImage(EmbeddedFile $image): void
-    {
-        $this->image = $image;
-    }
-
-    public function getImage(): ?EmbeddedFile
+    public function getImage(): ?MediaObject
     {
         return $this->image;
+    }
+
+    public function setImage(?MediaObject $image): static
+    {
+        $this->image = $image;
+
+        return $this;
     }
 
     /**

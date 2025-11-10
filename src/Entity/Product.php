@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Metadata\ApiProperty;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityStatusTrait;
 use App\Entity\Traits\EntityTimestampTrait;
@@ -38,10 +39,12 @@ class Product
     private ?string $description = null;
 
     /**
-     * @var Collection<int, MediaFile>
+     * @var Collection<int, MediaObject>
      */
-    #[ORM\OneToMany(targetEntity: MediaFile::class, mappedBy: 'product')]
+    #[ORM\ManyToMany(targetEntity: MediaObject::class)]
+    #[ORM\JoinTable(name: 'product_media_objects')]
     #[Groups(['product:read'])]
+    #[ApiProperty(types: ['https://schema.org/image'])]
     private Collection $images;
 
 
@@ -169,7 +172,7 @@ class Product
     }
 
     /**
-     * @return Collection<int, MediaFile>
+     * @return Collection<int, MediaObject>
      */
     public function getImages(): Collection
     {
@@ -177,24 +180,18 @@ class Product
     }
 
 
-    public function addImage(MediaFile $image): static
+    public function addImage(MediaObject $image): static
     {
         if (!$this->images->contains($image)) {
             $this->images->add($image);
-            $image->setProduct($this);
         }
 
         return $this;
     }
 
-    public function removeImage(MediaFile $image): static
+    public function removeImage(MediaObject $image): static
     {
-        if ($this->images->removeElement($image)) {
-            // set the owning side to null (unless already changed)
-            if ($image->getProduct() === $this) {
-                $image->setProduct(null);
-            }
-        }
+        $this->images->removeElement($image);
 
         return $this;
     }

@@ -9,7 +9,6 @@ use App\Entity\Order;
 use App\Form\OrderType;
 use App\Repository\OrderRepository;
 use App\Service\OrderService;
-use App\Service\MediaFileService;
 use App\Traits\ToastTrait;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -26,7 +25,6 @@ class OrderController extends AbstractController
     public  function __construct(
         private  readonly OrderRepository $orderRepository,
         private readonly OrderService $orderService,
-        private readonly MediaFileService $mediaFileService,
         private readonly ValidatorInterface $validator
     ) {}
     #[Route('/order', name: 'admin_order')]

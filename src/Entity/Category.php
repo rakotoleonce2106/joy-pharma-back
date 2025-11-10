@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Metadata\ApiProperty;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\CategoryRepository;
@@ -28,13 +29,17 @@ class Category
     #[Groups(['category:read','product:read'])]
     private ?string $description = null;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['category:read','product:read'])]
-    private ?MediaFile $svg = null;
+    #[ApiProperty(types: ['https://schema.org/image'])]
+    private ?MediaObject $image = null;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['category:read','product:read'])]
-    private ?MediaFile $image = null;
+    #[ApiProperty(types: ['https://schema.org/image'])]
+    private ?MediaObject $svg = null;
 
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'categories')]
@@ -164,26 +169,26 @@ class Category
         return $this;
     }
 
-    public function getSvg(): ?MediaFile
-    {
-        return $this->svg;
-    }
-
-    public function setSvg(?MediaFile $svg): static
-    {
-        $this->svg = $svg;
-
-        return $this;
-    }
-
-    public function getImage(): ?MediaFile
+    public function getImage(): ?MediaObject
     {
         return $this->image;
     }
 
-    public function setImage(?MediaFile $image): static
+    public function setImage(?MediaObject $image): static
     {
         $this->image = $image;
+
+        return $this;
+    }
+
+    public function getSvg(): ?MediaObject
+    {
+        return $this->svg;
+    }
+
+    public function setSvg(?MediaObject $svg): static
+    {
+        $this->svg = $svg;
 
         return $this;
     }

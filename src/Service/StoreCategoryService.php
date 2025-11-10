@@ -3,7 +3,6 @@
 namespace App\Service;
 
 use App\Entity\StoreCategory;
-use App\Entity\MediaFile;
 use App\Entity\Store;
 use App\Repository\StoreCategoryRepository;
 use Doctrine\ORM\EntityManagerInterface;

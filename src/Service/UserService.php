@@ -6,6 +6,7 @@ use App\Dto\SocialInput;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\HttpFoundation\File\File;
 
 
 readonly class UserService
@@ -13,7 +14,7 @@ readonly class UserService
     public function __construct(
         private EntityManagerInterface $manager,
         private UserPasswordHasherInterface $passwordHasher,
-        private MediaFileService $fileService
+        private string $projectDir
     )
     {
     }
@@ -72,8 +73,7 @@ readonly class UserService
         $user->setLastName($data->lastName);
         $user->setGoogleId($data->socialId);
         if ($data->imageUrl) {
-            $mediaFile = $this->fileService->createMediaFileByUrl($data->imageUrl, "profils");
-            $user->setImage($mediaFile);
+            $this->setUserImageFromUrl($user, $data->imageUrl);
         }
         $user->setRoles(['ROLE_USER']);
         return $user;
@@ -87,8 +87,7 @@ readonly class UserService
         $user->setLastName($data->lastName);
         $user->setFacebookId($data->socialId);
         if ($data->imageUrl) {
-            $mediaFile = $this->fileService->createMediaFileByUrl($data->imageUrl, "profils");
-            $user->setImage($mediaFile);
+            $this->setUserImageFromUrl($user, $data->imageUrl);
         }
         $user->setRoles(['ROLE_USER']);
         return $user;
@@ -120,6 +119,37 @@ readonly class UserService
     {
         $this->manager->remove($user);
         $this->manager->flush();
+    }
+
+    private function setUserImageFromUrl(User $user, string $imageUrl): void
+    {
+        $uploadDir = $this->projectDir . '/public/images/profile';
+        
+        // Create directory structure if it doesn't exist
+        if (!file_exists($uploadDir)) {
+            if (!mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                throw new \RuntimeException('Failed to create upload directory');
+            }
+        }
+
+        // Generate unique filename to prevent overwrites
+        $extension = pathinfo(parse_url($imageUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+        $fileName = uniqid('', true) . '.' . $extension;
+        $fullPath = $uploadDir . '/' . $fileName;
+
+        // Download and save the image
+        $content = @file_get_contents($imageUrl);
+        if ($content === false) {
+            throw new \RuntimeException('Failed to download image from: ' . $imageUrl);
+        }
+
+        if (file_put_contents($fullPath, $content) === false) {
+            throw new \RuntimeException('Failed to save image to: ' . $fullPath);
+        }
+
+        // Create a File object and set it
+        $file = new File($fullPath);
+        $user->setImageFile($file);
     }
 
 }

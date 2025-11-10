@@ -1,30 +1,9 @@
 vich_uploader:
     db_driver: orm
     mappings:
-        profile:
-            uri_prefix: /images/users
-            upload_destination: '%kernel.project_dir%/public/images/profile'
-            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
-            inject_on_load: false
-            delete_on_update: true
-            delete_on_remove: true
-        delivery_residence:
-            uri_prefix: /uploads/delivery/residence
-            upload_destination: '%kernel.project_dir%/public/uploads/delivery/residence'
-            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
-            inject_on_load: false
-            delete_on_update: true
-            delete_on_remove: true
-        delivery_vehicle:
-            uri_prefix: /uploads/delivery/vehicle
-            upload_destination: '%kernel.project_dir%/public/uploads/delivery/vehicle'
-            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
-            inject_on_load: false
-            delete_on_update: true
-            delete_on_remove: true
-        store:
-            uri_prefix: /images/store
-            upload_destination: '%kernel.project_dir%/public/images/store'
+        media_object:
+            uri_prefix: /media
+            upload_destination: '%kernel.project_dir%/public/media'
             namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
             inject_on_load: false
             delete_on_update: true

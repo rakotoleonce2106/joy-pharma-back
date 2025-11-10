@@ -9,7 +9,6 @@ use App\Entity\Form;
 use App\Form\FormType;
 use App\Repository\FormRepository;
 use App\Service\FormService;
-use App\Service\MediaFileService;
 use App\Traits\ToastTrait;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,8 +23,7 @@ class FormController extends AbstractController
 
     public  function __construct(
         private  readonly FormRepository $formRepository,
-        private readonly FormService $formService,
-        private readonly MediaFileService $mediaFileService
+        private readonly FormService $formService
     ) {}
     #[Route('/form', name: 'admin_form')]
     public function index(Request $request): Response
@@ -61,21 +59,44 @@ class FormController extends AbstractController
     #[Route('/form/{id}/delete', name: 'admin_form_delete', methods: ['POST'])]
     public  function deleteAction(Form $form): Response
     {
-        $this->formService->deleteForm($form);
-        $this->addSuccessToast('Form deleted!', 'The form has been successfully deleted.');
-        return $this->redirectToRoute('admin_form');
+        try {
+            $this->formService->deleteForm($form);
+            $this->addSuccessToast('Form deleted!', 'The form has been successfully deleted.');
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting the form: ' . $e->getMessage());
+        }
+        return $this->redirectToRoute('admin_form', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/form/batch-delete', name: 'admin_form_batch_delete', methods: ['POST'])]
     public function batchDeleteAction(Request $request): Response
     {
-        $formIds = $request->request->all('id');
-        $this->formService->batchDeleteForms(
-            $formIds
-        );
+        try {
+            $formIds = $request->request->all('id');
+            
+            if (empty($formIds)) {
+                $this->addWarningToast('No forms selected', 'Please select at least one form to delete.');
+                return $this->redirectToRoute('admin_form', [], Response::HTTP_SEE_OTHER);
+            }
 
-        $this->addSuccessToast("Forms deleted!", "The forms have been successfully deleted.");
-        return $this->redirectToRoute('admin_form');
+            $result = $this->formService->batchDeleteForms($formIds);
+
+            if ($result['failure_count'] > 0) {
+                $this->addWarningToast(
+                    'Partial deletion!',
+                    "{$result['success_count']} form(s) deleted successfully. {$result['failure_count']} form(s) could not be deleted."
+                );
+            } else {
+                $this->addSuccessToast(
+                    "Forms deleted!",
+                    "{$result['success_count']} form(s) have been successfully deleted."
+                );
+            }
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting forms: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_form', [], Response::HTTP_SEE_OTHER);
     }
 
 

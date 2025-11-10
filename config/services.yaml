@@ -45,6 +45,9 @@ services:
     App\Serializer\UploadedFileDenormalizer:
         tags: ['serializer.normalizer']
     
+    App\Serializer\MultipartDecoder:
+        tags: ['serializer.encoder']
+    
     App\Serializer\EmbeddedFileNormalizer:
         tags: ['serializer.normalizer']
     
@@ -57,6 +60,14 @@ services:
             - { name: 'serializer.normalizer', priority: 100 }
     
     App\Service\DownlaodFileService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\ProductService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Service\UserService:
         arguments:
             $projectDir: '%kernel.project_dir%'
 

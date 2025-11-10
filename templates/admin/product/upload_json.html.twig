@@ -1,0 +1,90 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}{{ 'Upload Products JSON'|trans }}{% endblock %}
+
+{% block content %}
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
+        <div class="mx-auto grid w-full max-w-6xl gap-6">
+            <div class="flex items-center gap-4">
+                <twig:ui:button:root href="{{ path('admin_product') }}" variant="outline" size="icon" class="h-8 w-8">
+                    <twig:ux:icon name="radix-icons:chevron-left" class="h-4 w-4"/>
+                    <span class="sr-only">{{ 'Back'|trans }}</span>
+                </twig:ui:button:root>
+                <h1 class="flex-1 text-3xl font-bold tracking-tight">
+                    {{ 'Upload Products JSON'|trans }}
+                </h1>
+                <div class="hidden items-center gap-2 md:flex">
+                    <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_product') }}">
+                        {{ 'Cancel'|trans }}
+                    </twig:ui:button:root>
+                    <twig:ui:button:root type="submit" form="upload-json-form" size="sm" data-turbo-submits-with="Uploading...">
+                        {{ 'Upload Products'|trans }}
+                    </twig:ui:button:root>
+                </div>
+            </div>
+
+            <div class="grid gap-6">
+                <twig:ui:card:root>
+                    <twig:ui:card:header>
+                        <twig:ui:card:title>{{ 'JSON Products Data'|trans }}</twig:ui:card:title>
+                        <twig:ui:card:description>
+                            {{ 'Paste or type your JSON array of products below. Each product should be an object in the array.'|trans }}
+                        </twig:ui:card:description>
+                    </twig:ui:card:header>
+                    <twig:ui:card:content>
+                        <form id="upload-json-form" method="POST" action="{{ path('admin_product_upload_json') }}">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="json_content" class="block text-sm font-medium mb-2">
+                                        {{ 'JSON Content'|trans }}
+                                    </label>
+                                    <textarea
+                                        id="json_content"
+                                        name="json_content"
+                                        rows="20"
+                                        class="w-full font-mono text-sm p-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                        placeholder='[
+  {
+    "title": "Product Name",
+    "description": "Product description",
+    "categories": ["Category 1", "Category 2"],
+    "images": ["image-url"],
+    "details": {
+      "code_ean": "123456789",
+      "forme": "Tablet",
+      "marque": "Brand Name",
+      "fabricant": "Manufacturer Name"
+    },
+    "price": {
+      "quantity": "7 pc(s)",
+      "unitPrice": "0,28 € / 1 pc(s)",
+      "totalPrice": "€ 1,99"
+    },
+    "variants": [
+      {"url": "variant-url"}
+    ]
+  }
+]'
+                                    ></textarea>
+                                </div>
+                                <div class="text-sm text-muted-foreground">
+                                    <p>{{ 'The JSON should be an array of product objects. Each product will be processed and added to the system.'|trans }}</p>
+                                </div>
+                            </div>
+                        </form>
+                    </twig:ui:card:content>
+                </twig:ui:card:root>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 md:hidden">
+                <twig:ui:button:root variant="outline" size="sm" href="{{ path('admin_product') }}">
+                    {{ 'Cancel'|trans }}
+                </twig:ui:button:root>
+                <twig:ui:button:root type="submit" form="upload-json-form" size="sm" data-turbo-submits-with="Uploading...">
+                    {{ 'Upload Products'|trans }}
+                </twig:ui:button:root>
+            </div>
+        </div>
+    </main>
+{% endblock %}
+

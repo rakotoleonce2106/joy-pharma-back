@@ -9,7 +9,6 @@ use App\Entity\Brand;
 use App\Form\BrandType;
 use App\Repository\BrandRepository;
 use App\Service\BrandService;
-use App\Service\MediaFileService;
 use App\Traits\ToastTrait;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,8 +24,7 @@ class BrandController extends AbstractController
 
     public  function __construct(
         private  readonly BrandRepository $brandRepository,
-        private readonly BrandService $brandService,
-        private readonly MediaFileService $mediaFileService
+        private readonly BrandService $brandService
     ) {}
     #[Route('/brand', name: 'admin_brand')]
     public function index(Request $request): Response
@@ -63,21 +61,44 @@ class BrandController extends AbstractController
     #[Route('/brand/{id}/delete', name: 'admin_brand_delete', methods: ['POST'])]
     public  function deleteAction(Brand $brand): Response
     {
-        $this->brandService->deleteBrand($brand);
-        $this->addSuccessToast('Brand deleted!', 'The brand has been successfully deleted.');
-        return $this->redirectToRoute('admin_brand');
+        try {
+            $this->brandService->deleteBrand($brand);
+            $this->addSuccessToast('Brand deleted!', 'The brand has been successfully deleted.');
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting the brand: ' . $e->getMessage());
+        }
+        return $this->redirectToRoute('admin_brand', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/brand/batch-delete', name: 'admin_brand_batch_delete', methods: ['POST'])]
     public function batchDeleteAction(Request $request): Response
     {
-        $brandIds = $request->request->all('id');
-        $this->brandService->batchDeleteBrands(
-            $brandIds
-        );
+        try {
+            $brandIds = $request->request->all('id');
+            
+            if (empty($brandIds)) {
+                $this->addWarningToast('No brands selected', 'Please select at least one brand to delete.');
+                return $this->redirectToRoute('admin_brand', [], Response::HTTP_SEE_OTHER);
+            }
 
-        $this->addSuccessToast("Brands deleted!", "The brands have been successfully deleted.");
-        return $this->redirectToRoute('admin_brand');
+            $result = $this->brandService->batchDeleteBrands($brandIds);
+
+            if ($result['failure_count'] > 0) {
+                $this->addWarningToast(
+                    'Partial deletion!',
+                    "{$result['success_count']} brand(s) deleted successfully. {$result['failure_count']} brand(s) could not be deleted."
+                );
+            } else {
+                $this->addSuccessToast(
+                    "Brands deleted!",
+                    "{$result['success_count']} brand(s) have been successfully deleted."
+                );
+            }
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting brands: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_brand', [], Response::HTTP_SEE_OTHER);
     }
 
 
@@ -86,23 +107,15 @@ class BrandController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
-            if ($action === 'create') {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/brand/');
-                    $brand->setImage($mediaFile);
-                }
+            /** @var UploadedFile|null $image */
+            $image = $form->get('image')->getData();
+            if ($image) {
+                $brand->setImageFile($image);
+            }
 
+            if ($action === 'create') {
                 $this->brandService->createBrand($brand);
             } else {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->updateMediaFileFromFile($brand->getImage(), $image, 'images/brand/');
-                    $brand->setImage($mediaFile);
-                }
-
                 $this->brandService->updateBrand($brand);
             }
 

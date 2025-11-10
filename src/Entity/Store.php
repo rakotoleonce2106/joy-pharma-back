@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityStatusTrait;
@@ -11,10 +12,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Attribute\Groups;
-use Vich\UploaderBundle\Entity\File as EmbeddedFile;
-use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 enum BoutiqueStatus: string
 {
@@ -50,7 +48,6 @@ enum BoutiqueStatus: string
 
 #[ORM\Entity(repositoryClass: StoreRepository::class)]
 #[ApiResource]
-#[Vich\Uploadable]
 class Store
 {
     use EntityIdTrait;
@@ -67,13 +64,11 @@ class Store
     #[Groups(['store:read'])]
     private ?string $description = null;
 
-    #[Vich\UploadableField(mapping: 'store', fileNameProperty: 'image.name', size: 'image.size')]
-    #[Groups(['store:create', 'store:update'])]
-    private ?File $imageFile = null;
-
-    #[ORM\Embedded(class: 'Vich\UploaderBundle\Entity\File')]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store:read'])]
-    private ?EmbeddedFile $image = null;
+    #[ApiProperty(types: ['https://schema.org/image'])]
+    private ?MediaObject $image = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
     #[Groups(['store:read'])]
@@ -114,7 +109,6 @@ class Store
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        $this->image = new EmbeddedFile();
         $this->categories = new ArrayCollection();
         $this->storeProducts = new ArrayCollection();
         $this->qrCode = $this->generateQRCode();
@@ -149,28 +143,16 @@ class Store
         return $this;
     }
 
-    public function setImageFile(?File $imageFile = null): void
-    {
-        $this->imageFile = $imageFile;
-
-        if (null !== $imageFile) {
-            $this->updatedAt = new \DateTimeImmutable();
-        }
-    }
-
-    public function getImageFile(): ?File
-    {
-        return $this->imageFile;
-    }
-
-    public function setImage(EmbeddedFile $image): void
-    {
-        $this->image = $image;
-    }
-
-    public function getImage(): ?EmbeddedFile
+    public function getImage(): ?MediaObject
     {
         return $this->image;
+    }
+
+    public function setImage(?MediaObject $image): static
+    {
+        $this->image = $image;
+
+        return $this;
     }
 
     public function getSetting(): ?StoreSetting

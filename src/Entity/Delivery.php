@@ -2,18 +2,15 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiProperty;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Annotation\Groups;
-use Vich\UploaderBundle\Entity\File as EmbeddedFile;
-use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity]
 #[ORM\Table(name: '`delivery`')]
-#[Vich\Uploadable]
 class Delivery
 {
     use EntityIdTrait;
@@ -60,25 +57,21 @@ class Delivery
     private ?string $vehiclePlate = null;
 
     // Delivery verification documents
-    #[Vich\UploadableField(mapping: 'delivery_residence', fileNameProperty: 'residenceDocument.name', size: 'residenceDocument.size')]
-    private ?File $residenceDocumentFile = null;
-
-    #[ORM\Embedded(class: 'Vich\\UploaderBundle\\Entity\\File')]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['user:read'])]
-    private ?EmbeddedFile $residenceDocument = null;
+    #[ApiProperty(types: ['https://schema.org/Document'])]
+    private ?MediaObject $residenceDocument = null;
 
-    #[Vich\UploadableField(mapping: 'delivery_vehicle', fileNameProperty: 'vehicleDocument.name', size: 'vehicleDocument.size')]
-    private ?File $vehicleDocumentFile = null;
-
-    #[ORM\Embedded(class: 'Vich\\UploaderBundle\\Entity\\File')]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['user:read'])]
-    private ?EmbeddedFile $vehicleDocument = null;
+    #[ApiProperty(types: ['https://schema.org/Document'])]
+    private ?MediaObject $vehicleDocument = null;
 
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
-        $this->residenceDocument = new EmbeddedFile();
-        $this->vehicleDocument = new EmbeddedFile();
     }
 
     public function getUser(): ?User
@@ -203,50 +196,28 @@ class Delivery
         return $this;
     }
 
-    public function setResidenceDocumentFile(?File $file = null): void
-    {
-        $this->residenceDocumentFile = $file;
-        if ($file !== null) {
-            $this->updatedAt = new \DateTimeImmutable();
-        }
-    }
-
-    public function getResidenceDocumentFile(): ?File
-    {
-        return $this->residenceDocumentFile;
-    }
-
-    public function getResidenceDocument(): ?EmbeddedFile
+    public function getResidenceDocument(): ?MediaObject
     {
         return $this->residenceDocument;
     }
 
-    public function setResidenceDocument(EmbeddedFile $file): void
+    public function setResidenceDocument(?MediaObject $residenceDocument): static
     {
-        $this->residenceDocument = $file;
+        $this->residenceDocument = $residenceDocument;
+
+        return $this;
     }
 
-    public function setVehicleDocumentFile(?File $file = null): void
-    {
-        $this->vehicleDocumentFile = $file;
-        if ($file !== null) {
-            $this->updatedAt = new \DateTimeImmutable();
-        }
-    }
-
-    public function getVehicleDocumentFile(): ?File
-    {
-        return $this->vehicleDocumentFile;
-    }
-
-    public function getVehicleDocument(): ?EmbeddedFile
+    public function getVehicleDocument(): ?MediaObject
     {
         return $this->vehicleDocument;
     }
 
-    public function setVehicleDocument(EmbeddedFile $file): void
+    public function setVehicleDocument(?MediaObject $vehicleDocument): static
     {
-        $this->vehicleDocument = $file;
+        $this->vehicleDocument = $vehicleDocument;
+
+        return $this;
     }
 }
 

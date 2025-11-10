@@ -37,6 +37,7 @@ product:
     #DataTable translations
     datatable:
         create_new: 'Create new product'
+        upload_json: 'Upload JSON'
         id: 'ID'
         name: 'Name'
         description: 'Description'

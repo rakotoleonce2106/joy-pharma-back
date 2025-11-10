@@ -64,14 +64,20 @@ class ElasticsearchService
 
     public function indexExists(string $index): bool
     {
-        return $this->client->indices()->exists(['index' => $this->getIndexName($index)]);
+        try {
+            $response = $this->client->indices()->exists(['index' => $this->getIndexName($index)]);
+            return $response->asBool();
+        } catch (\Exception $e) {
+            // If there's an exception (e.g., index doesn't exist), return false
+            return false;
+        }
     }
 
     public function createIndex(string $index, array $mapping): void
     {
         $indexName = $this->getIndexName($index);
         
-        if ($this->client->indices()->exists(['index' => $indexName])) {
+        if ($this->indexExists($index)) {
             return;
         }
 

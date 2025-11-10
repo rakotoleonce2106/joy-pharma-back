@@ -38,6 +38,20 @@ class ProductDataTableType extends AbstractDataTableType
             ]
         ]);
 
+        // Upload JSON action
+        $builder->addAction('upload_json', LinkActionType::class, [
+            'label' => 'product.datatable.upload_json',
+            'href' => $this->urlGenerator->generate('admin_product_upload_json'),
+            'attr' => [
+                'variant' => 'outline',
+                'data-turbo-frame' => '_top',
+            ],
+            'icon_attr' => [
+                'name' => 'radix-icons:upload',
+                'class' => 'w-5 h-5 mr-2'
+            ]
+        ]);
+
         // Filters
         $builder
             ->addFilter('id', StringFilterType::class, ['label' => 'product.datatable.id'])
@@ -107,7 +121,7 @@ class ProductDataTableType extends AbstractDataTableType
             ->addColumn('form', TextColumnType::class, [
                 'label' => 'product.datatable.form',
                 'sort' => true,
-                'property_path' => 'form.label',
+                'getter' => fn(Product $product) => $product->getForm()?->getLabel() ?? '-',
                 'value_attr' => [
                     'class' => 'px-4'
                 ]
@@ -115,7 +129,7 @@ class ProductDataTableType extends AbstractDataTableType
             ->addColumn('manufacturer', TextColumnType::class, [
                 'label' => 'product.datatable.manufacturer',
                 'sort' => true,
-                'property_path' => 'manufacturer.name',
+                'getter' => fn(Product $product) => $product->getManufacturer()?->getName() ?? '-',
                 'value_attr' => [
                     'class' => 'px-4'
                 ]

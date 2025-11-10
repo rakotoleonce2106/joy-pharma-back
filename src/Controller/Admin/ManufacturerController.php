@@ -9,7 +9,6 @@ use App\Entity\Manufacturer;
 use App\Form\ManufacturerType;
 use App\Repository\ManufacturerRepository;
 use App\Service\ManufacturerService;
-use App\Service\MediaFileService;
 use App\Traits\ToastTrait;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,8 +24,7 @@ class ManufacturerController extends AbstractController
 
     public  function __construct(
         private  readonly ManufacturerRepository $manufacturerRepository,
-        private readonly ManufacturerService $manufacturerService,
-        private readonly MediaFileService $mediaFileService
+        private readonly ManufacturerService $manufacturerService
     ) {}
     #[Route('/manufacturer', name: 'admin_manufacturer', defaults: ['title' => 'Manufacturer'])]
     public function index(Request $request): Response
@@ -62,21 +60,44 @@ class ManufacturerController extends AbstractController
     #[Route('/manufacturer/{id}/delete', name: 'admin_manufacturer_delete', methods: ['POST'])]
     public  function deleteAction(Manufacturer $manufacturer): Response
     {
-        $this->manufacturerService->deleteManufacturer($manufacturer);
-        $this->addSuccessToast('Manufacturer deleted!', 'The manufacturer has been successfully deleted.');
-        return $this->redirectToRoute('admin_manufacturer');
+        try {
+            $this->manufacturerService->deleteManufacturer($manufacturer);
+            $this->addSuccessToast('Manufacturer deleted!', 'The manufacturer has been successfully deleted.');
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting the manufacturer: ' . $e->getMessage());
+        }
+        return $this->redirectToRoute('admin_manufacturer', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/manufacturer/batch-delete', name: 'admin_manufacturer_batch_delete', methods: ['POST'])]
     public function batchDeleteAction(Request $request): Response
     {
-        $manufacturerIds = $request->request->all('id');
-        $this->manufacturerService->batchDeleteManufacturers(
-            $manufacturerIds
-        );
+        try {
+            $manufacturerIds = $request->request->all('id');
+            
+            if (empty($manufacturerIds)) {
+                $this->addWarningToast('No manufacturers selected', 'Please select at least one manufacturer to delete.');
+                return $this->redirectToRoute('admin_manufacturer', [], Response::HTTP_SEE_OTHER);
+            }
 
-        $this->addSuccessToast("Manufacturers deleted!", "The manufacturers have been successfully deleted.");
-        return $this->redirectToRoute('admin_manufacturer');
+            $result = $this->manufacturerService->batchDeleteManufacturers($manufacturerIds);
+
+            if ($result['failure_count'] > 0) {
+                $this->addWarningToast(
+                    'Partial deletion!',
+                    "{$result['success_count']} manufacturer(s) deleted successfully. {$result['failure_count']} manufacturer(s) could not be deleted."
+                );
+            } else {
+                $this->addSuccessToast(
+                    "Manufacturers deleted!",
+                    "{$result['success_count']} manufacturer(s) have been successfully deleted."
+                );
+            }
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting manufacturers: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_manufacturer', [], Response::HTTP_SEE_OTHER);
     }
 
 
@@ -85,23 +106,15 @@ class ManufacturerController extends AbstractController
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
 
+            /** @var UploadedFile|null $image */
+            $image = $form->get('image')->getData();
+            if ($image) {
+                $manufacturer->setImageFile($image);
+            }
+
             if ($action === 'create') {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/manufacturer/');
-                    $manufacturer->setImage($mediaFile);
-                }
-               
                 $this->manufacturerService->createManufacturer($manufacturer);
             } else {
-                /** @var UploadedFile|null $uploadedFile */
-                $image = $form->get('image')->getData();
-                if ($image) {
-                    $mediaFile = $this->mediaFileService->updateMediaFileFromFile($manufacturer->getImage(), $image, 'images/manufacturer/');
-                    $manufacturer->setImage($mediaFile);
-                }
-                
                 $this->manufacturerService->updateManufacturer($manufacturer);
             }
 

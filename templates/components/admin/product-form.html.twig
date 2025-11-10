@@ -113,12 +113,14 @@
                 <label class="text-sm font-medium text-muted-foreground">Current Images</label>
                 <div class="flex gap-3 overflow-x-auto pb-2">
                     {% for image in initialFormData.images %}
-                        <div class="flex-shrink-0 w-24">
-                            <div class="border rounded-lg overflow-hidden" style="height: 100px; width: 100px;">
-                                <img src="{{ image.url }}" alt="{{ image.name }}" class="w-full h-full object-cover">
+                        {% if image.url %}
+                            <div class="flex-shrink-0 w-24">
+                                <div class="border rounded-lg overflow-hidden" style="height: 100px; width: 100px;">
+                                    <img src="{{ image.url }}" alt="{{ image.name ?? '' }}" class="w-full h-full object-cover">
+                                </div>
+                                <p class="text-xs text-muted-foreground mt-1 truncate text-center">{{ image.name ?? '' }}</p>
                             </div>
-                            <p class="text-xs text-muted-foreground mt-1 truncate text-center">{{ image.name }}</p>
-                        </div>
+                        {% endif %}
                     {% endfor %}
                 </div>
             </div>

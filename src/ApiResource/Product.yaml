@@ -1,21 +1,11 @@
 App\Entity\Product:
     operations:
-        add_products:
-            method: "POST"
-            class: ApiPlatform\Metadata\Post
-            controller: 'App\Controller\Api\Product\AddProductController'
-            uriTemplate: "/products"
-            deserialize: false
-            openapi:
-                summary: "Add products"
-                description: "Add products"
-                
         get_product:
             method: 'GET'
             class: ApiPlatform\Metadata\Get
             uriTemplate: '/product/{id}'
             normalizationContext:
-                groups: ['id:read','product:read','image:read']
+                groups: ['id:read','product:read','image:read','media_object:read']
             openapi:
                 summary: 'Get a product'
                 description: 'Get a product by id'
@@ -29,7 +19,7 @@ App\Entity\Product:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/products'
             normalizationContext:
-                groups:  ['id:read','product:read','image:read']
+                groups:  ['id:read','product:read','image:read','media_object:read']
             format: 'json'
             openapi:
                 summary: 'Get all products'
@@ -41,7 +31,7 @@ App\Entity\Product:
             uriTemplate: '/products/suggestion'
             provider: 'App\State\Product\SuggestionProductsProvider'
             normalizationContext:
-                groups:  ['id:read','category:read','product:read','image:read']
+                groups:  ['id:read','category:read','product:read','image:read','media_object:read']
             openapi:
                 summary: 'Get all products home'
                 description: 'Get all products home'
@@ -52,7 +42,7 @@ App\Entity\Product:
             uriTemplate: '/products/search'
             provider: 'App\State\Product\ProductElasticsearchProvider'
             normalizationContext:
-                groups: ['id:read','product:read','image:read']
+                groups: ['id:read','product:read','image:read','media_object:read']
             openapi:
                 summary: 'Search products using Elasticsearch'
                 description: 'Search products with full-text search, filters, and pagination'
@@ -109,5 +99,5 @@ App\Entity\Product:
                           default: 10
 
     normalizationContext:
-        groups: ['id:read','product:read']
+        groups: ['id:read','product:read','media_object:read','image:read','brand:read','manufacturer:read','category:read']
                       

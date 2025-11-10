@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiProperty;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\ManufacturerRepository;
@@ -24,9 +25,11 @@ class Manufacturer
     #[Groups(['manufacturer:read','product:read'])]
     private ?string $description = null;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\JoinColumn(nullable: true)]
     #[Groups(['manufacturer:read','product:read'])]
-    private ?MediaFile $image = null;
+    #[ApiProperty(types: ['https://schema.org/image'])]
+    private ?MediaObject $image = null;
 
     /**
      * @var Collection<int, Product>
@@ -64,12 +67,12 @@ class Manufacturer
         return $this;
     }
 
-    public function getImage(): ?MediaFile
+    public function getImage(): ?MediaObject
     {
         return $this->image;
     }
 
-    public function setImage(?MediaFile $image): static
+    public function setImage(?MediaObject $image): static
     {
         $this->image = $image;
 

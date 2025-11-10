@@ -17,5 +17,6 @@
 /public/images/
 /public/icons/
 /public/uploads/
+/public/media/
 /assets/vendor/
 ###< symfony/asset-mapper ###

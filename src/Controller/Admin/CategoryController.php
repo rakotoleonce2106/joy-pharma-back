@@ -9,7 +9,6 @@ use App\Entity\Category;
 use App\Form\CategoryType;
 use App\Repository\CategoryRepository;
 use App\Service\CategoryService;
-use App\Service\MediaFileService;
 use App\Traits\ToastTrait;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,8 +24,7 @@ class CategoryController extends AbstractController
 
     public  function __construct(
         private  readonly CategoryRepository $categoryRepository,
-        private readonly CategoryService $categoryService,
-        private readonly MediaFileService $mediaFileService
+        private readonly CategoryService $categoryService
     ) {}
     
     #[Route('/category', name: 'admin_category')]
@@ -62,19 +60,44 @@ class CategoryController extends AbstractController
     #[Route('/category/{id}/delete', name: 'admin_category_delete', methods: ['POST'])]
     public  function deleteAction(Category $category): Response
     {
-        $this->categoryService->deleteCategory($category);
-        $this->addSuccessToast('Category deleted!', 'The category has been successfully deleted.');
-        return $this->redirectToRoute('admin_category');
+        try {
+            $this->categoryService->deleteCategory($category);
+            $this->addSuccessToast('Category deleted!', 'The category has been successfully deleted.');
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting the category: ' . $e->getMessage());
+        }
+        return $this->redirectToRoute('admin_category', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/category/batch-delete', name: 'admin_category_batch_delete', methods: ['POST'])]
     public function batchDeleteAction(Request $request): Response
     {
-        $categoryIds = $request->request->all('id');
-        $this->categoryService->batchDeleteCategories($categoryIds);
+        try {
+            $categoryIds = $request->request->all('id');
+            
+            if (empty($categoryIds)) {
+                $this->addWarningToast('No categories selected', 'Please select at least one category to delete.');
+                return $this->redirectToRoute('admin_category', [], Response::HTTP_SEE_OTHER);
+            }
 
-        $this->addSuccessToast("Categories deleted!", "The categories has been successfully deleted.");
-        return $this->redirectToRoute('admin_category');
+            $result = $this->categoryService->batchDeleteCategories($categoryIds);
+
+            if ($result['failure_count'] > 0) {
+                $this->addWarningToast(
+                    'Partial deletion!',
+                    "{$result['success_count']} category(ies) deleted successfully. {$result['failure_count']} category(ies) could not be deleted."
+                );
+            } else {
+                $this->addSuccessToast(
+                    "Categories deleted!",
+                    "{$result['success_count']} category(ies) have been successfully deleted."
+                );
+            }
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting categories: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_category', [], Response::HTTP_SEE_OTHER);
     }
 
     private function handleCategoryForm(Request $request, $form, $category, string $action): Response
@@ -86,44 +109,14 @@ class CategoryController extends AbstractController
             /** @var UploadedFile|null $image */
             $image = $form->get('image')->getData();
             if ($image) {
-                if ($action === 'create') {
-                    // Création d'un nouveau MediaFile pour une nouvelle catégorie
-                    $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/category/');
-                    $category->setImage($mediaFile);
-                } else {
-                    // Mise à jour : on met à jour le MediaFile existant ou on en crée un nouveau
-                    $existingMediaFile = $category->getImage();
-                    if ($existingMediaFile) {
-                        // Mettre à jour le MediaFile existant
-                         $this->mediaFileService->updateMediaFileFromFile($existingMediaFile, $image, 'images/category/');
-                    } else {
-                        // Créer un nouveau MediaFile si aucun n'existait
-                        $mediaFile = $this->mediaFileService->createMediaByFile($image, 'images/category/');
-                        $category->setImage($mediaFile);
-                    }
-                }
+                $category->setImageFile($image);
             }
 
             // Gestion du SVG
             /** @var UploadedFile|null $svg */
             $svg = $form->get('svg')->getData();
             if ($svg) {
-                if ($action === 'create') {
-                    // Création d'un nouveau MediaFile pour une nouvelle catégorie
-                    $svgFile = $this->mediaFileService->createMediaByFile($svg, 'icons/category/');
-                    $category->setSvg($svgFile);
-                } else {
-                    // Mise à jour : on met à jour le MediaFile existant ou on en crée un nouveau
-                    $existingSvgFile = $category->getSvg();
-                    if ($existingSvgFile) {
-                        // Mettre à jour le MediaFile existant
-                        $this->mediaFileService->updateMediaFileFromFile($existingSvgFile, $svg, 'icons/category/');
-                    } else {
-                        // Créer un nouveau MediaFile si aucun n'existait
-                        $svgFile = $this->mediaFileService->createMediaByFile($svg, 'icons/category/');
-                        $category->setSvg($svgFile);
-                    }
-                }
+                $category->setSvgFile($svg);
             }
 
             // Persister/mettre à jour la catégorie

@@ -9,7 +9,6 @@ use App\Entity\Unit;
 use App\Form\UnitType;
 use App\Repository\UnitRepository;
 use App\Service\UnitService;
-use App\Service\MediaFileService;
 use App\Traits\ToastTrait;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,8 +23,7 @@ class UnitController extends AbstractController
 
     public  function __construct(
         private  readonly UnitRepository $unitRepository,
-        private readonly UnitService $unitService,
-        private readonly MediaFileService $mediaFileService
+        private readonly UnitService $unitService
     ) {}
     #[Route('/unit', name: 'admin_unit')]
     public function index(Request $request): Response
@@ -61,21 +59,44 @@ class UnitController extends AbstractController
     #[Route('/unit/{id}/delete', name: 'admin_unit_delete', methods: ['POST'])]
     public  function deleteAction(Unit $unit): Response
     {
-        $this->unitService->deleteUnit($unit);
-        $this->addSuccessToast('Unit deleted!', 'The unit has been successfully deleted.');
-        return $this->redirectToRoute('admin_unit');
+        try {
+            $this->unitService->deleteUnit($unit);
+            $this->addSuccessToast('Unit deleted!', 'The unit has been successfully deleted.');
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting the unit: ' . $e->getMessage());
+        }
+        return $this->redirectToRoute('admin_unit', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/unit/batch-delete', name: 'admin_unit_batch_delete', methods: ['POST'])]
     public function batchDeleteAction(Request $request): Response
     {
-        $unitIds = $request->request->all('id');
-        $this->unitService->batchDeleteUnits(
-            $unitIds
-        );
+        try {
+            $unitIds = $request->request->all('id');
+            
+            if (empty($unitIds)) {
+                $this->addWarningToast('No units selected', 'Please select at least one unit to delete.');
+                return $this->redirectToRoute('admin_unit', [], Response::HTTP_SEE_OTHER);
+            }
 
-        $this->addSuccessToast("Units deleted!", "The units have been successfully deleted.");
-        return $this->redirectToRoute('admin_unit');
+            $result = $this->unitService->batchDeleteUnits($unitIds);
+
+            if ($result['failure_count'] > 0) {
+                $this->addWarningToast(
+                    'Partial deletion!',
+                    "{$result['success_count']} unit(s) deleted successfully. {$result['failure_count']} unit(s) could not be deleted."
+                );
+            } else {
+                $this->addSuccessToast(
+                    "Units deleted!",
+                    "{$result['success_count']} unit(s) have been successfully deleted."
+                );
+            }
+        } catch (\Exception $e) {
+            $this->addErrorToast('Delete failed!', 'An error occurred while deleting units: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('admin_unit', [], Response::HTTP_SEE_OTHER);
     }
 
 
