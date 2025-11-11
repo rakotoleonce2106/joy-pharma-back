@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[ORM\Entity(repositoryClass: ManufacturerRepository::class)]
 class Manufacturer
@@ -25,7 +26,7 @@ class Manufacturer
     #[Groups(['manufacturer:read','product:read'])]
     private ?string $description = null;
 
-    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['manufacturer:read','product:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
@@ -75,6 +76,23 @@ class Manufacturer
     public function setImage(?MediaObject $image): static
     {
         $this->image = $image;
+
+        return $this;
+    }
+
+    public function setImageFile(?UploadedFile $file): static
+    {
+        if ($file) {
+            // Si une image existe déjà, mettre à jour le fichier de l'existant
+            if ($this->image) {
+                $this->image->setFile($file);
+            } else {
+                // Sinon, créer un nouveau MediaObject
+                $mediaObject = new MediaObject();
+                $mediaObject->setFile($file);
+                $this->image = $mediaObject;
+            }
+        }
 
         return $this;
     }

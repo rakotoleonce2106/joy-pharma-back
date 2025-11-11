@@ -63,7 +63,9 @@ class CategoryType extends AbstractType
                 ],
                 'attr' => [
                     'accept' => '.svg',
+                    'data-max-size' => '2',
                 ],
+                'block_name' => 'file_upload',
             ])
             ->add('image', FileType::class, [
                 'label' => 'category.form.image',
@@ -83,7 +85,9 @@ class CategoryType extends AbstractType
                 ],
                 'attr' => [
                     'accept' => '.jpg,.jpeg,.png,.webp',
+                    'data-max-size' => '5',
                 ],
+                'block_name' => 'file_upload',
             ]);
     }
 

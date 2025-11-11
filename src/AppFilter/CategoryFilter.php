@@ -24,7 +24,7 @@ class CategoryFilter extends AbstractFilter
             $queryBuilder
                 ->join("$rootAlias.category", $joinAlias)
                 ->andWhere("$joinAlias.id = :category_$key")
-                ->setParameter("category_$key", $id);
+                ->setParameter("category_$key", (int) $id);
         }
     }
 

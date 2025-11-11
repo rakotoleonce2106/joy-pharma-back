@@ -41,19 +41,18 @@ class FormController extends AbstractController
     #[Route('/form/new', name: 'admin_form_new', defaults: ['title' => 'Create form'])]
     public function createAction(Request $request): Response
     {
-        $form = new Form();
-        $form = $this->createForm(FormType::class, $form, ['action' => $this->generateUrl('admin_form_new')]);
-        return $this->handleForm($request, $form, $form, 'create');
+        $formEntity = new Form();
+        $form = $this->createForm(FormType::class, $formEntity, ['action' => $this->generateUrl('admin_form_new')]);
+        return $this->handleCreate($request, $form, $formEntity);
     }
 
     #[Route('/form/{id}/edit', name: 'admin_form_edit', defaults: ['title' => 'Edit form'])]
-    public function editAction(Request $request, Form $form): Response
+    public function editAction(Request $request, Form $formEntity): Response
     {   
-
-        $form = $this->createForm(FormType::class, $form, [
-            'action' => $this->generateUrl('admin_form_edit', ['id' => $form->getId()])
+        $form = $this->createForm(FormType::class, $formEntity, [
+            'action' => $this->generateUrl('admin_form_edit', ['id' => $formEntity->getId()])
         ]);
-        return $this->handleForm($request, $form, $form, 'edit');
+        return $this->handleUpdate($request, $form, $formEntity);
     }
 
     #[Route('/form/{id}/delete', name: 'admin_form_delete', methods: ['POST'])]
@@ -100,25 +99,19 @@ class FormController extends AbstractController
     }
 
 
-    private function handleForm(Request $request, $form, $formEntity, string $action): Response
+    private function handleCreate(Request $request, $form, Form $formEntity): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-
-            if ($action === 'create') {
-                $this->formService->createForm($formEntity);
-            } else {
-                $this->formService->updateForm($formEntity);
-            }
-
+            $this->formService->createForm($formEntity);
 
             $this->addSuccessToast(
-                $action === 'create' ? 'Form created!' : 'Form updated!',
-                "The form has been successfully {$action}d."
+                'Form created!',
+                "The form has been successfully created."
             );
 
             if ($request->headers->has('turbo-frame')) {
-                $stream = $this->renderBlockView("admin/form/{$action}.html.twig", 'stream_success', [
+                $stream = $this->renderBlockView("admin/form/create.html.twig", 'stream_success', [
                     'form' => $formEntity
                 ]);
                 $this->addFlash('stream', $stream);
@@ -127,7 +120,33 @@ class FormController extends AbstractController
             return $this->redirectToRoute('admin_form', status: Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render("admin/form/{$action}.html.twig", [
+        return $this->render("admin/form/create.html.twig", [
+            'form' => $formEntity
+        ]);
+    }
+
+    private function handleUpdate(Request $request, $form, Form $formEntity): Response
+    {
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->formService->updateForm($formEntity);
+
+            $this->addSuccessToast(
+                'Form updated!',
+                "The form has been successfully updated."
+            );
+
+            if ($request->headers->has('turbo-frame')) {
+                $stream = $this->renderBlockView("admin/form/edit.html.twig", 'stream_success', [
+                    'form' => $formEntity
+                ]);
+                $this->addFlash('stream', $stream);
+            }
+
+            return $this->redirectToRoute('admin_form', status: Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/form/edit.html.twig", [
             'form' => $formEntity
         ]);
     }

@@ -30,8 +30,7 @@ class CategoryDataTableType extends AbstractDataTableType
             'href' => $this->urlGenerator->generate('admin_category_new'),
             'attr' => [
                 'variant' => 'default',
-                'data-turbo-frame' => 'dialog',
-                'target' => 'dialog',
+                'data-turbo-frame' => '_top',
             ],
             'icon_attr' => [
                 'name' => 'radix-icons:plus',
@@ -82,7 +81,7 @@ class CategoryDataTableType extends AbstractDataTableType
             ])
             ->addColumn('image', TextColumnType::class, [
                 'label' => 'category.datatable.image',
-                'getter' => fn(Category $category) => $category->getImage() ? $category->getImage()->getName() : null,
+                'getter' => fn(Category $category) => $category->getImage() ? $category->getImage()->getFilePath() : null,
                 'value_attr' => [
                     'class' => 'px-4'
                 ],
@@ -92,7 +91,7 @@ class CategoryDataTableType extends AbstractDataTableType
             ])
             ->addColumn('svg', TextColumnType::class, [
                 'label' => 'category.datatable.svg',
-                'getter' => fn(Category $category) => $category->getSvg() ? $category->getSvg()->getName() : null,
+                'getter' => fn(Category $category) => $category->getSvg() ? $category->getSvg()->getFilePath() : null,
                 'value_attr' => [
                     'class' => 'px-4'
                 ],
@@ -109,8 +108,7 @@ class CategoryDataTableType extends AbstractDataTableType
                 'attr' => [
                     'size' => 'sm',
                     'variant' => 'outline',
-                    'data-turbo-frame' => 'dialog',
-                    'target' => 'dialog',
+                    'data-turbo-frame' => '_top',
                     'class' => 'whitespace-nowrap'
                 ]
             ])

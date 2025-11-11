@@ -64,7 +64,7 @@ class Store
     #[Groups(['store:read'])]
     private ?string $description = null;
 
-    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['store:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]

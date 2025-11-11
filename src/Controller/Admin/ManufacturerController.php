@@ -10,6 +10,7 @@ use App\Form\ManufacturerType;
 use App\Repository\ManufacturerRepository;
 use App\Service\ManufacturerService;
 use App\Traits\ToastTrait;
+use Doctrine\ORM\EntityManagerInterface;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +25,8 @@ class ManufacturerController extends AbstractController
 
     public  function __construct(
         private  readonly ManufacturerRepository $manufacturerRepository,
-        private readonly ManufacturerService $manufacturerService
+        private readonly ManufacturerService $manufacturerService,
+        private readonly EntityManagerInterface $entityManager
     ) {}
     #[Route('/manufacturer', name: 'admin_manufacturer', defaults: ['title' => 'Manufacturer'])]
     public function index(Request $request): Response
@@ -44,17 +46,29 @@ class ManufacturerController extends AbstractController
     {
         $manufacturer = new Manufacturer();
         $form = $this->createForm(ManufacturerType::class, $manufacturer, ['action' => $this->generateUrl('admin_manufacturer_new')]);
-        return $this->handleManufacturerForm($request, $form, $manufacturer, 'create');
+        return $this->handleCreate($request, $form, $manufacturer);
     }
 
     #[Route('/manufacturer/{id}/edit', name: 'admin_manufacturer_edit', defaults: ['title' => 'Edit manufacturer'])]
     public function editAction(Request $request, Manufacturer $manufacturer): Response
     {
+        // Recharger le fabricant avec sa relation image pour éviter les problèmes de lazy loading
+        $manufacturer = $this->manufacturerRepository->createQueryBuilder('m')
+            ->leftJoin('m.image', 'img')
+            ->addSelect('img')
+            ->where('m.id = :id')
+            ->setParameter('id', $manufacturer->getId())
+            ->getQuery()
+            ->getOneOrNullResult();
+        
+        if (!$manufacturer) {
+            throw $this->createNotFoundException('Manufacturer not found');
+        }
 
         $form = $this->createForm(ManufacturerType::class, $manufacturer, [
             'action' => $this->generateUrl('admin_manufacturer_edit', ['id' => $manufacturer->getId()])
         ]);
-        return $this->handleManufacturerForm($request, $form, $manufacturer, 'edit');
+        return $this->handleUpdate($request, $form, $manufacturer);
     }
 
     #[Route('/manufacturer/{id}/delete', name: 'admin_manufacturer_delete', methods: ['POST'])]
@@ -101,30 +115,31 @@ class ManufacturerController extends AbstractController
     }
 
 
-    private function handleManufacturerForm(Request $request, $form, $manufacturer, string $action): Response
+    private function handleCreate(Request $request, $form, Manufacturer $manufacturer): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-
+            // Gestion de l'image
             /** @var UploadedFile|null $image */
             $image = $form->get('image')->getData();
             if ($image) {
+                // Nouvelle image fournie
                 $manufacturer->setImageFile($image);
+                // Si un nouveau MediaObject a été créé, le persister
+                if ($manufacturer->getImage()) {
+                    $this->entityManager->persist($manufacturer->getImage());
+                }
             }
 
-            if ($action === 'create') {
-                $this->manufacturerService->createManufacturer($manufacturer);
-            } else {
-                $this->manufacturerService->updateManufacturer($manufacturer);
-            }
+            $this->manufacturerService->createManufacturer($manufacturer);
 
             $this->addSuccessToast(
-                $action === 'create' ? 'Manufacturer created!' : 'Manufacturer updated!',
-                "The manufacturer has been successfully {$action}d."
+                'Manufacturer created!',
+                "The manufacturer has been successfully created."
             );
 
             if ($request->headers->has('turbo-frame')) {
-                $stream = $this->renderBlockView("admin/manufacturer/{$action}.html.twig", 'stream_success', [
+                $stream = $this->renderBlockView("admin/manufacturer/create.html.twig", 'stream_success', [
                     'manufacturer' => $manufacturer
                 ]);
                 $this->addFlash('stream', $stream);
@@ -133,7 +148,76 @@ class ManufacturerController extends AbstractController
             return $this->redirectToRoute('admin_manufacturer', status: Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render("admin/manufacturer/{$action}.html.twig", [
+        return $this->render("admin/manufacturer/create.html.twig", [
+            'manufacturer' => $manufacturer,
+            'form' => $form
+        ]);
+    }
+
+    private function handleUpdate(Request $request, $form, Manufacturer $manufacturer): Response
+    {
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            // IMPORTANT: Recharger le fabricant depuis la base de données pour s'assurer qu'il est géré par Doctrine
+            // Cela évite de créer un nouveau fabricant au lieu de mettre à jour l'existant
+            $manufacturerId = $manufacturer->getId();
+            if (!$manufacturerId) {
+                throw new \RuntimeException('Cannot update manufacturer without ID');
+            }
+
+            $managedManufacturer = $this->manufacturerRepository->createQueryBuilder('m')
+                ->leftJoin('m.image', 'img')
+                ->addSelect('img')
+                ->where('m.id = :id')
+                ->setParameter('id', $manufacturerId)
+                ->getQuery()
+                ->getOneOrNullResult();
+
+            if (!$managedManufacturer) {
+                throw $this->createNotFoundException('Manufacturer not found');
+            }
+
+            // Mettre à jour les propriétés de base
+            $managedManufacturer->setName($manufacturer->getName());
+            $managedManufacturer->setDescription($manufacturer->getDescription());
+
+            // Gestion de l'image
+            /** @var UploadedFile|null $image */
+            $image = $form->get('image')->getData();
+            $removeImage = $request->request->get('remove_image') === '1' || $request->request->get('remove_image') === 1 || $request->request->get('remove_image') === 'true';
+            
+            if ($removeImage) {
+                // Supprimer l'image existante
+                $managedManufacturer->setImage(null);
+            } elseif ($image) {
+                // Nouvelle image fournie - remplacer l'ancienne
+                $hadImage = $managedManufacturer->getImage() !== null;
+                $managedManufacturer->setImageFile($image);
+                // Si un nouveau MediaObject a été créé, le persister
+                if (!$hadImage && $managedManufacturer->getImage()) {
+                    $this->entityManager->persist($managedManufacturer->getImage());
+                }
+            }
+            // Si aucune nouvelle image n'est fournie et pas de suppression, l'image existante est préservée
+
+            $this->manufacturerService->updateManufacturer($managedManufacturer);
+
+            $this->addSuccessToast(
+                'Manufacturer updated!',
+                "The manufacturer has been successfully updated."
+            );
+
+            if ($request->headers->has('turbo-frame')) {
+                $stream = $this->renderBlockView("admin/manufacturer/edit.html.twig", 'stream_success', [
+                    'manufacturer' => $managedManufacturer
+                ]);
+                $this->addFlash('stream', $stream);
+            }
+
+            return $this->redirectToRoute('admin_manufacturer', status: Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/manufacturer/edit.html.twig", [
             'manufacturer' => $manufacturer,
             'form' => $form
         ]);

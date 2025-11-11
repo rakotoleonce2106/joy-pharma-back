@@ -5,7 +5,7 @@ App\Entity\Cart:
       class: ApiPlatform\Metadata\Get
       uriTemplate: '/carts/{id}'
       normalizationContext:
-        groups: ['cart:read', 'id:read','product:read','image:read']
+        groups: ['cart:read', 'id:read','product:read','image:read','media_object:read']
       openapi:
         summary: 'Get a cart'
         description: 'Get a cart by id'
@@ -19,7 +19,7 @@ App\Entity\Cart:
       class: ApiPlatform\Metadata\GetCollection
       uriTemplate: '/carts'
       normalizationContext:
-        groups: ['cart:read', 'id:read','product:read','image:read']
+        groups: ['cart:read', 'id:read','product:read','image:read','media_object:read']
       openapi:
         summary: 'Get all cart'
         description: 'Get all cart'
@@ -29,7 +29,7 @@ App\Entity\Cart:
         class: ApiPlatform\Metadata\Post
         uriTemplate: '/carts'
         normalizationContext:
-          groups: ['cart:write', 'id:read','product:read','image:read']
+          groups: ['cart:write', 'id:read','product:read','image:read','media_object:read']
         processor: App\State\Cart\CartProcessor
         input: 'App\Dto\OwnerInput'
         openapi:

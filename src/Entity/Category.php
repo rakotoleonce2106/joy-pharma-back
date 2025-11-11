@@ -13,6 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 #[ApiFilter(SearchFilter::class, properties: ['parent' => 'exact'])]
@@ -29,13 +30,13 @@ class Category
     #[Groups(['category:read','product:read'])]
     private ?string $description = null;
 
-    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['category:read','product:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $image = null;
 
-    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['category:read','product:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
@@ -201,6 +202,40 @@ class Category
     public function setColor(?string $color): static
     {
         $this->color = $color;
+
+        return $this;
+    }
+
+    public function setImageFile(?UploadedFile $file): static
+    {
+        if ($file) {
+            // Si une image existe déjà, mettre à jour le fichier de l'existant
+            if ($this->image) {
+                $this->image->setFile($file);
+            } else {
+                // Sinon, créer un nouveau MediaObject
+                $mediaObject = new MediaObject();
+                $mediaObject->setFile($file);
+                $this->image = $mediaObject;
+            }
+        }
+
+        return $this;
+    }
+
+    public function setSvgFile(?UploadedFile $file): static
+    {
+        if ($file) {
+            // Si un SVG existe déjà, mettre à jour le fichier de l'existant
+            if ($this->svg) {
+                $this->svg->setFile($file);
+            } else {
+                // Sinon, créer un nouveau MediaObject
+                $mediaObject = new MediaObject();
+                $mediaObject->setFile($file);
+                $this->svg = $mediaObject;
+            }
+        }
 
         return $this;
     }

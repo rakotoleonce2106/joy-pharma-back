@@ -62,7 +62,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $phone = null;
 
 
-    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['user:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]

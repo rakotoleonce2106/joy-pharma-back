@@ -107,14 +107,23 @@ class UserController extends AbstractController
         ]);
     }
 
+    #[Route('/user/new', name: 'admin_user_new', defaults: ['title' => 'Create user'])]
+    public function createAction(Request $request): Response
+    {
+        $user = new User();
+        $form = $this->createForm(UserType::class, $user, [
+            'action' => $this->generateUrl('admin_user_new')
+        ]);
+        return $this->handleCreate($request, $form, $user);
+    }
+
     #[Route('/user/{id}/edit', name: 'admin_user_edit')]
     public function editAction(Request $request, User $user): Response
     {
-
         $form = $this->createForm(UserType::class, $user, [
             'action' => $this->generateUrl('admin_user_edit', ['id' => $user->getId()])
         ]);
-        return $this->handleUserForm($request, $form, $user, 'edit');
+        return $this->handleUpdate($request, $form, $user);
     }
 
     #[Route('/user/{id}/toggle-active', name: 'admin_user_toggle_active', methods: ['POST'])]
@@ -133,9 +142,7 @@ class UserController extends AbstractController
         return $this->redirectToRoute('admin_user', status: Response::HTTP_SEE_OTHER);
     }
 
-
-
-    private function handleUserForm(Request $request, $form, $user, string $action): Response
+    private function handleCreate(Request $request, $form, User $user): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -144,20 +151,15 @@ class UserController extends AbstractController
                 $user->setActive(false);
             }
 
-            if ($action === 'create') {
-                $this->userService->createUser($user);
-            } else {
-                $this->userService->updateUser($user);
-            }
-
+            $this->userService->createUser($user);
 
             $this->addSuccessToast(
-                $action === 'create' ? 'User created!' : 'User updated!',
-                "The user has been successfully {$action}d."
+                'User created!',
+                "The user has been successfully created."
             );
 
             if ($request->headers->has('turbo-frame')) {
-                $stream = $this->renderBlockView("admin/user/{$action}.html.twig", 'stream_success', [
+                $stream = $this->renderBlockView("admin/user/create.html.twig", 'stream_success', [
                     'user' => $user
                 ]);
                 $this->addFlash('stream', $stream);
@@ -166,7 +168,39 @@ class UserController extends AbstractController
             return $this->redirectToRoute('admin_user', status: Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render("admin/user/{$action}.html.twig", [
+        return $this->render("admin/user/create.html.twig", [
+            'user' => $user,
+            'form' => $form
+        ]);
+    }
+
+    private function handleUpdate(Request $request, $form, User $user): Response
+    {
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Ensure the active field is properly set (handle unchecked checkboxes)
+            if (!$form->get('active')->getData()) {
+                $user->setActive(false);
+            }
+
+            $this->userService->updateUser($user);
+
+            $this->addSuccessToast(
+                'User updated!',
+                "The user has been successfully updated."
+            );
+
+            if ($request->headers->has('turbo-frame')) {
+                $stream = $this->renderBlockView("admin/user/edit.html.twig", 'stream_success', [
+                    'user' => $user
+                ]);
+                $this->addFlash('stream', $stream);
+            }
+
+            return $this->redirectToRoute('admin_user', status: Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/user/edit.html.twig", [
             'user' => $user,
             'form' => $form
         ]);

@@ -57,13 +57,13 @@ class Delivery
     private ?string $vehiclePlate = null;
 
     // Delivery verification documents
-    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['user:read'])]
     #[ApiProperty(types: ['https://schema.org/Document'])]
     private ?MediaObject $residenceDocument = null;
 
-    #[ORM\ManyToOne(targetEntity: MediaObject::class)]
+    #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['user:read'])]
     #[ApiProperty(types: ['https://schema.org/Document'])]

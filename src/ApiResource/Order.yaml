@@ -7,7 +7,7 @@ App\Entity\Order:
             processor: App\State\Order\OrderCreateProcessor
             format: 'json'
             normalizationContext:
-                groups: ['id:read','order:read','location:read','user:read','product:read','image:read']
+                groups: ['id:read','order:read','location:read','user:read','product:read','image:read','media_object:read']
             openapi:
                 summary: 'Create a order'
                 description: 'Create a order'
@@ -19,7 +19,7 @@ App\Entity\Order:
             security: 'is_granted("ROLE_DELIVER")'
             provider: App\State\Order\CurrentOrderProvider
             normalizationContext:
-                groups: ['id:read','order:read','image:read','product:read', 'location:read', 'user:read','store:read']
+                groups: ['id:read','order:read','image:read','product:read', 'location:read', 'user:read','store:read','media_object:read']
             openapi:
                 summary: 'Get current active order'
                 description: 'Get the current order being delivered by the authenticated delivery person (ROLE_DELIVER required)'
@@ -73,7 +73,7 @@ App\Entity\Order:
             format: 'json'
             security: 'is_granted("ROLE_STORE")'
             normalizationContext:
-                groups: ['id:read','order:read','location:read','user:read','product:read','image:read']
+                groups: ['id:read','order:read','location:read','user:read','product:read','image:read','media_object:read']
             openapi:
                 summary: 'Store updates order with order item actions'
                 description: 'Store owner updates an order by accepting, refusing, or suggesting alternatives for multiple order items in one request'

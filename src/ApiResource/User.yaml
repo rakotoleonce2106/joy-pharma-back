@@ -12,7 +12,7 @@ App\Entity\User:
             validationContext:
                 groups: ['user:update' ]
             normalizationContext:
-                groups: ['id:read', "user:read" ]
+                groups: ['id:read', "user:read", "image:read", "media_object:read" ]
             security: "is_granted('ROLE_USER')"
             input_formats:
                 multipart: [ 'multipart/form-data' ]
@@ -58,7 +58,7 @@ App\Entity\User:
             uriTemplate: "/me"
             provider: App\State\User\CurrentUserProvider
             normalizationContext:
-                groups: ['id:read', "user:read" ,"image:read","store:read"]
+                groups: ['id:read', "user:read" ,"image:read","media_object:read","store:read"]
             uriVariables: []
             openapiContext:
                 summary: Retrieves the current user resource.
@@ -70,7 +70,7 @@ App\Entity\User:
 
 
     normalizationContext:
-        groups: ['id:read','user:read']
+        groups: ['id:read','user:read','image:read','media_object:read']
 
     denormalizationContext:
         groups: ['user:create', 'user:update']

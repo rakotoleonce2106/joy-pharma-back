@@ -5,7 +5,7 @@ App\Entity\Favorite:
       class: ApiPlatform\Metadata\Get
       uriTemplate: '/favorites/{id}'
       normalizationContext:
-        groups: ['favorite:read', 'id:read','product:read','image:read']
+        groups: ['favorite:read', 'id:read','product:read','image:read','media_object:read']
       openapi:
         summary: 'Get a favorite'
         description: 'Get a favorite by id'
@@ -19,7 +19,7 @@ App\Entity\Favorite:
       class: ApiPlatform\Metadata\GetCollection
       uriTemplate: '/favorites'
       normalizationContext:
-        groups: ['favorite:read', 'id:read','product:read','image:read']
+        groups: ['favorite:read', 'id:read','product:read','image:read','media_object:read']
       openapi:
         summary: 'Get all favorite'
         description: 'Get all favorite'
@@ -29,7 +29,7 @@ App\Entity\Favorite:
         class: ApiPlatform\Metadata\Post
         uriTemplate: '/favorites'
         normalizationContext:
-          groups: ['favorite:read', 'id:read','product:read','image:read']
+          groups: ['favorite:read', 'id:read','product:read','image:read','media_object:read']
         processor: App\State\Favorite\FavoriteProcessor
         input: 'App\Dto\OwnerInput'
         openapi:

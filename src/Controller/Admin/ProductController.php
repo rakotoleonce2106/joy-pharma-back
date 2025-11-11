@@ -11,6 +11,7 @@ use App\Form\ProductType;
 use App\Repository\ProductRepository;
 use App\Service\ProductService;
 use App\Traits\ToastTrait;
+use Doctrine\ORM\EntityManagerInterface;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,7 +26,8 @@ class ProductController extends AbstractController
 
     public  function __construct(
         private  readonly ProductRepository $productRepository,
-        private readonly ProductService $productService
+        private readonly ProductService $productService,
+        private readonly EntityManagerInterface $entityManager
     ) {}
     #[Route('/product', name: 'admin_product')]
     public function index(Request $request): Response
@@ -45,41 +47,34 @@ class ProductController extends AbstractController
     {
         $product = new Product();
         $form = $this->createForm(ProductType::class, $product, ['action' => $this->generateUrl('admin_product_new')]);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            // Handle images field if it exists
-            if ($form->has('images')) {
-                /** @var UploadedFile[] $images */
-                $images = $form->get('images')->getData();
-                if ($images && count($images) > 0) {
-                    foreach ($images as $uploadedImage) {
-                        $mediaObject = new MediaObject();
-                        $mediaObject->setFile($uploadedImage);
-                        $this->productService->createMediaObject($mediaObject); // Persist MediaObject first
-                        $product->addImage($mediaObject);
-                    }
-                }
-            }
-            
-            $this->productService->createProduct($product);
-            $this->addSuccessToast('Product created!', "The product has been successfully created.");
-            return $this->redirectToRoute('admin_product', [], Response::HTTP_SEE_OTHER);
-        }
-
-        return $this->render("admin/product/create.html.twig", [
-            'product' => $product,
-            'form' => $form
-        ]);
+        return $this->handleCreate($request, $form, $product);
     }
 
     #[Route('/product/{id}/edit', name: 'admin_product_edit', defaults: ['title' => 'Edit product'])]
     public function editAction(Request $request, Product $product): Response
     {
+        // Recharger le produit avec ses relations pour éviter les problèmes de lazy loading
+        $product = $this->productRepository->createQueryBuilder('p')
+            ->leftJoin('p.images', 'img')
+            ->leftJoin('p.category', 'cat')
+            ->leftJoin('p.brand', 'brand')
+            ->leftJoin('p.manufacturer', 'manufacturer')
+            ->leftJoin('p.form', 'form')
+            ->leftJoin('p.unit', 'unit')
+            ->addSelect('img', 'cat', 'brand', 'manufacturer', 'form', 'unit')
+            ->where('p.id = :id')
+            ->setParameter('id', $product->getId())
+            ->getQuery()
+            ->getOneOrNullResult();
+        
+        if (!$product) {
+            throw $this->createNotFoundException('Product not found');
+        }
+
         $form = $this->createForm(ProductType::class, $product, [
             'action' => $this->generateUrl('admin_product_edit', ['id' => $product->getId()])
         ]);
-        return $this->handleProductForm($request, $form, $product, 'edit');
+        return $this->handleUpdate($request, $form, $product);
     }
 
     #[Route('/product/{id}/delete', name: 'admin_product_delete', methods: ['POST', 'GET'])]
@@ -186,7 +181,7 @@ class ProductController extends AbstractController
     }
 
 
-    private function handleProductForm(Request $request, $form, $product, string $action): Response
+    private function handleCreate(Request $request, $form, Product $product): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
@@ -197,19 +192,18 @@ class ProductController extends AbstractController
                 if ($images && count($images) > 0) {
                     foreach ($images as $uploadedImage) {
                         $mediaObject = new MediaObject();
+                        $this->entityManager->persist($mediaObject); // Persist AVANT setFile pour VichUploaderBundle
                         $mediaObject->setFile($uploadedImage);
-                        $this->productService->createMediaObject($mediaObject); // Persist MediaObject first
                         $product->addImage($mediaObject);
                     }
                 }
             }
             
-            $this->productService->updateProduct($product);
-
-            $this->addSuccessToast('Product updated!', "The product has been successfully updated.");
+            $this->productService->createProduct($product);
+            $this->addSuccessToast('Product created!', "The product has been successfully created.");
 
             if ($request->headers->has('turbo-frame')) {
-                $stream = $this->renderBlockView("admin/product/{$action}.html.twig", 'stream_success', [
+                $stream = $this->renderBlockView("admin/product/create.html.twig", 'stream_success', [
                     'product' => $product
                 ]);
                 $this->addFlash('stream', $stream);
@@ -218,7 +212,93 @@ class ProductController extends AbstractController
             return $this->redirectToRoute('admin_product', status: Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render("admin/product/{$action}.html.twig", [
+        return $this->render("admin/product/create.html.twig", [
+            'product' => $product,
+            'form' => $form
+        ]);
+    }
+
+    private function handleUpdate(Request $request, $form, Product $product): Response
+    {
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            // IMPORTANT: Recharger le produit depuis la base de données pour s'assurer qu'il est géré par Doctrine
+            // Cela évite de créer un nouveau produit au lieu de mettre à jour l'existant
+            $productId = $product->getId();
+            if (!$productId) {
+                throw new \RuntimeException('Cannot update product without ID');
+            }
+
+            $managedProduct = $this->productRepository->createQueryBuilder('p')
+                ->leftJoin('p.images', 'img')
+                ->leftJoin('p.category', 'cat')
+                ->leftJoin('p.brand', 'brand')
+                ->leftJoin('p.manufacturer', 'manufacturer')
+                ->leftJoin('p.form', 'form')
+                ->leftJoin('p.unit', 'unit')
+                ->addSelect('img', 'cat', 'brand', 'manufacturer', 'form', 'unit')
+                ->where('p.id = :id')
+                ->setParameter('id', $productId)
+                ->getQuery()
+                ->getOneOrNullResult();
+
+            if (!$managedProduct) {
+                throw $this->createNotFoundException('Product not found');
+            }
+
+            // Mettre à jour les propriétés de base depuis le formulaire
+            // Le formulaire Symfony gère déjà les relations, mais nous devons nous assurer que l'entité est managed
+            // Copier les propriétés simples
+            $managedProduct->setName($product->getName());
+            $managedProduct->setCode($product->getCode());
+            $managedProduct->setDescription($product->getDescription());
+            $managedProduct->setForm($product->getForm());
+            $managedProduct->setBrand($product->getBrand());
+            $managedProduct->setManufacturer($product->getManufacturer());
+            $managedProduct->setIsActive($product->isActive());
+            $managedProduct->setQuantity($product->getQuantity());
+            $managedProduct->setUnit($product->getUnit());
+            $managedProduct->setUnitPrice($product->getUnitPrice());
+            $managedProduct->setTotalPrice($product->getTotalPrice());
+            $managedProduct->setCurrency($product->getCurrency());
+            $managedProduct->setStock($product->getStock());
+            $managedProduct->setVariants($product->getVariants());
+
+            // Gérer les catégories (ManyToMany)
+            $managedProduct->getCategory()->clear();
+            foreach ($product->getCategory() as $category) {
+                $managedProduct->addCategory($category);
+            }
+
+            // Handle images field if it exists - ajouter de nouvelles images
+            if ($form->has('images')) {
+                /** @var UploadedFile[] $images */
+                $images = $form->get('images')->getData();
+                if ($images && count($images) > 0) {
+                    foreach ($images as $uploadedImage) {
+                        $mediaObject = new MediaObject();
+                        $this->entityManager->persist($mediaObject); // Persist AVANT setFile pour VichUploaderBundle
+                        $mediaObject->setFile($uploadedImage);
+                        $managedProduct->addImage($mediaObject);
+                    }
+                }
+            }
+            
+            $this->productService->updateProduct($managedProduct);
+
+            $this->addSuccessToast('Product updated!', "The product has been successfully updated.");
+
+            if ($request->headers->has('turbo-frame')) {
+                $stream = $this->renderBlockView("admin/product/edit.html.twig", 'stream_success', [
+                    'product' => $managedProduct
+                ]);
+                $this->addFlash('stream', $stream);
+            }
+
+            return $this->redirectToRoute('admin_product', status: Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/product/edit.html.twig", [
             'product' => $product,
             'form' => $form
         ]);

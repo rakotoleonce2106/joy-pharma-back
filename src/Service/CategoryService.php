@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Entity\Category;
+use App\Entity\MediaObject;
 use App\Repository\CategoryRepository;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,8 +16,7 @@ readonly class CategoryService
         private EntityManagerInterface $manager,
         private CategoryRepository $categoryRepository,
         private ProductRepository $productRepository
-    ) {
-    }
+    ) {}
 
     public function createCategory(Category $category): void
     {
@@ -56,12 +56,52 @@ readonly class CategoryService
 
     public function findParentCategories(): array
     {
-      return  $this->categoryRepository->findRootCategories();
+        return  $this->categoryRepository->findRootCategories();
     }
 
     public function updateCategory(Category $category): void
     {
         $this->manager->flush();
+    }
+
+    public function createMediaObject(MediaObject $mediaObject): void
+    {
+        $this->manager->persist($mediaObject);
+        $this->manager->flush();
+    }
+
+    public function updateMediaObject(MediaObject $mediaObject): void
+    {
+        // S'assurer que le MediaObject est géré par Doctrine
+        if (!$this->manager->contains($mediaObject)) {
+            // Si l'objet a un ID, le recharger depuis la base de données
+            if ($mediaObject->getId()) {
+                $existingMediaObject = $this->manager->find(MediaObject::class, $mediaObject->getId());
+                if ($existingMediaObject) {
+                    // Mettre à jour le fichier de l'objet existant
+                    $existingMediaObject->setFile($mediaObject->getFile());
+                    $this->manager->persist($existingMediaObject);
+                    return;
+                }
+            }
+            // Sinon, persister comme nouveau
+            $this->manager->persist($mediaObject);
+        }
+    }
+
+    public function ensureMediaObjectManaged(MediaObject $mediaObject): MediaObject
+    {
+        // S'assurer que le MediaObject est géré par Doctrine pour éviter qu'il soit perdu lors du flush
+        if (!$this->manager->contains($mediaObject) && $mediaObject->getId()) {
+            // Recharger depuis la base de données pour qu'il soit géré
+            $managedMediaObject = $this->manager->find(MediaObject::class, $mediaObject->getId());
+            if ($managedMediaObject) {
+                // Retourner l'objet géré pour remplacer la référence dans la catégorie
+                return $managedMediaObject;
+            }
+        }
+        // Si déjà géré ou pas d'ID, retourner l'objet tel quel
+        return $mediaObject;
     }
 
 
@@ -103,10 +143,10 @@ readonly class CategoryService
 
         // Sort categories: delete children first (categories with parent), then parents
         // This prevents foreign key constraint violations
-        usort($categories, function($a, $b) {
+        usort($categories, function ($a, $b) {
             $aHasParent = $a->getParent() !== null;
             $bHasParent = $b->getParent() !== null;
-            
+
             // Children (with parent) come first
             if ($aHasParent && !$bHasParent) {
                 return -1;
@@ -152,7 +192,7 @@ readonly class CategoryService
         // First, load and delete all child categories
         // Use repository to ensure we get all children even if collection is not initialized
         $children = $this->categoryRepository->findBy(['parent' => $category]);
-        
+
         foreach ($children as $childCategory) {
             $this->deleteCategoryRecursively($childCategory);
         }
@@ -166,7 +206,7 @@ readonly class CategoryService
             ->setParameter('categoryId', $category->getId())
             ->getQuery()
             ->getResult();
-        
+
         foreach ($products as $product) {
             $product->removeCategory($category);
         }

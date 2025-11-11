@@ -36,8 +36,8 @@ class CurrentUserProvider implements ProviderInterface
         ];
 
         // Add image if exists
-        if ($user->getImage() && $user->getImage()->getName()) {
-            $userData['avatar'] = '/uploads/profile/' . $user->getImage()->getName();
+        if ($user->getImage() && $user->getImage()->getFilePath()) {
+            $userData['avatar'] = $user->getImage()->getContentUrl() ?? '/media/' . $user->getImage()->getFilePath();
         }
 
         // Add role-specific data for DELIVERY PERSONS
@@ -86,8 +86,8 @@ class CurrentUserProvider implements ProviderInterface
                 }
 
                 // Add image if exists
-                if ($store->getImage() && $store->getImage()->getName()) {
-                    $storeData['image'] = '/images/store/' . $store->getImage()->getName();
+                if ($store->getImage() && $store->getImage()->getFilePath()) {
+                    $storeData['image'] = $store->getImage()->getContentUrl() ?? '/media/' . $store->getImage()->getFilePath();
                 }
 
                 $userData['store'] = $storeData;

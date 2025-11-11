@@ -43,17 +43,16 @@ class UnitController extends AbstractController
     {
         $unit = new Unit();
         $form = $this->createForm(UnitType::class, $unit, ['action' => $this->generateUrl('admin_unit_new')]);
-        return $this->handleUnitForm($request, $form, $unit, 'create');
+        return $this->handleCreate($request, $form, $unit);
     }
 
     #[Route('/unit/{id}/edit', name: 'admin_unit_edit', defaults: ['title' => 'Edit unit'])]
     public function editAction(Request $request, Unit $unit): Response
     {
-
         $form = $this->createForm(UnitType::class, $unit, [
             'action' => $this->generateUrl('admin_unit_edit', ['id' => $unit->getId()])
         ]);
-        return $this->handleUnitForm($request, $form, $unit, 'edit');
+        return $this->handleUpdate($request, $form, $unit);
     }
 
     #[Route('/unit/{id}/delete', name: 'admin_unit_delete', methods: ['POST'])]
@@ -100,25 +99,19 @@ class UnitController extends AbstractController
     }
 
 
-    private function handleUnitForm(Request $request, $form, $unit, string $action): Response
+    private function handleCreate(Request $request, $form, Unit $unit): Response
     {
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-
-            if ($action === 'create') {
-                $this->unitService->createUnit($unit);
-            } else {
-                $this->unitService->updateUnit($unit);
-            }
-
+            $this->unitService->createUnit($unit);
 
             $this->addSuccessToast(
-                $action === 'create' ? 'Unit created!' : 'Unit updated!',
-                "The unit has been successfully {$action}d."
+                'Unit created!',
+                "The unit has been successfully created."
             );
 
             if ($request->headers->has('turbo-frame')) {
-                $stream = $this->renderBlockView("admin/unit/{$action}.html.twig", 'stream_success', [
+                $stream = $this->renderBlockView("admin/unit/create.html.twig", 'stream_success', [
                     'unit' => $unit
                 ]);
                 $this->addFlash('stream', $stream);
@@ -127,7 +120,34 @@ class UnitController extends AbstractController
             return $this->redirectToRoute('admin_unit', status: Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render("admin/unit/{$action}.html.twig", [
+        return $this->render("admin/unit/create.html.twig", [
+            'unit' => $unit,
+            'form' => $form
+        ]);
+    }
+
+    private function handleUpdate(Request $request, $form, Unit $unit): Response
+    {
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->unitService->updateUnit($unit);
+
+            $this->addSuccessToast(
+                'Unit updated!',
+                "The unit has been successfully updated."
+            );
+
+            if ($request->headers->has('turbo-frame')) {
+                $stream = $this->renderBlockView("admin/unit/edit.html.twig", 'stream_success', [
+                    'unit' => $unit
+                ]);
+                $this->addFlash('stream', $stream);
+            }
+
+            return $this->redirectToRoute('admin_unit', status: Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->render("admin/unit/edit.html.twig", [
             'unit' => $unit,
             'form' => $form
         ]);

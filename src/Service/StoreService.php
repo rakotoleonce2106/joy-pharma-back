@@ -70,6 +70,7 @@ readonly class StoreService
 
     public function updateStore(Store $store): void
     {
+        $this->manager->persist($store);
         $this->manager->flush();
     }
 

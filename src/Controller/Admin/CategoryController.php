@@ -10,6 +10,7 @@ use App\Form\CategoryType;
 use App\Repository\CategoryRepository;
 use App\Service\CategoryService;
 use App\Traits\ToastTrait;
+use Doctrine\ORM\EntityManagerInterface;
 use Kreyu\Bundle\DataTableBundle\DataTableFactoryAwareTrait;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,7 +25,8 @@ class CategoryController extends AbstractController
 
     public  function __construct(
         private  readonly CategoryRepository $categoryRepository,
-        private readonly CategoryService $categoryService
+        private readonly CategoryService $categoryService,
+        private readonly EntityManagerInterface $entityManager
     ) {}
     
     #[Route('/category', name: 'admin_category')]
@@ -45,7 +47,7 @@ class CategoryController extends AbstractController
     {
         $category = new Category();
         $form = $this->createForm(CategoryType::class, $category, ['action' => $this->generateUrl('admin_category_new')]);
-        return $this->handleCategoryForm($request, $form, $category, 'create');
+        return $this->handleCreate($request, $form, $category);
     }
 
     #[Route('/category/{id}/edit', name: 'admin_category_edit', defaults: ['title' => 'Edit category'])]
@@ -54,7 +56,7 @@ class CategoryController extends AbstractController
         $form = $this->createForm(CategoryType::class, $category, [
             'action' => $this->generateUrl('admin_category_edit', ['id' => $category->getId()])
         ]);
-        return $this->handleCategoryForm($request, $form, $category, 'edit');
+        return $this->handleUpdate($request, $form, $category);
     }
 
     #[Route('/category/{id}/delete', name: 'admin_category_delete', methods: ['POST'])]
@@ -100,16 +102,35 @@ class CategoryController extends AbstractController
         return $this->redirectToRoute('admin_category', [], Response::HTTP_SEE_OTHER);
     }
 
-    private function handleCategoryForm(Request $request, $form, $category, string $action): Response
+    private function handleCreate(Request $request, $form, Category $category): Response
     {
         $form->handleRequest($request);
+        
+        // Debug: Log form submission status
+        if ($form->isSubmitted()) {
+            if (!$form->isValid()) {
+                // Log validation errors
+                $errors = [];
+                foreach ($form->getErrors(true) as $error) {
+                    $errors[] = $error->getMessage();
+                }
+                $this->addErrorToast(
+                    'Validation failed!',
+                    'Please check the form for errors: ' . implode(', ', $errors)
+                );
+            }
+        }
+        
         if ($form->isSubmitted() && $form->isValid()) {
-
             // Gestion de l'image
             /** @var UploadedFile|null $image */
             $image = $form->get('image')->getData();
             if ($image) {
                 $category->setImageFile($image);
+                // Si un nouveau MediaObject a été créé, le persister
+                if ($category->getImage()) {
+                    $this->entityManager->persist($category->getImage());
+                }
             }
 
             // Gestion du SVG
@@ -117,22 +138,22 @@ class CategoryController extends AbstractController
             $svg = $form->get('svg')->getData();
             if ($svg) {
                 $category->setSvgFile($svg);
+                // Si un nouveau MediaObject a été créé, le persister
+                if ($category->getSvg()) {
+                    $this->entityManager->persist($category->getSvg());
+                }
             }
 
-            // Persister/mettre à jour la catégorie
-            if ($action === 'create') {
-                $this->categoryService->createCategory($category);
-            } else {
-                $this->categoryService->updateCategory($category);
-            }
+            // Créer la catégorie (le cascade persist gérera automatiquement les MediaObject)
+            $this->categoryService->createCategory($category);
 
             $this->addSuccessToast(
-                $action === 'create' ? 'Category created!' : 'Category updated!',
-                "The category has been successfully {$action}d."
+                'Category created!',
+                "The category has been successfully created."
             );
 
             if ($request->headers->has('turbo-frame')) {
-                $stream = $this->renderBlockView("admin/category/{$action}.html.twig", 'stream_success', [
+                $stream = $this->renderBlockView("admin/category/create.html.twig", 'stream_success', [
                     'category' => $category
                 ]);
                 $this->addFlash('stream', $stream);
@@ -141,9 +162,104 @@ class CategoryController extends AbstractController
             return $this->redirectToRoute('admin_category', status: Response::HTTP_SEE_OTHER);
         }
 
-        return $this->render("admin/category/{$action}.html.twig", [
+        return $this->render("admin/category/create.html.twig", [
             'category' => $category,
             'form' => $form
         ]);
+    }
+
+    private function handleUpdate(Request $request, $form, Category $category): Response
+    {
+        $form->handleRequest($request);
+        
+        // Debug: Log form submission status
+        if ($form->isSubmitted()) {
+            if (!$form->isValid()) {
+                // Log validation errors
+                $errors = [];
+                foreach ($form->getErrors(true) as $error) {
+                    $errors[] = $error->getMessage();
+                }
+                $this->addErrorToast(
+                    'Validation failed!',
+                    'Please check the form for errors: ' . implode(', ', $errors)
+                );
+            }
+        }
+        
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            return $this->render("admin/category/edit.html.twig", [
+                'category' => $category,
+                'form' => $form
+            ]);
+        }
+
+        // IMPORTANT: S'assurer que la catégorie est gérée par Doctrine
+        // Si elle n'est pas gérée, la recharger depuis la base de données
+        $categoryId = $category->getId();
+        if (!$categoryId) {
+            throw new \RuntimeException('Cannot update category without ID');
+        }
+
+        if (!$this->entityManager->contains($category)) {
+            $managedCategory = $this->categoryRepository->createQueryBuilder('c')
+                ->leftJoin('c.image', 'img')
+                ->leftJoin('c.svg', 'svg')
+                ->addSelect('img', 'svg')
+                ->where('c.id = :id')
+                ->setParameter('id', $categoryId)
+                ->getQuery()
+                ->getOneOrNullResult();
+
+            if (!$managedCategory) {
+                throw $this->createNotFoundException('Category not found');
+            }
+
+            // Copier les propriétés du formulaire vers la catégorie gérée
+            $managedCategory->setName($category->getName());
+            $managedCategory->setDescription($category->getDescription());
+            $managedCategory->setColor($category->getColor());
+            $managedCategory->setParent($category->getParent());
+            $category = $managedCategory;
+        }
+
+        // Gestion de l'image
+        /** @var UploadedFile|null $image */
+        $image = $form->get('image')->getData();
+        if ($image) {
+            $category->setImageFile($image);
+            // Si un nouveau MediaObject a été créé, le persister
+            if ($category->getImage()) {
+                $this->entityManager->persist($category->getImage());
+            }
+        }
+
+        // Gestion du SVG
+        /** @var UploadedFile|null $svg */
+        $svg = $form->get('svg')->getData();
+        if ($svg) {
+            $category->setSvgFile($svg);
+            // Si un nouveau MediaObject a été créé, le persister
+            if ($category->getSvg()) {
+                $this->entityManager->persist($category->getSvg());
+            }
+        }
+
+        // Mettre à jour la catégorie (elle est déjà gérée par Doctrine)
+        $this->categoryService->updateCategory($category);
+
+        $this->addSuccessToast(
+            'Category updated!',
+            "The category has been successfully updated."
+        );
+
+        if ($request->headers->has('turbo-frame')) {
+            $stream = $this->renderBlockView("admin/category/edit.html.twig", 'stream_success', [
+                'category' => $category
+            ]);
+            $this->addFlash('stream', $stream);
+        }
+
+        return $this->redirectToRoute('admin_category', status: Response::HTTP_SEE_OTHER);
     }
 }

@@ -103,6 +103,8 @@ readonly class UserService
 
     public function updateUser(User $user): void
     {
+        // Persist nécessaire pour que le cascade persist fonctionne avec les nouveaux MediaObject
+        $this->manager->persist($user);
         $this->manager->flush();
     }
 

@@ -41,7 +41,7 @@ class Product
     /**
      * @var Collection<int, MediaObject>
      */
-    #[ORM\ManyToMany(targetEntity: MediaObject::class)]
+    #[ORM\ManyToMany(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinTable(name: 'product_media_objects')]
     #[Groups(['product:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
