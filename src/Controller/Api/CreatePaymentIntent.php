@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 
 class CreatePaymentIntent extends AbstractController
@@ -21,14 +22,23 @@ class CreatePaymentIntent extends AbstractController
 
     public function __invoke(#[MapRequestPayload] Payment $payment): JsonResponse
     {
-        
         $paymentMethod = $payment->getMethod();
         if ($paymentMethod !== PaymentMethod::METHODE_MVOLA) {
-            throw new BadRequestHttpException('Invalid payment method. Supported methods are "stripe" and "mvola".');
+            throw new BadRequestHttpException('Invalid payment method. Only "mvola" is currently supported.');
         }
+
         $order = $this->orderService->findByReference($payment->getReference());
+        if (!$order) {
+            throw new NotFoundHttpException('Order not found with reference: ' . $payment->getReference());
+        }
+
         $user = $order->getOwner();
-         $order->setPayment($payment);
+        if (!$user) {
+            throw new NotFoundHttpException('Order owner not found.');
+        }
+
+        $order->setPayment($payment);
+        $this->orderService->updateOrder($order);
 
         try {
             $result = $this->paymentIntentService->createPaymentIntent($user, $payment);

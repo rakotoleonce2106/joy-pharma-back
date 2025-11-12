@@ -40,4 +40,7 @@ class OrderInput
     //payment method
     #[Assert\NotBlank]
     public ?string $paymentMethod;
+
+    //promotion code
+    public ?string $promotionCode = null;
 }

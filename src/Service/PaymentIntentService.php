@@ -28,6 +28,8 @@ readonly class PaymentIntentService
             $currency = $this->currencyService->getCurrency();
             $this->currencyService->validateAmount($amount, $currency->getLabel());
 
+            $phoneNumber = $payment->getPhoneNumber();
+
             $this->logger->info('Creating payment intent', [
                 'user_id' => $user->getId(),
                 'amount' => $amount,
@@ -39,13 +41,14 @@ readonly class PaymentIntentService
 
             switch ($payment->getMethod()) {
                 default:
-                    return  $this->createMvolaPaymentIntent($user,  $payment, $amount, $currency->getLabel());
+                    return $this->createMvolaPaymentIntent($user, $payment, $amount, $currency->getLabel());
             }
         } catch (\Exception $e) {
+            $phoneNumber = $payment->getPhoneNumber();
             $this->logger->error('Failed to create payment intent', [
                 'error' => $e->getMessage(),
                 'user_id' => $user->getId(),
-                'amount' => $amount,
+                'amount' => $amount ?? null,
                 'reference' => $payment->getReference(),
                 'payment_method' => $payment->getMethodLabel(),
                 'phone_number' => $phoneNumber ?? null
@@ -54,20 +57,14 @@ readonly class PaymentIntentService
         }
     }
 
-    private function createMvolaPaymentIntent(User $user, Payment $payment,): array
+    private function createMvolaPaymentIntent(User $user, Payment $payment, int $amount, string $currency): array
     {
         if (!$phoneNumber = $payment->getPhoneNumber()) {
             throw new NotFoundHttpException('Phone number not found');
         }
 
         try {
-           $this->logger->error('Failed to create MVola payment intent', [
-                'user_id' => $user->getId(),
-                'phone_number' => $phoneNumber,
-                'provider' => $payment->getMethodLabel(),
-                'reference' => $payment->getReference()
-            ]);
-            $mvolaPaymentIntent = $this->mvolaPaymentService->createPaymentIntent($user, $payment);
+            $mvolaPaymentIntent = $this->mvolaPaymentService->createPaymentIntent($user, $payment, $amount, $currency);
 
             $this->logger->info('MVola payment intent created', [
                 'payment_intent_id' => $mvolaPaymentIntent['id'],

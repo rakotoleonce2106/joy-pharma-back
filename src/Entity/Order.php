@@ -97,6 +97,15 @@ class Order
     #[Groups(['order:read'])]
     private ?Payment $payment = null;
 
+    #[ORM\ManyToOne(inversedBy: 'orders')]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['order:read'])]
+    private ?Promotion $promotion = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['order:read'])]
+    private ?float $discountAmount = null;
+
     #[ORM\ManyToOne(inversedBy: 'deliverOrders')]
     #[Groups(['order:create','order:read'])]
     private ?User $deliver = null;
@@ -301,6 +310,30 @@ class Order
     public function setPayment(?Payment $payment): static
     {
         $this->payment = $payment;
+
+        return $this;
+    }
+
+    public function getPromotion(): ?Promotion
+    {
+        return $this->promotion;
+    }
+
+    public function setPromotion(?Promotion $promotion): static
+    {
+        $this->promotion = $promotion;
+
+        return $this;
+    }
+
+    public function getDiscountAmount(): ?float
+    {
+        return $this->discountAmount;
+    }
+
+    public function setDiscountAmount(?float $discountAmount): static
+    {
+        $this->discountAmount = $discountAmount;
 
         return $this;
     }

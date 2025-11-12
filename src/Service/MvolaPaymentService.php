@@ -20,9 +20,9 @@ final readonly class MvolaPaymentService
     {
     }
 
-    public function createPaymentIntent(User $user, Payment $payment): array
+    public function createPaymentIntent(User $user, Payment $payment, int $amount, string $currency): array
     {
-        $transactionRequest = $this->createTransactionRequest($user, $payment);
+        $transactionRequest = $this->createTransactionRequest($user, $payment, $amount, $currency);
 
         try {
             $result = $this->mvolaService->initiateTransaction($transactionRequest);
