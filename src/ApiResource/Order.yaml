@@ -12,6 +12,19 @@ App\Entity\Order:
                 summary: 'Create a order'
                 description: 'Create a order'
 
+        simulate_order:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: "/order/simulate"
+            input: App\Dto\OrderInput
+            processor: App\State\Order\OrderSimulationProvider
+            format: 'json'
+            security: 'is_granted("ROLE_USER")'
+            normalizationContext:
+                groups: ['simulation:read']
+            openapi:
+                summary: 'Simulate order with promotion code'
+                description: 'Simulate order creation to preview total amount, discount, and promotion details without creating the actual order. Uses the same input as order creation.'
+
         get_current_order:
             method: 'GET'
             class: ApiPlatform\Metadata\Get
