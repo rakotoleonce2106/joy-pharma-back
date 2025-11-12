@@ -83,6 +83,9 @@ class OrderCreateProcessor implements ProcessorInterface
                 $location = $this->createLocation($data->latitude, $data->longitude, $data->address);
                 $this->entityManager->persist($location);
                 $order->setLocation($location);
+                
+                // Save location to user's saved locations if it doesn't already exist
+                $this->saveLocationToUser($user, $location);
             }
 
             // Process order items
@@ -145,6 +148,28 @@ class OrderCreateProcessor implements ProcessorInterface
     }
 
     /**
+     * Save location to user's saved locations if it doesn't already exist
+     */
+    private function saveLocationToUser(User $user, Location $location): void
+    {
+        // Check if user already has this location (by comparing coordinates and address)
+        $existingLocation = null;
+        foreach ($user->getLocations() as $userLocation) {
+            if (abs($userLocation->getLatitude() - $location->getLatitude()) < 0.0001 &&
+                abs($userLocation->getLongitude() - $location->getLongitude()) < 0.0001 &&
+                $userLocation->getAddress() === $location->getAddress()) {
+                $existingLocation = $userLocation;
+                break;
+            }
+        }
+
+        // If location doesn't exist in user's locations, add it
+        if (!$existingLocation) {
+            $user->addLocation($location);
+        }
+    }
+
+    /**
      * Process order items and calculate total amount
      */
     private function processOrderItems(Order $order, array $items): float
@@ -169,7 +194,7 @@ class OrderCreateProcessor implements ProcessorInterface
             }
 
             // Validate product is active
-            if (!$product->getIsActive()) {
+            if (!$product->isActive()) {
                 throw new BadRequestHttpException(sprintf('Product %s (ID: %d) is not active', $product->getName(), $product->getId()));
             }
 
