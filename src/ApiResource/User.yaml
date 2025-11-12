@@ -12,7 +12,7 @@ App\Entity\User:
             validationContext:
                 groups: ['user:update' ]
             normalizationContext:
-                groups: ['id:read', "user:read", "image:read", "media_object:read" ]
+                groups: ['id:read', "user:read", "image:read", "media_object:read", "location:read" ]
             security: "is_granted('ROLE_USER')"
             input_formats:
                 multipart: [ 'multipart/form-data' ]
@@ -58,7 +58,7 @@ App\Entity\User:
             uriTemplate: "/me"
             provider: App\State\User\CurrentUserProvider
             normalizationContext:
-                groups: ['id:read', "user:read" ,"image:read","media_object:read","store:read"]
+                groups: ['id:read', "user:read" ,"image:read","media_object:read","store:read","location:read"]
             uriVariables: []
             openapiContext:
                 summary: Retrieves the current user resource.
@@ -68,9 +68,27 @@ App\Entity\User:
                 summary: "Get  current user."
                 description: "Get  current user."
 
+        remove_location:
+            class: ApiPlatform\Metadata\Delete
+            security: 'is_granted("ROLE_USER")'
+            securityMessage: 'Only authenticated users can remove locations.'
+            method: DELETE
+            uriTemplate: "/me/locations/{locationId}"
+            controller: App\Controller\Api\UserLocationController
+            openapi:
+                summary: "Remove a location from current user's saved locations"
+                description: "Remove a location from the authenticated user's saved locations"
+                parameters:
+                    - name: locationId
+                      in: path
+                      required: true
+                      schema:
+                        type: integer
+                      description: The ID of the location to remove
+
 
     normalizationContext:
-        groups: ['id:read','user:read','image:read','media_object:read']
+        groups: ['id:read','user:read','image:read','media_object:read','location:read']
 
     denormalizationContext:
         groups: ['user:create', 'user:update']

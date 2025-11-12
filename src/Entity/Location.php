@@ -27,15 +27,19 @@ class Location
     private ?float $longitude = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['location:read'])]
     private ?string $city = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['location:read'])]
     private ?string $state = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['location:read'])]
     private ?string $country = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['location:read'])]
     private ?string $postalCode = null;
 
     #[ORM\OneToOne(mappedBy: 'location')]

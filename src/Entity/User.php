@@ -124,6 +124,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'deliveryPerson')]
     private Collection $invoices;
 
+    /**
+     * @var Collection<int, Location>
+     */
+    #[ORM\ManyToMany(targetEntity: Location::class, cascade: ['persist'])]
+    #[ORM\JoinTable(name: 'user_locations')]
+    #[Groups(['user:read'])]
+    private Collection $locations;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -134,6 +142,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->notifications = new ArrayCollection();
         $this->deliverySchedules = new ArrayCollection();
         $this->invoices = new ArrayCollection();
+        $this->locations = new ArrayCollection();
     }
 
     public function getEmail(): ?string
@@ -534,6 +543,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $invoice->setDeliveryPerson(null);
             }
         }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Location>
+     */
+    public function getLocations(): Collection
+    {
+        return $this->locations;
+    }
+
+    public function addLocation(Location $location): static
+    {
+        if (!$this->locations->contains($location)) {
+            $this->locations->add($location);
+        }
+
+        return $this;
+    }
+
+    public function removeLocation(Location $location): static
+    {
+        $this->locations->removeElement($location);
+
         return $this;
     }
 }
