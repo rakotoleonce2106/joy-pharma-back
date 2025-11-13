@@ -1,0 +1,70 @@
+App\Entity\Category:
+    operations:
+        # Admin: List all categories
+        admin_get_categories:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/categories'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'List all categories (Admin)'
+                description: 'Get list of all categories with hierarchical structure'
+
+        # Admin: Get single category
+        admin_get_category:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/categories/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Get category by ID (Admin)'
+                description: 'Get detailed information about a specific category'
+
+        # Admin: Create category
+        admin_create_category:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/categories'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\CategoryInput
+            processor: App\State\Admin\CategoryProcessor
+            normalizationContext:
+                groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Create new category (Admin)'
+                description: 'Create a new category with optional parent category'
+
+        # Admin: Update category
+        admin_update_category:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/categories/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\CategoryInput
+            processor: App\State\Admin\CategoryProcessor
+            normalizationContext:
+                groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Update category (Admin)'
+                description: 'Update category information including parent relationship'
+
+        # Admin: Delete category
+        admin_delete_category:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/categories/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete category (Admin)'
+                description: 'Permanently delete a category'
+
+        # Admin: Batch delete categories
+        admin_batch_delete_categories:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/categories/batch-delete'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\BatchDeleteInput
+            processor: App\State\Admin\BatchDeleteProcessor
+            openapi:
+                summary: 'Batch delete categories (Admin)'
+                description: 'Delete multiple categories at once'
+

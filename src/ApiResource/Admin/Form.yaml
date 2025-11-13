@@ -1,0 +1,58 @@
+App\Entity\Form:
+    operations:
+        admin_get_forms:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/forms'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'form:read']
+            openapi:
+                summary: 'List all forms (Admin)'
+
+        admin_get_form:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/forms/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'form:read']
+            openapi:
+                summary: 'Get form by ID (Admin)'
+
+        admin_create_form:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/forms'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\FormInput
+            processor: App\State\Admin\FormProcessor
+            normalizationContext:
+                groups: ['id:read', 'form:read']
+            openapi:
+                summary: 'Create new form (Admin)'
+
+        admin_update_form:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/forms/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\FormInput
+            processor: App\State\Admin\FormProcessor
+            normalizationContext:
+                groups: ['id:read', 'form:read']
+            openapi:
+                summary: 'Update form (Admin)'
+
+        admin_delete_form:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/forms/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete form (Admin)'
+
+        admin_batch_delete_forms:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/forms/batch-delete'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\BatchDeleteInput
+            processor: App\State\Admin\BatchDeleteProcessor
+            openapi:
+                summary: 'Batch delete forms (Admin)'
+

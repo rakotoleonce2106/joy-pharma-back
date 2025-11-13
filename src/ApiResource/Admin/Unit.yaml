@@ -1,0 +1,58 @@
+App\Entity\Unit:
+    operations:
+        admin_get_units:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/units'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'unit:read']
+            openapi:
+                summary: 'List all units (Admin)'
+
+        admin_get_unit:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/units/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'unit:read']
+            openapi:
+                summary: 'Get unit by ID (Admin)'
+
+        admin_create_unit:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/units'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\UnitInput
+            processor: App\State\Admin\UnitProcessor
+            normalizationContext:
+                groups: ['id:read', 'unit:read']
+            openapi:
+                summary: 'Create new unit (Admin)'
+
+        admin_update_unit:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/units/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\UnitInput
+            processor: App\State\Admin\UnitProcessor
+            normalizationContext:
+                groups: ['id:read', 'unit:read']
+            openapi:
+                summary: 'Update unit (Admin)'
+
+        admin_delete_unit:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/units/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete unit (Admin)'
+
+        admin_batch_delete_units:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/units/batch-delete'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\BatchDeleteInput
+            processor: App\State\Admin\BatchDeleteProcessor
+            openapi:
+                summary: 'Batch delete units (Admin)'
+

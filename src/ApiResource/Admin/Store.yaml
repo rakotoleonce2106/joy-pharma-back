@@ -1,0 +1,58 @@
+App\Entity\Store:
+    operations:
+        admin_get_stores:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/stores'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'store:read', 'location:read', 'user:read']
+            openapi:
+                summary: 'List all stores (Admin)'
+
+        admin_get_store:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/stores/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'store:read', 'location:read', 'user:read']
+            openapi:
+                summary: 'Get store by ID (Admin)'
+
+        admin_create_store:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/stores'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\StoreInput
+            processor: App\State\Admin\StoreProcessor
+            normalizationContext:
+                groups: ['id:read', 'store:read', 'location:read', 'user:read']
+            openapi:
+                summary: 'Create new store (Admin)'
+
+        admin_update_store:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/stores/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\StoreInput
+            processor: App\State\Admin\StoreProcessor
+            normalizationContext:
+                groups: ['id:read', 'store:read', 'location:read', 'user:read']
+            openapi:
+                summary: 'Update store (Admin)'
+
+        admin_delete_store:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/stores/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete store (Admin)'
+
+        admin_batch_delete_stores:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/stores/batch-delete'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\BatchDeleteInput
+            processor: App\State\Admin\BatchDeleteProcessor
+            openapi:
+                summary: 'Batch delete stores (Admin)'
+

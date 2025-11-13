@@ -1,0 +1,50 @@
+App\Entity\Promotion:
+    operations:
+        admin_get_promotions:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/promotions'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'promotion:read']
+            openapi:
+                summary: 'List all promotions (Admin)'
+
+        admin_get_promotion:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/promotions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'promotion:read']
+            openapi:
+                summary: 'Get promotion by ID (Admin)'
+
+        admin_create_promotion:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/promotions'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\PromotionInput
+            processor: App\State\Admin\PromotionProcessor
+            normalizationContext:
+                groups: ['id:read', 'promotion:read']
+            openapi:
+                summary: 'Create new promotion (Admin)'
+
+        admin_update_promotion:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/promotions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\PromotionInput
+            processor: App\State\Admin\PromotionProcessor
+            normalizationContext:
+                groups: ['id:read', 'promotion:read']
+            openapi:
+                summary: 'Update promotion (Admin)'
+
+        admin_delete_promotion:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/promotions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete promotion (Admin)'
+                description: 'Cannot delete promotions that have been used in orders'
+

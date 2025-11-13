@@ -1,0 +1,58 @@
+App\Entity\Manufacturer:
+    operations:
+        admin_get_manufacturers:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/manufacturers'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'manufacturer:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'List all manufacturers (Admin)'
+
+        admin_get_manufacturer:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/manufacturers/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'manufacturer:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Get manufacturer by ID (Admin)'
+
+        admin_create_manufacturer:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/manufacturers'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\ManufacturerInput
+            processor: App\State\Admin\ManufacturerProcessor
+            normalizationContext:
+                groups: ['id:read', 'manufacturer:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Create new manufacturer (Admin)'
+
+        admin_update_manufacturer:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/manufacturers/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\ManufacturerInput
+            processor: App\State\Admin\ManufacturerProcessor
+            normalizationContext:
+                groups: ['id:read', 'manufacturer:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Update manufacturer (Admin)'
+
+        admin_delete_manufacturer:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/manufacturers/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete manufacturer (Admin)'
+
+        admin_batch_delete_manufacturers:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/manufacturers/batch-delete'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\BatchDeleteInput
+            processor: App\State\Admin\BatchDeleteProcessor
+            openapi:
+                summary: 'Batch delete manufacturers (Admin)'
+
