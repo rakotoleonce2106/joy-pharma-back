@@ -397,6 +397,7 @@ readonly class  ProductService
         
         // Check if it's already a local path
         $localPath = null;
+        $originalFileName = null; // Store the original filename found in products directory
         $mediaDir = $this->projectDir . '/public/media';
         
         // Extract the filename from the URL (works for both URLs and paths)
@@ -406,15 +407,96 @@ readonly class  ProductService
         // First, check if file exists in media directory
         if (file_exists($mediaDir . '/' . $fileName)) {
             $localPath = $mediaDir . '/' . $fileName;
+            $originalFileName = $fileName;
         } elseif (file_exists($this->projectDir . '/public' . $parsedPath)) {
             // Try the exact path from the URL
             $localPath = $this->projectDir . '/public' . $parsedPath;
+            $originalFileName = basename($parsedPath);
         } elseif (file_exists($this->projectDir . $parsedPath)) {
             // Try absolute path from project root
             $localPath = $this->projectDir . $parsedPath;
+            $originalFileName = basename($parsedPath);
         }
         
-        // If it's a URL (external), download it to a temporary location
+        // Check if image exists in products directories before downloading
+        if (!$localPath) {
+            $productsDir = $this->projectDir . '/public/images/products';
+            $productDir = $this->projectDir . '/public/images/product';
+            
+            // Try to find the file in products directories
+            // First try exact match with the filename from URL
+            $possiblePaths = [
+                $productsDir . '/' . $fileName,
+                $productDir . '/' . $fileName,
+            ];
+            
+            // Also try with different extensions if the original doesn't match
+            $baseName = pathinfo($fileName, PATHINFO_FILENAME);
+            $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            foreach ($extensions as $ext) {
+                $possiblePaths[] = $productsDir . '/' . $baseName . '.' . $ext;
+                $possiblePaths[] = $productDir . '/' . $baseName . '.' . $ext;
+            }
+            
+            // Try to find the file in the possible paths
+            $foundPath = null;
+            foreach ($possiblePaths as $possiblePath) {
+                if (file_exists($possiblePath) && is_readable($possiblePath)) {
+                    $foundPath = $possiblePath;
+                    break;
+                }
+            }
+            
+            // If not found, try case-insensitive search (only if needed)
+            if (!$foundPath && !empty($baseName)) {
+                foreach ([$productsDir, $productDir] as $dir) {
+                    if (is_dir($dir)) {
+                        $files = scandir($dir);
+                        if ($files !== false) {
+                            foreach ($files as $file) {
+                                if ($file === '.' || $file === '..') {
+                                    continue;
+                                }
+                                // Case-insensitive comparison of base name
+                                $fileBaseName = pathinfo($file, PATHINFO_FILENAME);
+                                if (strcasecmp($baseName, $fileBaseName) === 0) {
+                                    $testPath = $dir . '/' . $file;
+                                    if (file_exists($testPath) && is_readable($testPath)) {
+                                        $foundPath = $testPath;
+                                        break 2; // Break both loops
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If file found, copy it to temporary location for Vich to process
+            if ($foundPath) {
+                $tempDir = sys_get_temp_dir() . '/product_images';
+                if (!file_exists($tempDir)) {
+                    if (!mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
+                        throw new \RuntimeException('Failed to create temporary directory');
+                    }
+                }
+                
+                $extension = pathinfo($foundPath, PATHINFO_EXTENSION) ?: 'jpg';
+                $tempFileName = uniqid('', true) . '.' . $extension;
+                $tempPath = $tempDir . '/' . $tempFileName;
+                
+                // Copy the file instead of downloading
+                if (!copy($foundPath, $tempPath)) {
+                    throw new \RuntimeException('Failed to copy image from: ' . $foundPath);
+                }
+                
+                $localPath = $tempPath;
+                // Use the actual filename found in products directory
+                $originalFileName = basename($foundPath);
+            }
+        }
+        
+        // If it's a URL (external) and file not found locally, download it to a temporary location
         if (!$localPath && filter_var($imageUrl, FILTER_VALIDATE_URL)) {
             // Create temporary directory if needed
             $tempDir = sys_get_temp_dir() . '/product_images';
@@ -473,8 +555,9 @@ readonly class  ProductService
         // Create a MediaObject and set the file
         $mediaObject = new MediaObject();
         
-        // Create an UploadedFile simulated from the downloaded file
-        $originalName = basename($imageUrl);
+        // Create an UploadedFile simulated from the downloaded/copied file
+        // Use the original filename found in products directory, or fallback to URL basename
+        $originalName = $originalFileName ?? basename($imageUrl);
         $mimeType = mime_content_type($localPath) ?: 'image/jpeg';
         
         // Create a simulated UploadedFile from the local file

@@ -32,7 +32,7 @@ enum PriorityType : string
 }
 
 #[ORM\Entity(repositoryClass: OrderRepository::class)]
-#[ORM\Table(name: '`order`')]
+#[ORM\Table(name: '"order"')]
 #[ORM\HasLifecycleCallbacks]
 class Order
 {
