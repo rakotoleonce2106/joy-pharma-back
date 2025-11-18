@@ -18,12 +18,43 @@ App\Entity\Product:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/products'
+            provider: 'App\State\Product\ProductsProvider'
             normalizationContext:
                 groups:  ['id:read','product:read','image:read','media_object:read']
             format: 'json'
             openapi:
                 summary: 'Get all products'
-                description: 'Get all products'
+                description: 'Get all products with pagination and category filter'
+                parameters:
+                    - name: 'category'
+                      in: 'query'
+                      description: 'Filter by category ID'
+                      required: false
+                      schema:
+                          type: integer
+                    - name: 'page'
+                      in: 'query'
+                      description: 'Page number'
+                      required: false
+                      schema:
+                          type: integer
+                          default: 1
+                    - name: 'itemsPerPage'
+                      in: 'query'
+                      description: 'Items per page'
+                      required: false
+                      schema:
+                          type: integer
+                          default: 20
+                          maximum: 50
+                    - name: 'perPage'
+                      in: 'query'
+                      description: 'Items per page (alternative to itemsPerPage)'
+                      required: false
+                      schema:
+                          type: integer
+                          default: 20
+                          maximum: 50
                 
         get_products_suggestion:
             method: 'GET'
