@@ -37,8 +37,11 @@ class CategoryController extends AbstractController
         $datatable = $this->createNamedDataTable('categories', CategoryDataTableType::class, $query);
         $datatable->handleRequest($request);
 
+        $rootCategories = $this->categoryRepository->findRootCategories();
+
         return $this->render('admin/category/index.html.twig', [
-            'datatable' => $datatable->createView()
+            'datatable' => $datatable->createView(),
+            'rootCategories' => $rootCategories,
         ]);
     }
 

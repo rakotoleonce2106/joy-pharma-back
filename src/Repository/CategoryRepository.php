@@ -20,7 +20,10 @@ class CategoryRepository extends ServiceEntityRepository
     public function findRootCategories(): array
     {
         return $this->createQueryBuilder('c')
+            ->leftJoin('c.categories', 'children')
+            ->addSelect('children')
             ->andWhere('c.parent IS NULL')
+            ->orderBy('c.name', 'ASC')
             ->getQuery()
             ->getResult();
     }

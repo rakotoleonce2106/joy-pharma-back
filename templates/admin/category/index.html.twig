@@ -1,19 +1,107 @@
 {% extends 'admin/layout.html.twig' %}
 
 {% block content %}
-    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-[85rem]">
-        <div class="gap-4  md:gap-8">
-            <twig:ui:card:root class="w-full h-full">
-                <twig:ui:card:header>
-                    <twig:ui:card:title>{{ 'Category'|trans }}</twig:ui:card:title>
-                    <twig:ui:card:description>
-                        {{ 'Manage Category'|trans }}
-                    </twig:ui:card:description>
-                </twig:ui:card:header>
-                <twig:ui:card:content>
-                    {{ data_table(datatable) }}
-                </twig:ui:card:content>
-            </twig:ui:card:root>
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 w-full xl:w-[95rem]">
+        <div class="flex flex-col gap-6 md:gap-8">
+            <div class="w-full">
+                <twig:ui:card:root class="w-full h-full">
+                    <twig:ui:card:header>
+                        <twig:ui:card:title>Catégories (parents nuls)</twig:ui:card:title>
+                        <twig:ui:card:description>
+                            Gérer les catégories principales, leurs couleurs et leurs actions rapides.
+                        </twig:ui:card:description>
+                    </twig:ui:card:header>
+                    <twig:ui:card:content>
+                        {% if rootCategories is not defined or rootCategories|length == 0 %}
+                            <div class="py-10 text-center text-sm text-muted-foreground">
+                                Aucune catégorie racine n'a encore été définie.
+                            </div>
+                        {% else %}
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="text-left text-xs uppercase tracking-wide text-muted-foreground border-b">
+                                            <th class="py-3 pr-4">Nom</th>
+                                            <th class="py-3 pr-4 hidden lg:table-cell">Description</th>
+                                            <th class="py-3 pr-4">Couleur</th>
+                                            <th class="py-3 pr-4 text-center">Sous-catégories</th>
+                                            <th class="py-3 pr-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y">
+                                        {% for category in rootCategories %}
+                                            <tr class="align-top">
+                                                <td class="py-4 pr-4">
+                                                    <div class="font-semibold text-foreground flex items-center gap-3">
+                                                        <span class="inline-flex h-8 w-8 rounded-full border border-white/40 shadow-inner"
+                                                              style="background: {{ category.color ?? '#2563eb' }}"></span>
+                                                        {{ category.name }}
+                                                    </div>
+                                                    {% if category.description %}
+                                                        <p class="text-xs text-muted-foreground lg:hidden mt-1">
+                                                            {{ category.description|slice(0, 80) ~ (category.description|length > 80 ? '…' : '') }}
+                                                        </p>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="py-4 pr-4 hidden lg:table-cell text-muted-foreground">
+                                                    {{ category.description ?? '—' }}
+                                                </td>
+                                                <td class="py-4 pr-4">
+                                                    <span class="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                                        <span class="inline-flex h-4 w-4 rounded-full border border-border"
+                                                              style="background: {{ category.color ?? '#94a3b8' }}"></span>
+                                                        {{ category.color ?? 'Non définie' }}
+                                                    </span>
+                                                </td>
+                                                <td class="py-4 pr-4 text-center">
+                                                    <span class="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-medium text-foreground/80">
+                                                        <twig:ux:icon name="lucide:git-branch" class="h-3.5 w-3.5"/>
+                                                        {{ category.categories|length }}
+                                                    </span>
+                                                </td>
+                                                <td class="py-4 pr-0">
+                                                    <div class="flex justify-end gap-2">
+                                                        <twig:ui:button:root
+                                                            href="{{ path('admin_category_edit', {id: category.id}) }}"
+                                                            size="sm"
+                                                            variant="outline"
+                                                        >
+                                                            Éditer
+                                                        </twig:ui:button:root>
+                                                        <form method="post" action="{{ path('admin_category_delete', {id: category.id}) }}" onsubmit="return confirm('Supprimer cette catégorie ?');">
+                                                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ category.id) }}">
+                                                            <twig:ui:button:root type="submit" variant="destructive" size="sm">
+                                                                Supprimer
+                                                            </twig:ui:button:root>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    </twig:ui:card:content>
+                </twig:ui:card:root>
+            </div>
+
+            <div>
+                <twig:ui:card:root class="w-full h-full">
+                    <twig:ui:card:header>
+                        <twig:ui:card:title>{{ 'Category'|trans }}</twig:ui:card:title>
+                        <twig:ui:card:description>
+                            {{ 'Manage Category'|trans }}
+                        </twig:ui:card:description>
+                    </twig:ui:card:header>
+                    <twig:ui:card:content>
+                        {{ data_table(datatable) }}
+                    </twig:ui:card:content>
+                </twig:ui:card:root>
+            </div>
         </div>
     </main>
+{% endblock %}
+{% block javascripts %}
+    {{ parent() }}
 {% endblock %}
