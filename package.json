@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "tailwindcss": "^4.1.7"
+    "tailwindcss": "^4.1.7",
+    "@hyeon/tailwindcss-animate": "^1.1.6"
   }
 }

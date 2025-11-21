@@ -88,7 +88,7 @@ module.exports = {
         },
     },
     plugins: [
-        require("./assets/vendor/@hyeon/tailwindcss-animate/tailwindcss-animate.index.js"),
+        require("@hyeon/tailwindcss-animate"),
         plugin(function({ addVariant }) {
             addVariant('turbo-frame', 'turbo-frame[src] &');
         }),
