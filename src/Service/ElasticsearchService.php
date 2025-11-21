@@ -121,10 +121,12 @@ class ElasticsearchService
 
     public function search(string $index, array $query): array
     {
-        return $this->client->search([
+        $response = $this->client->search([
             'index' => $this->getIndexName($index),
             'body' => $query
         ]);
+        
+        return $response->asArray();
     }
 
     public function bulk(array $operations): void

@@ -120,14 +120,62 @@ class ProductElasticsearchService
 
         // Add text search
         if (!empty($query)) {
-            $searchQuery['query']['bool']['must'][] = [
-                'multi_match' => [
-                    'query' => $query,
-                    'fields' => ['name^3', 'code^2', 'description', 'brand.name', 'manufacturer.name', 'form.name', 'categories.name'],
-                    'type' => 'best_fields',
-                    'fuzziness' => 'AUTO'
+            // Use should clause to combine multiple search strategies for better results
+            // This ensures that "Doli" will find both "Doli" and "Doliprane"
+            $searchQuery['query']['bool']['should'] = [
+                // 1. Exact and fuzzy match (highest priority for exact matches)
+                [
+                    'multi_match' => [
+                        'query' => $query,
+                        'fields' => ['name^5', 'code^4', 'brand.name', 'manufacturer.name', 'form.name', 'categories.name'],
+                        'type' => 'best_fields',
+                        'fuzziness' => 'AUTO',
+                        'boost' => 3
+                    ]
+                ],
+                // 2. Match phrase prefix - matches words that start with the query
+                // This will match "Doli" with "Doliprane" because "Doli" is a prefix
+                [
+                    'match_phrase_prefix' => [
+                        'name' => [
+                            'query' => $query,
+                            'boost' => 2.5,
+                            'max_expansions' => 50
+                        ]
+                    ]
+                ],
+                [
+                    'match_phrase_prefix' => [
+                        'code' => [
+                            'query' => $query,
+                            'boost' => 2.5,
+                            'max_expansions' => 50
+                        ]
+                    ]
+                ],
+                // 3. Simple match for partial word matching
+                [
+                    'match' => [
+                        'name' => [
+                            'query' => $query,
+                            'operator' => 'and',
+                            'boost' => 1.5
+                        ]
+                    ]
+                ],
+                [
+                    'match' => [
+                        'code' => [
+                            'query' => $query,
+                            'operator' => 'and',
+                            'boost' => 1.5
+                        ]
+                    ]
                 ]
             ];
+            
+            // At least one should clause must match
+            $searchQuery['query']['bool']['minimum_should_match'] = 1;
         } else {
             $searchQuery['query']['bool']['must'][] = ['match_all' => new \stdClass()];
         }
@@ -180,7 +228,13 @@ class ProductElasticsearchService
             ['createdAt' => ['order' => 'desc']]
         ];
 
-        $result = $this->elasticsearchService->search(self::INDEX_NAME, $searchQuery);
+        try {
+            $result = $this->elasticsearchService->search(self::INDEX_NAME, $searchQuery);
+        } catch (\Exception $e) {
+            // Log error and return empty array if Elasticsearch is unavailable
+            error_log('Elasticsearch search error: ' . $e->getMessage());
+            return [];
+        }
         
         // Extract product IDs from search results (preserve order)
         $productIds = [];
