@@ -27,6 +27,8 @@ services:
         curl -1sLf 'https://dl.cloudsmith.io/public/symfony/stable/setup.deb.sh'
         | bash
       - apt install -y symfony-cli
+      # Install Composer manually (official method)
+      - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
       # Install PHP extensions for FrankenPHP compatibility
       - docker-php-ext-enable pdo_pgsql opcache intl zip
     build:
