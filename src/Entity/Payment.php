@@ -27,6 +27,7 @@ enum PaymentMethod: string
     case METHODE_ORANGE_MONEY = 'orange_money'; 
     case METHOD_PAYPAL = 'paypal';
     case METHOD_STRIPE = 'stripe';
+    case METHOD_MPGS = 'mpgs';
 }
 
 #[ORM\Entity(repositoryClass: PaymentRepository::class)]
@@ -42,7 +43,7 @@ class Payment
     private ?string $transactionId = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Groups(['payment:read'])]
+    #[Groups(['payment:create', 'payment:read'])]
     private float $amount = 0;
 
     #[ORM\Column(length: 20, enumType: PaymentMethod::class)]
@@ -79,6 +80,7 @@ class Payment
     private Collection $orders;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['payment:create', 'payment:read'])]
     private ?string $reference = null;
 
     public function __construct()
@@ -121,26 +123,25 @@ class Payment
         return $this->method;
     }
 
-    public function setMethod(String $method): static
+    public function setMethod(string|PaymentMethod $method): static
     {
-        switch ($method) {
-            case 'mvola':
-                $method = PaymentMethod::METHODE_MVOLA;
-                break;
-            case 'airtel_money':
-                $method = PaymentMethod::METHODE_AIRTEL_MONEY;
-                break;
-            case 'orange_money':
-                $method = PaymentMethod::METHODE_ORANGE_MONEY;
-                break;
-            case 'paypal':
-                $method = PaymentMethod::METHOD_PAYPAL;
-                break;
-            case 'stripe':
-                $method = PaymentMethod::METHOD_STRIPE;
-                break;
+        // If already a PaymentMethod enum, use it directly
+        if ($method instanceof PaymentMethod) {
+            $this->method = $method;
+            return $this;
         }
-        $this->method = $method;
+
+        // Convert string to PaymentMethod enum
+        $this->method = match($method) {
+            'mvola' => PaymentMethod::METHODE_MVOLA,
+            'airtel_money' => PaymentMethod::METHODE_AIRTEL_MONEY,
+            'orange_money' => PaymentMethod::METHODE_ORANGE_MONEY,
+            'paypal' => PaymentMethod::METHOD_PAYPAL,
+            'stripe' => PaymentMethod::METHOD_STRIPE,
+            'mpgs' => PaymentMethod::METHOD_MPGS,
+            default => throw new \InvalidArgumentException("Invalid payment method: $method")
+        };
+        
         return $this;
     }
 
@@ -256,7 +257,8 @@ class Payment
     {
         return in_array($this->method, [
             PaymentMethod::METHOD_STRIPE,
-            PaymentMethod::METHOD_PAYPAL
+            PaymentMethod::METHOD_PAYPAL,
+            PaymentMethod::METHOD_MPGS
         ]);
     }
 
@@ -266,6 +268,7 @@ class Payment
         return [
             'Stripe' => PaymentMethod::METHOD_STRIPE,
             'PayPal' => PaymentMethod::METHOD_PAYPAL,
+            'MPGS' => PaymentMethod::METHOD_MPGS,
             'Mvola' => PaymentMethod::METHODE_MVOLA,
             'Airtel Money' => PaymentMethod::METHODE_AIRTEL_MONEY,
             'Orange Money' => PaymentMethod::METHODE_ORANGE_MONEY,
@@ -311,6 +314,7 @@ class Payment
         return match($this->method) {
             PaymentMethod::METHOD_STRIPE => 'Stripe',
             PaymentMethod::METHOD_PAYPAL => 'PayPal',
+            PaymentMethod::METHOD_MPGS => 'MPGS',
             PaymentMethod::METHODE_MVOLA => 'Mvola',
             PaymentMethod::METHODE_AIRTEL_MONEY => 'Airtel Money',
             PaymentMethod::METHODE_ORANGE_MONEY => 'Orange Money',

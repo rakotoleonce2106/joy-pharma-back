@@ -34,6 +34,40 @@ readonly class PaymentService
     public function updatePayment(Payment $payment): Payment
     {
         $this->manager->persist($payment);
+        $this->manager->flush();
+        return $payment;
+    }
+
+    public function findByTransactionId(string $transactionId): ?Payment
+    {
+        return $this->manager->getRepository(Payment::class)
+            ->findOneBy(['transactionId' => $transactionId]);
+    }
+
+    public function findByOrderId(string $orderReference): ?Payment
+    {
+        $order = $this->manager->getRepository(\App\Entity\Order::class)
+            ->findOneBy(['reference' => $orderReference]);
+        
+        if (!$order) {
+            return null;
+        }
+
+        return $order->getPayment();
+    }
+
+    public function updatePaymentStatusByOrderId(string $orderReference, PaymentStatus $newStatus): ?Payment
+    {
+        $payment = $this->findByOrderId($orderReference);
+        
+        if (!$payment) {
+            return null;
+        }
+
+        $payment->setStatus($newStatus);
+        $this->manager->persist($payment);
+        $this->manager->flush();
+        
         return $payment;
     }
 }

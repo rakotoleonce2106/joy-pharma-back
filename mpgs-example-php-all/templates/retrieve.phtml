@@ -1,0 +1,45 @@
+<!doctype html> 
+<html> 
+<?php require_once('partials/header.html'); ?>
+<body> 
+<?php require_once('partials/banner.html'); ?>
+ 
+<div class="container"> 
+    <div class="row"> 
+        <?php require_once('partials/navigation.html'); ?>
+        <div class="col-9"> 
+            <div class="row"> 
+                <form action="/retrieve" class="col-12 form-horizontal" method="post">  <h3>Retrieve Transaction</h3> 
+                    <div class="alert alert-warning" role="alert">
+                        A valid transaction ID and order ID are needed to retrieve a transaction.
+                        <br/><br/>
+                        To get these values, run the Pay process, then enter the values from the response.
+                    </div>
+                    <fieldset> 
+                            <input type="hidden" readonly="readonly" name="apiOperation" value="RETRIEVE_TRANSACTION" size="20" maxlength="80"/>
+                        <input type="hidden" readonly="readonly" name="method" value="PUT" size="20" maxlength="80"/>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="orderId">Order ID</label> 
+                            <div class="col-md-7"> 
+                                <input id= "orderId" required="" class="form-control input-md"  type="text" name="orderId" value="" size="8" maxlength="80" placeholder="[ORDER ID FROM EXISTING TRANSACTION]"/>
+                            </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="transactionId">Transaction ID</Void></label> 
+                            <div class="col-md-7"> 
+                                <input id= "transaction[targetTransactionId]" required="" class="form-control input-md"  type="text" name="transaction[targetTransactionId]" value="" size="8" maxlength="80" placeholder="[TRANSACTION ID FROM EXISTING TRANSACTION]"/>
+                            </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="process"></label> 
+                            <div class="col-md-7"> 
+                                <button id="process" name="process" class="btn btn-primary">Retrieve Transaction</button> 
+                            </div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+ <?php require_once('partials/spinner.html'); ?>
+
+</body>
+</html> 

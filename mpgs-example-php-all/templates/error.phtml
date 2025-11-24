@@ -1,0 +1,65 @@
+<!doctype html> 
+<html> 
+<head> 
+    <title>Gateway PHP Sample</title> 
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css"
+          integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="../../../../stylesheets/main.css"/>
+    <meta charset="UTF-8">
+</head>
+<body> 
+<?php require_once('partials/banner.html'); ?>
+<div class="container"> 
+    <div class="row"> 
+        <?php require_once('partials/navigation.html'); ?>
+        <div class="col-9"> 
+            <div class="row"> 
+                <div class="col-9 pl-4">
+                    <div class="alert alert-warning error" role="alert"><p>Your payment was <?= $responseStatus ?></p></div>
+                    <div class="container mt-4 ml-0">
+                        <div class="row">
+                            <div class="col">
+                                <h5>Order ID</h5>
+                            </div>
+                            <div class="col">
+                                <p><?= $orderId ?></p>
+                            </div>
+                        </div>
+                        <?php if($cause !== NULL) : ?>
+                            <div class="row">
+                                <div class="col">
+                                    <h5>Cause:</h5>
+                                </div>
+                                <div class="col">
+                                    <p><?= $cause ?></p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        <?php if($explanation !== NULL) : ?>
+                            <div class="row">
+                                <div class="col">
+                                    <h5>Details</h5>
+                                </div>
+                                <div class="col">
+                                    <p><?= $explanation ?></p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        <div class="row">
+                            <div class="col">
+                                <h5>Amount</h5>
+                            </div>
+                            <div class="col">
+                                <p><?= $orderAmount ?> &nbsp; <?= $currency ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php require_once('partials/spinner.html'); ?>
+
+</body>
+</html> 

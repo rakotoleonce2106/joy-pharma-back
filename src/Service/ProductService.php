@@ -296,17 +296,6 @@ readonly class  ProductService
             $this->manager->remove($favorite);
         }
 
-        // Remove all carts (OneToMany - no cascade)
-        $carts = $this->manager->getRepository(\App\Entity\Cart::class)
-            ->createQueryBuilder('c')
-            ->where('c.product = :product')
-            ->setParameter('product', $product)
-            ->getQuery()
-            ->getResult();
-        
-        foreach ($carts as $cart) {
-            $this->manager->remove($cart);
-        }
 
         // Remove all images associations (ManyToMany)
         // The MediaObject entities themselves are not deleted as they might be used elsewhere

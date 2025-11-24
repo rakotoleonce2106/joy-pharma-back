@@ -32,12 +32,12 @@ L'endpoint accepte uniquement le format `application/json`.
 
 | Paramètre | Type | Requis | Description |
 |-----------|------|--------|-------------|
-| `method` | string | Oui | Méthode de paiement. Actuellement, seule `"mvola"` est supportée |
+| `method` | string | Oui | Méthode de paiement. Actuellement, `"mvola"` et `"mpgs"` sont supportées |
 | `amount` | string/decimal | Oui | Montant du paiement (format décimal, ex: "100.00") |
 | `reference` | string | Oui | Référence de la commande (order reference) |
-| `phoneNumber` | string | Oui | Numéro de téléphone pour le paiement MVola (format: +261XXXXXXXXX) |
+| `phoneNumber` | string | Conditionnel | Numéro de téléphone pour le paiement MVola (format: +261XXXXXXXXX). Requis uniquement pour `"mvola"` |
 
-### Exemple de requête
+### Exemple de requête (MVola)
 
 ```json
 {
@@ -45,6 +45,16 @@ L'endpoint accepte uniquement le format `application/json`.
   "amount": "15000.00",
   "reference": "ORD-2024-001234",
   "phoneNumber": "+261341234567"
+}
+```
+
+### Exemple de requête (MPGS)
+
+```json
+{
+  "method": "mpgs",
+  "amount": "15000.00",
+  "reference": "ORD-2024-001234"
 }
 ```
 
@@ -56,7 +66,7 @@ L'endpoint accepte uniquement le format `application/json`.
 
 L'endpoint retourne un objet JSON contenant les informations de l'intent de paiement créé.
 
-**Structure de la réponse:**
+**Structure de la réponse (MVola):**
 ```json
 {
   "id": "serverCorrelationId",
@@ -67,15 +77,34 @@ L'endpoint retourne un objet JSON contenant les informations de l'intent de paie
 }
 ```
 
+**Structure de la réponse (MPGS):**
+```json
+{
+  "id": "sessionId",
+  "clientSecret": "sessionId",
+  "status": "pending",
+  "provider": "MPGS",
+  "reference": "ORD-2024-001234",
+  "sessionId": "sessionId",
+  "sessionVersion": "sessionVersion",
+  "successIndicator": "successIndicator",
+  "orderId": "orderId"
+}
+```
+
 **Champs de la réponse:**
 
 | Champ | Type | Description |
 |-------|------|-------------|
-| `id` | string | Identifiant unique de l'intent de paiement (serverCorrelationId) |
+| `id` | string | Identifiant unique de l'intent de paiement (serverCorrelationId pour MVola, sessionId pour MPGS) |
 | `clientSecret` | string | Secret client pour l'intent de paiement (utilisé pour confirmer le paiement) |
 | `status` | string | Statut de l'intent de paiement (généralement "pending") |
-| `provider` | string | Nom du fournisseur de paiement (ex: "Mvola") |
+| `provider` | string | Nom du fournisseur de paiement (ex: "Mvola", "MPGS") |
 | `reference` | string | Référence de la commande associée |
+| `sessionId` | string | (MPGS uniquement) Identifiant de session MPGS |
+| `sessionVersion` | string | (MPGS uniquement) Version de la session MPGS |
+| `successIndicator` | string | (MPGS uniquement) Indicateur de succès pour la session MPGS |
+| `orderId` | string | (MPGS uniquement) Identifiant de la commande MPGS |
 
 ### Erreurs
 
@@ -87,7 +116,7 @@ L'endpoint retourne un objet JSON contenant les informations de l'intent de paie
   "type": "https://tools.ietf.org/html/rfc2616#section-10",
   "title": "An error occurred",
   "status": 400,
-  "detail": "Invalid payment method. Only \"mvola\" is currently supported."
+  "detail": "Invalid payment method. Only \"mvola\" and \"mpgs\" are currently supported."
 }
 ```
 
@@ -269,7 +298,12 @@ $paymentIntent = json_decode($response->getBody(), true);
 
 ### Méthodes de paiement supportées
 
-Actuellement, seule la méthode `"mvola"` est supportée. Les autres méthodes de paiement (Stripe, PayPal, Airtel Money, Orange Money) ne sont pas encore implémentées dans cet endpoint.
+Actuellement, les méthodes `"mvola"` et `"mpgs"` sont supportées. Les autres méthodes de paiement (Stripe, PayPal, Airtel Money, Orange Money) ne sont pas encore implémentées dans cet endpoint.
+
+**MPGS (Mastercard Payment Gateway Services):**
+- Ne nécessite pas de numéro de téléphone
+- Retourne un `sessionId`, `sessionVersion` et `successIndicator` pour l'intégration avec le checkout MPGS
+- Utilise l'API REST de MPGS pour créer une session de checkout
 
 ### Format du numéro de téléphone
 

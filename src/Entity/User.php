@@ -96,11 +96,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Favorite::class, mappedBy: 'user')]
     private Collection $favorites;
 
-    /**
-     * @var Collection<int, Cart>
-     */
-    #[ORM\OneToMany(targetEntity: Cart::class, mappedBy: 'user')]
-    private Collection $carts;
 
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Delivery::class, cascade: ['persist', 'remove'])]
     #[Groups(['user:read'])]
@@ -138,7 +133,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->orders = new ArrayCollection();
         $this->deliverOrders = new ArrayCollection();
         $this->favorites = new ArrayCollection();
-        $this->carts = new ArrayCollection();
         $this->notifications = new ArrayCollection();
         $this->deliverySchedules = new ArrayCollection();
         $this->invoices = new ArrayCollection();
@@ -421,35 +415,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * @return Collection<int, Cart>
-     */
-    public function getCarts(): Collection
-    {
-        return $this->carts;
-    }
-
-    public function addCart(Cart $cart): static
-    {
-        if (!$this->carts->contains($cart)) {
-            $this->carts->add($cart);
-            $cart->setUser($this);
-        }
-
-        return $this;
-    }
-
-    public function removeCart(Cart $cart): static
-    {
-        if ($this->carts->removeElement($cart)) {
-            // set the owning side to null (unless already changed)
-            if ($cart->getUser() === $this) {
-                $cart->setUser(null);
-            }
-        }
-
-        return $this;
-    }
 
     public function getDelivery(): ?Delivery
     {

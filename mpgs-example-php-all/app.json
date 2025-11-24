@@ -1,0 +1,32 @@
+{
+  "name": "Gateway PHP Sample Code",
+  "description": "Sample PHP application for transactions on the Gateway",
+  "repository": "https://github.com/simplifycom/gateway-php-sample-code.git",
+  "website": "https://github.com/simplifycom/gateway-php-sample-code.git",
+  "env": {
+    "GATEWAY_MERCHANT_ID": {
+      "required": true,
+      "description": "Your TEST Gateway merchant ID (must begin with 'TEST')"
+    },
+    "GATEWAY_API_PASSWORD": {
+      "required": true,
+      "description": "Your TEST Gateway API password"
+    },
+    "GATEWAY_BASE_URL": {
+      "required": true,
+      "description": "The Gateway base URL to target. Use your region specific url if you have one.", 
+    },
+    "GATEWAY_API_VERSION": {
+      "required": false,
+      "description": "Your TEST Gateway API Version"
+    },
+    "GATEWAY_DEFAULT_CURRENCY": {
+      "required": false,
+      "description": "Your TEST Gateway Default Currency"
+    },
+    "WEBHOOKS_NOTIFICATION_SECRET": {
+      "required": false,
+      "description": "Webhook notification secret for payload validation"
+    }
+  }
+}

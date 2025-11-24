@@ -1,0 +1,80 @@
+<!doctype html> 
+<html> 
+<?php require_once('partials/header.html'); ?>
+<body> 
+<?php require_once('partials/banner.html'); ?>
+<div class="container"> 
+    <div class="row"> 
+        <?php require_once('partials/navigation.html'); ?>
+        <div class="col-9"> 
+            <div class="row"> 
+                <form action="/masterpass" class="col-12 form-horizontal" method="post">  <h3>Pay with Masterpass</h3> 
+                    <div class="alert alert-warning" role="alert">
+                        <p><strong>NOTE:</strong> You can also do an authorization via Masterpass, depending on your merchant settings.</p>
+                        <p>This page is for demonstration purposes only, to collect information like order amount and currency in order to generate the Masterpass button. In practical use this would be collected behind the scenes.</p>
+                        <p>Here are the steps to complete this transaction:</p>
+                        <ol>
+                            <li>Use the <a href="<?= $baseURL . '/api/documentation/apiDocumentation/rest-json/version/latest/operation/Session%3a%20Create%20Session.html'?>" target="_blank">CREATE_SESSION</a> operation to create a session.</li>
+                            <li>Use the <a href="<?= $baseURL .  '/api/documentation/apiDocumentation/rest-json/version/latest/operation/Session%3a%20Update%20Session.html'?>" target="_blank">UPDATE_SESSION</a> operation to update the session with information about the order (like amount, description, currency, etc).</li>
+                            <li>Use the <a href="<?= $baseURL .  '/api/documentation/apiDocumentation/rest-json/version/latest/operation/Wallet%3a%20Open%20Wallet.html'?>" target="_blank">OPEN_WALLET</a> operation to initiate the Masterpass interaction.</li>
+                            <li>Use the <a href="<?= $baseURL . '/api/documentation/integrationGuidelines/supportedFeatures/pickPaymentMethod/masterPassOnline.html'?>" target="_blank">Masterpass JavaScript library</a> to launch the Masterpass interaction.</li>
+                            <li>Use the URL parameters included in the Masterpass callback with the <a href="<?= $baseURL .  '/api/documentation/apiDocumentation/rest-json/version/latest/operation/Wallet%3a%20Update%20Session%20From%20Wallet.html'?>" target="_blank">UPDATE_SESSION_FROM_WALLET</a> operation to retrieve the payment details from Masterpass. </li>
+                            <li>Use the payment details to complete the transaction using <a href="<?= $baseURL .  '/api/documentation/apiDocumentation/rest-json/version/latest/operation/Transaction%3a%20%20Pay.html'?>" target="_blank">PAY</a> or <a href="<?= $baseURL .  '/api/documentation/apiDocumentation/rest-json/version/latest/operation/Transaction%3a%20%20Authorize.html'?>" target="_blank">AUTHORIZE</a>.</li>
+                        </ol>
+                        <p>View the full Masterpass documentation <a href="<?= $baseURL .  '/api/documentation/integrationGuidelines/supportedFeatures/pickPaymentMethod/masterPassOnline.html'?>" target="_blank">here</a>.</p>
+                    </div>
+                    <fieldset> 
+                        <input type="hidden" readonly="readonly" name="apiOperation" value="INITIATE_BROWSER_PAYMENT" size="20" maxlength="80"/>
+                        <input type="hidden" readonly="readonly" name="version" value="45" size="8" maxlength="80"/>
+                        <input type="hidden" readonly="readonly" name="method" value="PUT" size="20" maxlength="80"/>
+
+                        <div class="form-group">  <label class="col-md-7 control-label" for="wallet-provider">Wallet Provider</label> 
+                            <div class="col-md-7"> 
+                                <input id="wallet-provider" readonly="readonly" class="form-control input-md" type="text" size="19" maxlength="80"   name="walletProvider" value="MASTERPASS_ONLINE"/> 
+                            </div>
+                        </div>
+<!--                        <div class="form-group">  <label class="col-md-7 control-label" for="origin-url">Origin URL (where Masterpass will redirect after transaction is complete)</label>-->
+<!--                            <div class="col-md-7"> -->
+<!--                                <input id="origin-url" readonly="readonly" class="form-control input-md" type="text" size="19" maxlength="80"   name="masterpassOriginUrl" /> -->
+<!--                            </div>-->
+<!--                        </div>-->
+                        <div class="form-group">  <label class="col-md-7 control-label" for="order-id">Order ID (Auto generated unique Order ID)</label> 
+                            <div class="col-md-7"> 
+                                <input id="order-id"  class="form-control input-md" type="text" size="19" maxlength="80"   name="orderId" value="<?php echo 'order-' . bin2hex(openssl_random_pseudo_bytes(8)) ?>"/> 
+                            </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="transactionId">Transaction ID (Auto generated unique Transaction ID)</label> 
+                            <div class="col-md-7"> 
+                                <input id="transactionId" class="form-control input-md" type="text" size="19" maxlength="80"   name="transactionId" value="<?php echo 'trans-' . bin2hex(openssl_random_pseudo_bytes(8)) ?>"/> 
+                            </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label"
+                                                         for="amount">Amount</label> 
+                            <div class="col-md-7"> 
+                                <input id="amount" required="" class="form-control input-md" type="text"
+                                       name="amount" value="" size="8" maxlength="13"/>
+                            </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="currency">Currency</label> 
+                            <div class="col-md-7">
+                                <input class="form-control input-md" id="currency" type="text"
+                                       name="currency" size="8" maxlength="3" value="<?= $currency ?>" />
+                            </div>
+                             
+                        </div>
+                         
+                        <div class="form-group">  <label class="col-md-7 control-label" for="process"></label> 
+                            <div class="col-md-7"> 
+                                <button id="process" name="process" class="btn btn-primary">Generate Masterpass Button</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+ <?php require_once('partials/spinner.html'); ?>
+
+</body>
+</html> 

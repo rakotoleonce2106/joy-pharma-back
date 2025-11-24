@@ -13,7 +13,7 @@ class PaymentIntent
     public ?String $reference = null;
 
     #[Groups(['payment_intent:create'])]
-    #[Assert\Choice(choices: ['stripe', 'mvola'], message: 'Choose a valid payment method.', groups: ['payment_intent:create'])]
+    #[Assert\Choice(choices: ['stripe', 'mvola', 'mpgs'], message: 'Choose a valid payment method.', groups: ['payment_intent:create'])]
     public string $paymentMethod = 'stripe';
 
     #[Groups(['payment_intent:create'])]

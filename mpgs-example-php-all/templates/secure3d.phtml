@@ -1,0 +1,127 @@
+<!doctype html> 
+<html> 
+<?php require_once('partials/header.html'); ?>
+<body> 
+<script type="text/javascript">
+    var PhpSample = {
+        operation: function () {
+            return "CHECK_3DS_ENROLLMENT";
+        },
+        endpoint: function () {
+            return "/check3dsEnrollment/";
+        },
+        currency: function () {
+            return document.getElementById("transaction[currency]").value;
+        },
+        amount: function () {
+            return document.getElementById("transaction[amount]").value;
+        },
+        orderId: function () {
+            return document.getElementById("order-id").value;
+        },
+        transactionId: function () {
+            return document.getElementById("transactionId").value;
+        },
+        receipt: 'secureIdPayerAuthenticationForm'
+
+    };
+</script>
+<style id="antiClickjack">body{display:none !important;}</style>
+<script type="text/javascript" src="<?= $sessionjsurl ?>"></script>
+<?php require_once('partials/banner.html'); ?>
+<div class="container"> 
+    <div class="row"> 
+        <?php require_once('partials/navigation.html'); ?>
+        <div class="col-9"> 
+            <div class="row"> 
+                <fieldset> 
+                    <h3>Authorize with 3DS</h3> 
+                    <div class="alert alert-warning" role="alert">
+                        <ol>
+                            <p>Here are the processes that occur for this transaction:</p>
+                            <li>Create Hosted Session for the card details</li>
+                            <li>Check for 3DS enrollment using Hosted Session</li>
+                            <li>Redirect the user to the ACS simulator (in a real-life scenario this would be the
+                                issuer's authentication form)
+                            </li>
+                            <li>Complete the payment or authorization using the session ID and the 3D Secure ID</li>
+                        </ol>
+                    </div>
+                    <input type="hidden" name="transactionId" value="<?php echo bin2hex(openssl_random_pseudo_bytes(8)) ?>"/> 
+                    <input type="hidden" readonly="readonly" name="apiOperation" value="PAY" size="20" maxlength="80"/>
+                    <input type="hidden" readonly="readonly" name="method" value="PUT" size="20" maxlength="80"/>
+
+                    <div class="form-group">  <label class="col-md-7 control-label" for="order-id">Order ID (Auto
+                            generated unique Order ID)</label> 
+                        <div class="col-md-7"> 
+                            <input id="order-id" class="form-control input-md" type="text" size="19" maxlength="80"
+                                   name="orderId" value="<?php echo 'order-' . bin2hex(openssl_random_pseudo_bytes(8)) ?>"/> 
+                        </div>
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label" for="transactionId">Transaction ID
+                            (Auto generated unique Transaction ID)</label> 
+                        <div class="col-md-7"> 
+                            <input id="transactionId" class="form-control input-md" type="text" size="19" maxlength="80"
+                                   name="transactionId" value="<?php echo 'trans-' . bin2hex(openssl_random_pseudo_bytes(8)) ?>"/> 
+                        </div>
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label" for="funds-type">Source of
+                            Funds</label> 
+                        <div class="col-md-7"> 
+                            <input id="funds-type" class="form-control input-md" type="text" name="sourceOfFunds[type]"
+                                   value="CARD" size="19" maxlength="80" readonly/>
+                        </div>
+                         
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label" for="card-number">Card Number</label> 
+                        <div class="col-md-7"> 
+                            <input type="text" id="card-number" class="form-control input-md"  size="19" maxlength="80" readonly>
+                             </div>
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label" for="expiry-month">Expiry
+                            Month</label> 
+                        <div class="col-md-7"> 
+                            <input type="text" id="expiry-month" class="form-control  input-md" value=""   maxlength="2">
+                        </div>
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label" for="expiry-year">Expiry Year</label> 
+                        <div class="col-md-7"> 
+                            <input type="text" id="expiry-year" class="form-control  input-md" value=""   maxlength="2">
+                        </div>
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label" for="security-code">Security
+                            Code</label> 
+                        <div class="col-md-7"> 
+                            <input type="text" id="security-code" class="form-control  input-md" value=""   maxlength="4" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label"
+                                                     for="transaction[amount]">Amount</label> 
+                        <div class="col-md-7"> 
+                            <input id="transaction[amount]" required="" class="form-control input-md" type="text"
+                                   name="order[amount]" value="" size="8" maxlength="13"/>
+                        </div>
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label"
+                                                     for="transaction[currency]">Currency</label> 
+                        <div class="col-md-7">
+                            <input class="form-control input-md" id="transaction[currency]" type="text"
+                                   name="order[currency]" value="<?= $currency ?>" size="8" maxlength="3" />
+                        </div>
+                    </div>
+                    <div class="form-group">  <label class="col-md-7 control-label" for="process"></label> 
+                        <div class="col-md-7"> 
+                            <button class="btn btn-primary" id="payButton" onclick="pay();">Pay</button>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+        </div>
+    </div>
+</div>
+  <?php require_once('partials/spinner.html'); ?>
+
+<script src="../scripts/hostedSession.js"></script>
+</body>
+</html> 

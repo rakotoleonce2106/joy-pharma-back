@@ -1,0 +1,68 @@
+<!doctype html> 
+<html> 
+<?php require_once('partials/header.html'); ?>
+<body> 
+<?php require_once('partials/banner.html'); ?>
+<div class="container"> 
+    <div class="row"> 
+        <?php require_once('partials/navigation.html'); ?>
+        <div class="col-9"> 
+            <div class="row"> 
+                <form action="/receipt" class="col-12 form-horizontal" method="post">  <h3>Initiate Browser Payment</h3> 
+                    <fieldset> 
+
+                        <input type="hidden"  name="orderId" value="<?php echo 'order-' . bin2hex(openssl_random_pseudo_bytes(8)) ?>"/> 
+                        <input type="hidden" name="transactionId" value="<?php echo 'trans-' . bin2hex(openssl_random_pseudo_bytes(8)) ?>"/> 
+                        <input type="hidden" readonly="readonly" name="apiOperation" value="INITIATE_BROWSER_PAYMENT" size="20" maxlength="80"/>
+                        <input type="hidden" readonly="readonly" name="method" value="PUT" size="20" maxlength="80"/>
+
+                        <div class="form-group">  <label class="col-md-7 control-label" for="browserPayment[operation]">Payment Operation</label> 
+                            <div class="col-md-7"> 
+                                <input id="browserPayment[operation]" type="text" class="form-control input-md" name="browserPayment[operation]" value="PAY" size="10" maxlength="80"/>
+                                 </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="funds-type">Source of Funds</label> 
+                            <div class="col-md-7"> 
+                                <input id="funds-type" class="form-control input-md" type="text" name="sourceOfFunds[type]" value="PAYPAL" size="19" maxlength="80"/>
+                            </div>
+                             
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="browserPayment[returnUrl]">Return URL</label> 
+                            <div class="col-md-7"> 
+                                <input id="browserPayment[returnUrl]" class="form-control input-md"  type="text" name="browserPayment[returnUrl]" value="http://localhost:8001/browserPaymentReceipt" size="1" maxlength="2"/>
+                            </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="order[amount]">Amount</label> 
+                            <div class="col-md-7"> 
+                                <input id= "order[amount]" required="" class="form-control input-md"  type="text" name="order[amount]" value="" size="8" maxlength="13"/>
+                            </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="transaction[currency]">Currency</label> 
+                            <div class="col-md-7">
+                                <input class="form-control input-md" id="transaction[currency]"  type="text" name="order[currency]" value="<?= $currency ?>"  size="8" maxlength="3"/>
+                            </div>
+                        </div>
+                        <div class="form-group">  <label class="col-md-7 control-label" for="process"></label> 
+                            <div class="col-md-7"> 
+                                <button id="process" name="process" class="btn btn-primary">Initiate Browser Payment</button>
+                                 
+                            </div>
+                             
+                        </div>
+                         
+                    </fieldset>
+                     
+                </form>
+                 
+            </div>
+             
+        </div>
+         
+    </div>
+     
+</div>
+ <?php require_once('partials/spinner.html'); ?>
+
+</body>
+ 
+</html> 

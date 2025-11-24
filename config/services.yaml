@@ -7,6 +7,17 @@ parameters:
     api_url: '%env(API_URL)%'
     elasticsearch.hosts: []
     elasticsearch.index_prefix: 'joy_pharma'
+    
+    # MPGS Configuration
+    mpgs.gateway_base_url: '%env(MPGS_GATEWAY_BASE_URL)%'
+    mpgs.pki_base_url: '%env(MPGS_PKI_BASE_URL)%'
+    mpgs.merchant_id: '%env(MPGS_MERCHANT_ID)%'
+    mpgs.api_password: '%env(MPGS_API_PASSWORD)%'
+    mpgs.api_version: '%env(MPGS_API_VERSION)%'
+    mpgs.default_currency: '%env(MPGS_DEFAULT_CURRENCY)%'
+    mpgs.certificate_path: '%env(MPGS_CERTIFICATE_PATH)%'
+    mpgs.verify_peer: '%env(bool:MPGS_VERIFY_PEER)%'
+    mpgs.verify_host: '%env(int:MPGS_VERIFY_HOST)%'
 
 services:
     # default configuration for services in *this* file

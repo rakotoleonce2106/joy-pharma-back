@@ -23,8 +23,8 @@ class CreatePaymentIntent extends AbstractController
     public function __invoke(#[MapRequestPayload] Payment $payment): JsonResponse
     {
         $paymentMethod = $payment->getMethod();
-        if ($paymentMethod !== PaymentMethod::METHODE_MVOLA) {
-            throw new BadRequestHttpException('Invalid payment method. Only "mvola" is currently supported.');
+        if (!in_array($paymentMethod, [PaymentMethod::METHODE_MVOLA, PaymentMethod::METHOD_MPGS])) {
+            throw new BadRequestHttpException('Invalid payment method. Only "mvola" and "mpgs" are currently supported.');
         }
 
         $order = $this->orderService->findByReference($payment->getReference());
