@@ -23,7 +23,11 @@
             "branch": "main",
             "version": "1.0",
             "ref": "e281f6d2ae11f47e8a0c1813202d403b26586c43"
-        }
+        },
+        "files": [
+            "config/packages/mvola.yaml",
+            "config/routes/mvola.yaml"
+        ]
     },
     "doctrine/annotations": {
         "version": "2.0",

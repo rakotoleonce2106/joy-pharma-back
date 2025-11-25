@@ -12,7 +12,6 @@
         "api-platform/doctrine-orm": "^4.1.12",
         "api-platform/symfony": "^4.1.12",
         "dahromy/fusion-ui": ">=0.1.1",
-        "dahromy/mvola-bundle": "^1.0",
         "doctrine/annotations": "^2.0.2",
         "doctrine/dbal": "^3.9.4",
         "doctrine/doctrine-bundle": "^2.14",

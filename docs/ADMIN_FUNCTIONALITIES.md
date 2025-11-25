@@ -60,6 +60,35 @@ Le tableau de bord fournit une vue complète de l'état de la plateforme avec de
   - Les livreurs en ligne avec leur position actuelle
   - Les commandes actives (Pending, Confirmed, Processing, Shipped) avec leurs adresses de livraison
 
+#### API
+- **Endpoint:** `GET /api/admin/dashboard`
+- **Sécurité:** JWT + `ROLE_ADMIN`
+- **Réponse:**
+  ```json
+  {
+    "counters": {
+      "orders": { "total": 1200, "pending": 45, "completed": 980 },
+      "users": { "total": 5600, "deliverers": { "total": 120, "online": 18 } },
+      "inventory": { "products": 320, "stores": 45 }
+    },
+    "financials": {
+      "totalRevenue": 1520000.0,
+      "lastMonthRevenue": 82000.0,
+      "todayOrders": 34,
+      "todayRevenue": 175000.0
+    },
+    "map": {
+      "stores": [{ "id": 1, "name": "Pharmacie Centrale", "location": { "latitude": -18.9, "longitude": 47.5, "address": "..." } }],
+      "deliverers": { "count": 18, "items": [{ "id": 99, "fullName": "Toky Randria", "email": "toky@joy.pharma", "location": { "latitude": -18.8, "longitude": 47.4, "updatedAt": "2025-01-01T09:10:00+00:00" } }] },
+      "orders": [{ "id": 450, "reference": "ORD-2025-001", "status": "pending", "totalAmount": 45000, "location": { "latitude": -18.7, "longitude": 47.3 } }]
+    },
+    "lists": {
+      "recentOrders": [{ "id": 450, "reference": "ORD-2025-001", "status": "pending", "createdAt": "2025-01-01T08:45:00+00:00", "customer": { "id": 10, "fullName": "Tahina" } }],
+      "availableOrders": [{ "...": "..." }]
+    }
+  }
+  ```
+
 #### Commandes récentes
 - Liste des 10 dernières commandes créées
 - Affichage des commandes disponibles pour les pharmacies (commandes en attente sans livreur assigné)
