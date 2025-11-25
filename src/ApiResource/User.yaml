@@ -86,6 +86,79 @@ App\Entity\User:
                         type: integer
                       description: The ID of the location to remove
 
+        # Admin specific endpoints
+        admin_get_users:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/users'
+            security: 'is_granted("ROLE_ADMIN")'
+            provider: App\State\Admin\UserProvider
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'List all users (Admin)'
+                description: 'Get list of users with optional type filter (all, delivers, stores, customers)'
+                parameters:
+                    - name: type
+                      in: query
+                      schema:
+                          type: string
+                          enum: [all, delivers, stores, customers]
+                          default: all
+                      description: 'Filter users by type'
+
+        admin_get_user:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/users/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Get user by ID (Admin)'
+                description: 'Get detailed information about a specific user'
+
+        admin_create_user:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/users'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\UserInput
+            processor: App\State\Admin\UserProcessor
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Create new user (Admin)'
+                description: 'Create a new user account with specified roles and permissions'
+
+        admin_update_user:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/users/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\UserInput
+            processor: App\State\Admin\UserProcessor
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Update user (Admin)'
+                description: 'Update user information including roles and active status'
+
+        admin_delete_user:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/users/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete user (Admin)'
+                description: 'Permanently delete a user account'
+
+        admin_toggle_user_active:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/users/{id}/toggle-active'
+            security: 'is_granted("ROLE_ADMIN")'
+            processor: App\State\Admin\ToggleUserActiveProcessor
+            normalizationContext:
+                groups: ['id:read', 'user:read']
+            openapi:
+                summary: 'Toggle user active status (Admin)'
+                description: 'Activate or deactivate a user account'
+
 
     normalizationContext:
         groups: ['id:read','user:read','image:read','media_object:read','location:read']

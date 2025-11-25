@@ -48,3 +48,6 @@ App\Entity\Promotion:
                 summary: 'Delete promotion (Admin)'
                 description: 'Cannot delete promotions that have been used in orders'
 
+    normalizationContext:
+        groups: ['id:read', 'promotion:read']
+

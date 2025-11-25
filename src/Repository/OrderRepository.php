@@ -159,6 +159,88 @@ class OrderRepository extends ServiceEntityRepository
         return (float) ($qb->getQuery()->getSingleScalarResult() ?? 0);
     }
 
+    public function sumDeliveredTotalAmount(): float
+    {
+        $result = $this->createQueryBuilder('o')
+            ->select('SUM(o.totalAmount)')
+            ->where('o.status = :status')
+            ->setParameter('status', OrderStatus::STATUS_DELIVERED)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
+    public function sumDeliveredTotalAmountSince(\DateTimeInterface $since): float
+    {
+        $result = $this->createQueryBuilder('o')
+            ->select('SUM(o.totalAmount)')
+            ->where('o.status = :status')
+            ->andWhere('o.deliveredAt >= :since')
+            ->setParameter('status', OrderStatus::STATUS_DELIVERED)
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
+    public function sumDeliveredTotalAmountBetween(\DateTimeInterface $start, \DateTimeInterface $end): float
+    {
+        $result = $this->createQueryBuilder('o')
+            ->select('SUM(o.totalAmount)')
+            ->where('o.status = :status')
+            ->andWhere('o.deliveredAt >= :start')
+            ->andWhere('o.deliveredAt < :end')
+            ->setParameter('status', OrderStatus::STATUS_DELIVERED)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (float) ($result ?? 0);
+    }
+
+    public function countCreatedSince(\DateTimeInterface $since): int
+    {
+        $result = $this->createQueryBuilder('o')
+            ->select('COUNT(o.id)')
+            ->where('o.createdAt >= :since')
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return (int) ($result ?? 0);
+    }
+
+    public function findActiveOrdersWithLocation(int $limit = 50): array
+    {
+        return $this->createQueryBuilder('o')
+            ->select('o.id AS id', 'o.reference AS reference', 'o.totalAmount AS totalAmount', 'o.status AS status', 'l.latitude AS latitude', 'l.longitude AS longitude', 'l.address AS address')
+            ->leftJoin('o.location', 'l')
+            ->where('o.status IN (:statuses)')
+            ->andWhere('l.latitude IS NOT NULL')
+            ->andWhere('l.longitude IS NOT NULL')
+            ->setParameter('statuses', [
+                OrderStatus::STATUS_PENDING,
+                OrderStatus::STATUS_CONFIRMED,
+                OrderStatus::STATUS_PROCESSING,
+                OrderStatus::STATUS_SHIPPED,
+            ])
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    public function findRecentOrders(int $limit = 10): array
+    {
+        return $this->createQueryBuilder('o')
+            ->orderBy('o.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
 //    /**
 //     * @return Order[] Returns an array of Order objects
 //     */

@@ -56,3 +56,6 @@ App\Entity\Unit:
             openapi:
                 summary: 'Batch delete units (Admin)'
 
+    normalizationContext:
+        groups: ['id:read', 'unit:read']
+

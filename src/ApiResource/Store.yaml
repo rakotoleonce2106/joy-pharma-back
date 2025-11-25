@@ -56,3 +56,6 @@ App\Entity\Store:
             openapi:
                 summary: 'Batch delete stores (Admin)'
 
+    normalizationContext:
+        groups: ['id:read', 'store:read', 'location:read', 'user:read']
+

@@ -56,3 +56,6 @@ App\Entity\Form:
             openapi:
                 summary: 'Batch delete forms (Admin)'
 
+    normalizationContext:
+        groups: ['id:read', 'form:read']
+

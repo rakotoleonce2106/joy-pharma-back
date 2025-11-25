@@ -56,3 +56,6 @@ App\Entity\Manufacturer:
             openapi:
                 summary: 'Batch delete manufacturers (Admin)'
 
+    normalizationContext:
+        groups: ['id:read', 'manufacturer:read', 'image:read', 'media_object:read']
+

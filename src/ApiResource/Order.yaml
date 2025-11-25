@@ -226,6 +226,63 @@ App\Entity\Order:
                 summary: 'Report order issue'
                 description: 'Report an issue with an order'
 
+        # Admin specific endpoints
+        admin_get_orders:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/orders'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'order:read', 'location:read', 'user:read', 'product:read']
+            openapi:
+                summary: 'List all orders (Admin)'
+
+        admin_get_order:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/orders/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'order:read', 'location:read', 'user:read', 'product:read']
+            openapi:
+                summary: 'Get order by ID (Admin)'
+
+        admin_create_order:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/orders'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\OrderInput
+            processor: App\State\Admin\OrderProcessor
+            normalizationContext:
+                groups: ['id:read', 'order:read', 'location:read', 'user:read', 'product:read']
+            openapi:
+                summary: 'Create new order (Admin)'
+
+        admin_update_order:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/orders/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\OrderInput
+            processor: App\State\Admin\OrderProcessor
+            normalizationContext:
+                groups: ['id:read', 'order:read', 'location:read', 'user:read', 'product:read']
+            openapi:
+                summary: 'Update order (Admin)'
+
+        admin_delete_order:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/orders/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete order (Admin)'
+
+        admin_batch_delete_orders:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/orders/batch-delete'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\BatchDeleteInput
+            processor: App\State\Admin\BatchDeleteProcessor
+            openapi:
+                summary: 'Batch delete orders (Admin)'
+
     normalizationContext:
         groups: ['id:read','order:read']
 

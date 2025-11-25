@@ -35,6 +35,27 @@ class DeliveryLocationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * @return DeliveryLocation[]
+     */
+    public function findOnlineByUserIdsSince(array $userIds, \DateTimeInterface $threshold): array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('dl')
+            ->leftJoin('dl.deliveryPerson', 'u')
+            ->addSelect('u')
+            ->where('u.id IN (:ids)')
+            ->andWhere('dl.updatedAt >= :threshold')
+            ->setParameter('ids', $userIds)
+            ->setParameter('threshold', $threshold)
+            ->orderBy('dl.updatedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
 
 
