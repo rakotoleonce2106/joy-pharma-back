@@ -70,6 +70,10 @@ services:
         tags: 
             - { name: 'serializer.normalizer', priority: 100 }
     
+    App\Serializer\AdminDashboardDataNormalizer:
+        tags: 
+            - { name: 'serializer.normalizer', priority: 64 }
+    
     App\Service\DownlaodFileService:
         arguments:
             $projectDir: '%kernel.project_dir%'

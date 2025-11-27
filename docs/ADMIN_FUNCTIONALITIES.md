@@ -914,12 +914,47 @@ Toutes les réponses sont au format JSON avec les groupes de sérialisation appr
 
 | Méthode | Endpoint | Description |
 |---------|----------|-------------|
-| GET | `/api/admin/users` | Liste tous les utilisateurs (filtre: `?type=all|delivers|stores|customers`) |
+| GET | `/api/admin/users` | Liste tous les utilisateurs (filtres `type` et `role`) |
 | GET | `/api/admin/users/{id}` | Récupère un utilisateur par ID |
 | POST | `/api/admin/users` | Crée un nouvel utilisateur |
 | PUT | `/api/admin/users/{id}` | Met à jour un utilisateur |
 | DELETE | `/api/admin/users/{id}` | Supprime un utilisateur |
 | POST | `/api/admin/users/{id}/toggle-active` | Active/désactive un utilisateur |
+
+**Paramètres de requête `GET /api/admin/users`:**
+
+| Paramètre | Type | Valeurs | Description |
+|-----------|------|---------|-------------|
+| `type` | string | `all`, `delivers`, `stores`, `customers` | Filtre rapide prédéfini. Valeur par défaut: `all`. Ignoré si `role` est fourni. |
+| `role` | string | Exemple: `ROLE_ADMIN`, `ROLE_STORE`, `ROLE_DELIVER`, `ROLE_USER` | Filtre explicite sur un rôle précis. Prioritaire sur `type` si les deux sont présents. |
+
+**Réponse `GET /api/admin/users` (exemple):**
+
+```json
+[
+  {
+    "id": 42,
+    "email": "livreur@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "phone": "+261 34 00 000 00",
+    "roles": [
+      "ROLE_USER",
+      "ROLE_DELIVER"
+    ],
+    "active": true,
+    "image": {
+      "id": 12,
+      "contentUrl": "https://cdn.joy-pharma.mg/media/users/42/avatar.jpg"
+    },
+    "store": null,
+    "delivery": {
+      "id": 7
+      // ... autres champs Delivery ...
+    }
+  }
+]
+```
 
 **Body pour POST/PUT (UserInput):**
 ```json
