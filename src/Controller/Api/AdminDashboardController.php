@@ -1,19 +1,21 @@
 <?php
 
-namespace App\State\Admin;
+namespace App\Controller\Api;
 
-use ApiPlatform\Metadata\Operation;
-use ApiPlatform\State\ProviderInterface;
-use App\Dto\Admin\AdminDashboardData;
-use App\Entity\Order;
-use App\Entity\OrderStatus;
 use App\Repository\DeliveryLocationRepository;
 use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
 use App\Repository\StoreRepository;
 use App\Repository\UserRepository;
+use App\Entity\Order;
+use App\Entity\OrderStatus;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-class AdminDashboardProvider implements ProviderInterface
+#[IsGranted('ROLE_ADMIN')]
+class AdminDashboardController extends AbstractController
 {
     public function __construct(
         private readonly OrderRepository $orderRepository,
@@ -24,19 +26,29 @@ class AdminDashboardProvider implements ProviderInterface
     ) {
     }
 
-    public function provide(Operation $operation, array $uriVariables = [], array $context = []): AdminDashboardData
+    #[Route('/api/dashboard', name: 'api_admin_dashboard', methods: ['GET'])]
+    public function getDashboard(): JsonResponse
     {
-        $cards = $this->buildCounters();
-        $financials = $this->buildFinancials();
-        $mapData = $this->buildMapData();
-        $lists = $this->buildLists();
+        try {
+            $counters = $this->buildCounters();
+            $financials = $this->buildFinancials();
+            $map = $this->buildMapData();
+            $lists = $this->buildLists();
 
-        return new AdminDashboardData(
-            counters: $cards,
-            financials: $financials,
-            map: $mapData,
-            lists: $lists
-        );
+            $data = [
+                'counters' => $counters,
+                'financials' => $financials,
+                'map' => $map,
+                'lists' => $lists,
+            ];
+
+            return $this->json($data);
+        } catch (\Exception $e) {
+            return $this->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
     }
 
     private function buildCounters(): array
@@ -164,9 +176,6 @@ class AdminDashboardProvider implements ProviderInterface
         ];
     }
 
-    /**
-     * @param array|null $delivers Optional pre-fetched delivers
-     */
     private function getOnlineDeliverers(?array $delivers = null): array
     {
         $delivers ??= $this->userRepository->findByRole('ROLE_DELIVER');

@@ -191,6 +191,7 @@ App\Entity\Product:
             openapi:
                 summary: 'Batch delete products (Admin)'
                 description: 'Delete multiple products at once'
+        
 
     normalizationContext:
         groups: ['id:read','product:read','media_object:read','image:read','brand:read','manufacturer:read','category:read']

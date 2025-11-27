@@ -20,19 +20,6 @@ App\Dto\DashboardStats:
                           enum: [today, week, month, year]
                           default: today
 
-# Admin Dashboard
-App\Dto\Admin\AdminDashboardData:
-    operations:
-        admin_get_dashboard_stats:
-            class: ApiPlatform\Metadata\Get
-            uriTemplate: '/admin/dashboard'
-            security: 'is_granted("ROLE_ADMIN")'
-            provider: App\State\Admin\AdminDashboardProvider
-            read: false
-            openapi:
-                summary: 'Admin dashboard metrics'
-                description: 'Aggregate counters, financial KPIs, live map data (stores, deliverers, active orders) and latest orders for the admin dashboard.'
-
 # Earnings Stats
 App\Dto\EarningsStats:
     operations:

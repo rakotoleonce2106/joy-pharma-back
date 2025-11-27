@@ -96,7 +96,7 @@ App\Entity\User:
                 groups: ['id:read', 'user:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'List all users (Admin)'
-                description: 'Get list of users with optional type filter (all, delivers, stores, customers)'
+                description: 'Get list of users with optional type filter (all, delivers, stores, customers) or role filter'
                 parameters:
                     - name: type
                       in: query
@@ -105,6 +105,11 @@ App\Entity\User:
                           enum: [all, delivers, stores, customers]
                           default: all
                       description: 'Filter users by type'
+                    - name: role
+                      in: query
+                      schema:
+                          type: string
+                      description: 'Filter users by specific role (e.g., ROLE_ADMIN, ROLE_STORE, ROLE_DELIVER, ROLE_USER). Takes precedence over type filter if both are provided.'
 
         admin_get_user:
             class: ApiPlatform\Metadata\Get
