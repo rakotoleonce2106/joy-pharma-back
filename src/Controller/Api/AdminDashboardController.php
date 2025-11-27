@@ -7,7 +7,6 @@ use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
 use App\Repository\StoreRepository;
 use App\Repository\UserRepository;
-use App\Entity\Order;
 use App\Entity\OrderStatus;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -32,14 +31,10 @@ class AdminDashboardController extends AbstractController
         try {
             $counters = $this->buildCounters();
             $financials = $this->buildFinancials();
-            $map = $this->buildMapData();
-            $lists = $this->buildLists();
 
             $data = [
                 'counters' => $counters,
                 'financials' => $financials,
-                'map' => $map,
-                'lists' => $lists,
             ];
 
             return $this->json($data);
@@ -62,7 +57,22 @@ class AdminDashboardController extends AbstractController
 
         $delivers = $this->userRepository->findByRole('ROLE_DELIVER');
         $totalDelivers = \count($delivers);
-        $onlineDelivers = $this->getOnlineDeliverers($delivers)['count'];
+        
+        // Count online deliverers based on recent location updates
+        $deliverIds = array_map(static fn ($user) => $user->getId(), $delivers);
+        $onlineDelivers = 0;
+        if (!empty($deliverIds)) {
+            $onlineThreshold = new \DateTimeImmutable('-15 minutes');
+            $locations = $this->deliveryLocationRepository->findOnlineByUserIdsSince($deliverIds, $onlineThreshold);
+            $uniqueUsers = [];
+            foreach ($locations as $location) {
+                $user = $location->getDeliveryPerson();
+                if ($user && !isset($uniqueUsers[$user->getId()])) {
+                    $uniqueUsers[$user->getId()] = true;
+                }
+            }
+            $onlineDelivers = count($uniqueUsers);
+        }
 
         return [
             'orders' => [
@@ -101,116 +111,6 @@ class AdminDashboardController extends AbstractController
             'lastMonthRevenue' => $lastMonthRevenue,
             'todayOrders' => $todayOrders,
             'todayRevenue' => $todayRevenue,
-        ];
-    }
-
-    private function buildMapData(): array
-    {
-        $storePayload = $this->storeRepository->findAllWithLocations();
-
-        $deliverers = $this->getOnlineDeliverers();
-
-        $activeOrders = $this->orderRepository->findActiveOrdersWithLocation(limit: 50);
-        $orderPayload = array_map(
-            static function (array $order): array {
-                $status = $order['status'] instanceof OrderStatus ? $order['status']->value : $order['status'];
-                $location = ($order['latitude'] !== null && $order['longitude'] !== null) ? [
-                    'latitude' => $order['latitude'],
-                    'longitude' => $order['longitude'],
-                    'address' => $order['address'],
-                ] : null;
-
-                return [
-                    'id' => $order['id'],
-                    'reference' => $order['reference'],
-                    'totalAmount' => (float) $order['totalAmount'],
-                    'status' => $status,
-                    'location' => $location,
-                ];
-            },
-            $activeOrders
-        );
-
-        return [
-            'stores' => $storePayload,
-            'deliverers' => [
-                'count' => $deliverers['count'],
-                'items' => $deliverers['items'],
-            ],
-            'orders' => $orderPayload,
-        ];
-    }
-
-    private function buildLists(): array
-    {
-        $recentOrders = $this->orderRepository->findRecentOrders(10);
-        $availableOrders = $this->orderRepository->findAvailableOrders(10);
-
-        return [
-            'recentOrders' => array_map([$this, 'normalizeOrder'], $recentOrders),
-            'availableOrders' => array_map([$this, 'normalizeOrder'], $availableOrders),
-        ];
-    }
-
-    private function normalizeOrder(Order $order): array
-    {
-        $location = $order->getLocation();
-        $owner = $order->getOwner();
-
-        return [
-            'id' => $order->getId(),
-            'reference' => $order->getReference(),
-            'status' => $order->getStatus()->value,
-            'totalAmount' => (float) $order->getTotalAmount(),
-            'createdAt' => $order->getCreatedAt()?->format(\DATE_ATOM),
-            'customer' => $owner ? [
-                'id' => $owner->getId(),
-                'fullName' => $owner->getFullName(),
-                'phone' => $order->getPhone(),
-            ] : null,
-            'location' => $location ? [
-                'address' => $location->getAddress(),
-                'latitude' => $location->getLatitude(),
-                'longitude' => $location->getLongitude(),
-            ] : null,
-        ];
-    }
-
-    private function getOnlineDeliverers(?array $delivers = null): array
-    {
-        $delivers ??= $this->userRepository->findByRole('ROLE_DELIVER');
-        $deliverIds = array_map(static fn ($user) => $user->getId(), $delivers);
-
-        if (empty($deliverIds)) {
-            return ['count' => 0, 'items' => []];
-        }
-
-        $onlineThreshold = new \DateTimeImmutable('-15 minutes');
-        $locations = $this->deliveryLocationRepository->findOnlineByUserIdsSince($deliverIds, $onlineThreshold);
-
-        $unique = [];
-        foreach ($locations as $location) {
-            $user = $location->getDeliveryPerson();
-            if (!$user || isset($unique[$user->getId()])) {
-                continue;
-            }
-
-            $unique[$user->getId()] = [
-                'id' => $user->getId(),
-                'fullName' => $user->getFullName(),
-                'email' => $user->getEmail(),
-                'location' => [
-                    'latitude' => $location->getLatitude(),
-                    'longitude' => $location->getLongitude(),
-                    'address' => $location->getAddress(),
-                    'updatedAt' => $location->getUpdatedAt()?->format(\DATE_ATOM),
-                ],
-            ];
-        }
-
-        return [
-            'count' => \count($unique),
-            'items' => array_values($unique),
         ];
     }
 }
