@@ -126,61 +126,6 @@ class ProductController extends AbstractController
         return $this->redirectToRoute('admin_product', [], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/product/upload-json', name: 'admin_product_upload_json', defaults: ['title' => 'Upload Products JSON'])]
-    public function uploadJsonAction(Request $request): Response
-    {
-        if ($request->isMethod('POST')) {
-            $jsonContent = $request->request->get('json_content');
-            
-            if (empty($jsonContent)) {
-                $this->addErrorToast('Error!', 'JSON content is required.');
-                return $this->render('admin/product/upload_json.html.twig');
-            }
-
-            try {
-                $data = json_decode($jsonContent, true, 512, JSON_THROW_ON_ERROR);
-                
-                if (!is_array($data)) {
-                    $this->addErrorToast('Error!', 'JSON must be an array of products.');
-                    return $this->render('admin/product/upload_json.html.twig');
-                }
-
-                $count = 0;
-                $errors = [];
-                
-                foreach ($data as $index => $elt) {
-                    try {
-                        $this->productService->createProductFromJson($elt);
-                        $count++;
-                    } catch (\Exception $e) {
-                        $errors[] = "Product at index $index: " . $e->getMessage();
-                    }
-                }
-
-                if (count($errors) > 0) {
-                    $this->addWarningToast(
-                        'Partial success!', 
-                        "$count product(s) added successfully. " . count($errors) . " error(s) occurred."
-                    );
-                } else {
-                    $this->addSuccessToast(
-                        'Products added!', 
-                        "$count product(s) have been successfully added."
-                    );
-                }
-
-                return $this->redirectToRoute('admin_product', [], Response::HTTP_SEE_OTHER);
-            } catch (\JsonException $e) {
-                $this->addErrorToast('Error!', 'Invalid JSON format: ' . $e->getMessage());
-            } catch (\Exception $e) {
-                $this->addErrorToast('Error!', 'An error occurred: ' . $e->getMessage());
-            }
-        }
-
-        return $this->render('admin/product/upload_json.html.twig');
-    }
-
-
     private function handleCreate(Request $request, $form, Product $product): Response
     {
         $form->handleRequest($request);
