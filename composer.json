@@ -11,30 +11,23 @@
         "ext-iconv": "*",
         "api-platform/doctrine-orm": "^4.1.12",
         "api-platform/symfony": "^4.1.12",
-        "dahromy/fusion-ui": ">=0.1.1",
         "doctrine/annotations": "^2.0.2",
         "doctrine/dbal": "^3.9.4",
         "doctrine/doctrine-bundle": "^2.14",
         "doctrine/doctrine-migrations-bundle": "^3.4.2",
         "doctrine/orm": "^3.3.3",
         "elasticsearch/elasticsearch": "^8.0",
-        "gehrisandro/tailwind-merge-php": ">=1.1.2",
         "gesdinet/jwt-refresh-token-bundle": "^1.4",
-        "knplabs/knp-menu-bundle": "^3.5",
-        "kreyu/data-table-bundle": "^0.30.2",
         "lexik/jwt-authentication-bundle": "^3.1.1",
         "nelmio/cors-bundle": "^2.5",
         "phpdocumentor/reflection-docblock": "^5.6.2",
         "phpstan/phpdoc-parser": "^2.1",
         "runtime/frankenphp-symfony": "^0.2.0",
-        "symfony/asset": "7.2.*",
-        "symfony/asset-mapper": "7.2.*",
         "symfony/console": "7.2.*",
         "symfony/dotenv": "7.2.*",
         "symfony/expression-language": "7.2.*",
         "symfony/filesystem": "7.2.*",
         "symfony/flex": "^2.7",
-        "symfony/form": "7.2.*",
         "symfony/framework-bundle": "7.2.*",
         "symfony/mailer": "7.2.*",
         "symfony/monolog-bundle": "^3.10",
@@ -43,16 +36,10 @@
         "symfony/runtime": "7.2.*",
         "symfony/security-bundle": "7.2.*",
         "symfony/serializer": "7.2.*",
-        "symfony/stimulus-bundle": "^2.25.2",
         "symfony/string": "7.2.*",
         "symfony/translation": "7.2.*",
-        "symfony/twig-bundle": "7.2.*",
-        "symfony/ux-icons": "^2.25",
-        "symfony/ux-live-component": "^2.25.2",
-        "symfony/ux-turbo": "^2.25.2",
         "symfony/validator": "7.2.*",
         "symfony/yaml": "7.2.*",
-        "symfonycasts/tailwind-bundle": "^0.5.3",
         "vich/uploader-bundle": "^2.6.1"
     },
     "config": {
@@ -66,8 +53,7 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "src/",
-            "Jb\\Bundle\\ConfigKnpMenuBundle\\": "lib/config-knp-menu-bundle/"
+            "App\\": "src/"
         }
     },
     "autoload-dev": {
@@ -88,11 +74,6 @@
     "scripts": {
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd",
-            "importmap:install": "symfony-cmd",
-            "tailwind:build --minify": "symfony-cmd",
-            "ux:icons:warm-cache": "symfony-cmd",
-            "asset-map:compile": "symfony-cmd",
             "lexik:jwt:generate-keypair --overwrite": "symfony-cmd"
         },
         "post-install-cmd": [

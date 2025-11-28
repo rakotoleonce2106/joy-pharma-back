@@ -1,7 +1,0 @@
-<button {{ attributes.add(stimulus_target('ui--select', 'trigger')).without('class') }} type="button" class="{{ ['flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1', attributes.render('class')] | tailwind_merge }}">
-    {% block content %}{% endblock %}
-    <div class="flex space-x-1">
-        {{ ux_icon('radix-icons:cross-2', { class: 'h-4 w-4 opacity-50', ...stimulus_action('ui--select', 'remove', 'click') }) }}
-        <twig:ux:icon name="radix-icons:caret-sort" class="h-4 w-4 opacity-50" />
-    </div>
-</button>

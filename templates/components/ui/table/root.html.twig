@@ -1,6 +1,0 @@
-<div class="relative w-full overflow-auto">
-    <table {{ attributes.without('class') }}
-            class="{{ ['w-full caption-bottom text-sm', attributes.render('class')] | tailwind_merge }}">
-        {% block content %}{% endblock %}
-    </table>
-</div>

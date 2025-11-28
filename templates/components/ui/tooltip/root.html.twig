@@ -1,7 +1,0 @@
-{% props placement = 'top' %}
-
-<div {{ attributes.add(stimulus_controller('ui--tooltip', {placement})).without('class') }}
-        data-action="turbo:before-cache@window->ui--tooltip#hideTooltip"
-        class="{{ ['', attributes.render('class')] |tailwind_merge }}" data-state="closed" data-side="{{ placement }}">
-    {% block content %}{% endblock %}
-</div>

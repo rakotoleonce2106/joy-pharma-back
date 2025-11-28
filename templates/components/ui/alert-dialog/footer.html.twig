@@ -1,4 +1,0 @@
-<div{{ attributes.add(stimulus_target('ui--alert-dialog', 'footer')).without('class') }}
-        class="{{ ['flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', attributes.render('class')] | tailwind_merge }}">
-    {% block content %}{% endblock %}
-</div>

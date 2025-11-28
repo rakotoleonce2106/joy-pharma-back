@@ -1,5 +1,0 @@
-{% props placement = 'bottom', trigger = 'click', dismissAfter = null, matchWidth = false %}
-
-<div {{ attributes.add(stimulus_controller('ui--popover', { placement, trigger, dismissAfter, matchWidth })) }} data-state="closed">
-    {% block content %}{% endblock %}
-</div>

@@ -1,7 +1,0 @@
-{% props side = 'right' %}
-
-<div {{ attributes.add(stimulus_controller('ui--sheet', {side})).without('class') }}
-        data-action="turbo:before-cache@window->ui--sheet#close"
-        class="{{ ['', attributes.render('class')] | tailwind_merge }}" data-state="closed">
-    {% block content %}{% endblock %}
-</div>

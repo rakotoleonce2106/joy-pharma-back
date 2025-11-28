@@ -1,6 +1,0 @@
-{% props delay = 0 %}
-
-<span hidden {{ attributes.add(stimulus_target('ui--avatar', 'fallback')).without('class') }} data-delay="{{ delay }}"
-      class="{{ ['flex h-full w-full items-center justify-center rounded-full bg-muted', attributes.render('class')] | tailwind_merge }}">
-    {% block content %}{% endblock %}
-</span>

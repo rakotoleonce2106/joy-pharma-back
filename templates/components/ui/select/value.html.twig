@@ -1,7 +1,0 @@
-{% props placeholder = '' %}
-
-<span {{ attributes.add(stimulus_controller('ui--text')).without('class') }} class="pointer-events-none">
-    {% block content %}
-        {{ placeholder }}
-    {% endblock %}
-</span>

@@ -1,3 +1,0 @@
-<div {{ attributes.add(stimulus_target('ui--sheet', 'title')).without('class') }} class="{{ ['text-lg font-semibold text-foreground', attributes.render('class')] | tailwind_merge }}">
-    {% block content %}{% endblock %}
-</div>

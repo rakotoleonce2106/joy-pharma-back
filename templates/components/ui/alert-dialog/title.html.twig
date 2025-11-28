@@ -1,4 +1,0 @@
-<div{{ attributes.add(stimulus_target('ui--alert-dialog', 'title')).without('class') }}
-        class="{{ ['text-lg font-semibold', attributes.render('class')] | tailwind_merge }}">
-    {% block content %}{% endblock %}
-</div>

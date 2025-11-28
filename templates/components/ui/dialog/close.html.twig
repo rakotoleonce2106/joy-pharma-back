@@ -1,4 +1,0 @@
-<div {{ attributes.add(stimulus_target('ui--dialog', 'close')).without('class') }}
-        class="{{ ['', attributes.render('class')] | tailwind_merge }}" data-state="closed">
-    {% block content %}{% endblock %}
-</div>

@@ -1,8 +1,0 @@
-{% props placement = 'bottom', trigger = 'click', dismissAfter = null, matchWidth = false %}
-
-<div
-        {{ attributes.add(stimulus_controller('ui--popover', { placement, trigger, dismissAfter, matchWidth })) }}
-        data-action="turbo:before-cache@window->ui--popover#hide"
-        data-state="closed">
-    {% block content %}{% endblock %}
-</div>

@@ -24,8 +24,8 @@ api_platform:
         normalization_context:
             enable_max_depth: true
             max_depth: 2  # Limit serialization depth to prevent excessive joins
-    enable_docs: true
+    enable_docs: false
     enable_entrypoint: true
     enable_swagger_ui: false
-    enable_re_doc: true
+    enable_re_doc: false
     show_webby: false
