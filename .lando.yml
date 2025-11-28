@@ -9,6 +9,8 @@ config:
 services:
   appserver:
     overrides:
+      env_file:
+        - .env
       environment:
         # Xdebug
         XDEBUG_MODE: debug,develop
