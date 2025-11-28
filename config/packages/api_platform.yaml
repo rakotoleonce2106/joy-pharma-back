@@ -2,7 +2,7 @@ api_platform:
     title: Joy Pharma API Platform
     version: 1.0.0
     eager_loading:
-        max_joins: 50  # Increase the number based on your needs
+        max_joins: 150  # Increased to handle complex relation chains
     description: 'Joy-Pharma API'
     formats:
         jsonld: ['application/ld+json']
@@ -21,6 +21,9 @@ api_platform:
         stateless: true
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
+        normalization_context:
+            enable_max_depth: true
+            max_depth: 2  # Limit serialization depth to prevent excessive joins
     enable_docs: true
     enable_entrypoint: true
     enable_swagger_ui: false
