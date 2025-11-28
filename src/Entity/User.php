@@ -17,6 +17,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
 use Symfony\Component\Serializer\Annotation\SerializedName;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -34,7 +35,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[Assert\NotBlank]
     #[Assert\Email]
-    #[Groups(['user:read', 'user:create'])]
+    #[Groups(['user:read', 'user:create', 'user:store:read'])]
     #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
@@ -46,25 +47,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $plainPassword = null;
 
     #[ORM\Column(type: 'json')]
-    #[Groups(['user:read', 'user:create', 'user:update'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     private array $roles = [];
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user:read', 'user:create', 'user:update'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user:read', 'user:create', 'user:update'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:read', 'user:create', 'user:update'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     private ?string $phone = null;
 
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:store:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $image = null;
 
@@ -82,6 +83,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\ManyToOne(inversedBy: 'owner')]
     #[Groups(['user:read'])]
+    #[MaxDepth(1)]
     private ?Store $store = null;
 
     /**
@@ -99,6 +101,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Delivery::class, cascade: ['persist', 'remove'])]
     #[Groups(['user:read'])]
+    #[MaxDepth(1)]
     private ?Delivery $delivery = null;
 
     /**
@@ -125,6 +128,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\ManyToMany(targetEntity: Location::class, cascade: ['persist'])]
     #[ORM\JoinTable(name: 'user_locations')]
     #[Groups(['user:read'])]
+    #[MaxDepth(1)]
     private Collection $locations;
 
     public function __construct()

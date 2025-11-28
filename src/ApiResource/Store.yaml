@@ -5,7 +5,7 @@ App\Entity\Store:
             uriTemplate: '/admin/stores'
             security: 'is_granted("ROLE_ADMIN")'
             normalizationContext:
-                groups: ['id:read', 'store:read', 'location:read', 'user:read']
+                groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'List all stores (Admin)'
 
@@ -14,7 +14,7 @@ App\Entity\Store:
             uriTemplate: '/admin/stores/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             normalizationContext:
-                groups: ['id:read', 'store:read', 'location:read', 'user:read']
+                groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'Get store by ID (Admin)'
 
@@ -25,7 +25,7 @@ App\Entity\Store:
             input: App\Dto\Admin\StoreInput
             processor: App\State\Admin\StoreProcessor
             normalizationContext:
-                groups: ['id:read', 'store:read', 'location:read', 'user:read']
+                groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'Create new store (Admin)'
 
@@ -36,7 +36,7 @@ App\Entity\Store:
             input: App\Dto\Admin\StoreInput
             processor: App\State\Admin\StoreProcessor
             normalizationContext:
-                groups: ['id:read', 'store:read', 'location:read', 'user:read']
+                groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'Update store (Admin)'
 
@@ -57,5 +57,5 @@ App\Entity\Store:
                 summary: 'Batch delete stores (Admin)'
 
     normalizationContext:
-        groups: ['id:read', 'store:read', 'location:read', 'user:read']
+        groups: ['id:read', 'store:read', 'location:read', 'user:store:read']
 

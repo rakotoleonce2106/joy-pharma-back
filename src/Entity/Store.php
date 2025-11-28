@@ -84,6 +84,7 @@ class Store
     private ?Location $location = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[Groups(['store:read'])]
     private ?User $owner = null;
 
     /**
