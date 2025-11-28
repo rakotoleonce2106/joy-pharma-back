@@ -63,6 +63,26 @@ App\Entity\StoreProduct:
                       in: 'path'
                       description: 'The id of the store product'
 
+        admin_get_store_products:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/store-products'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read','store-product:read','product:read','image:read','media_object:read','store:read','location:read','user:store:read','store_setting:read']
+            openapi:
+                summary: 'List all store products (Admin)'
+                description: 'List every store product across all stores (Admin only)'
+
+        admin_get_store_product:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/store-products/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read','store-product:read','product:read','image:read','media_object:read','store:read','location:read','user:store:read','store_setting:read']
+            openapi:
+                summary: 'Get store product by ID (Admin)'
+                description: 'Retrieve any store product by ID (Admin only)'
+
     normalizationContext:
         groups: ['id:read','store-product:read','product:read','image:read','media_object:read']
     denormalizationContext:
