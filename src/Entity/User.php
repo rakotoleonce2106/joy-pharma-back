@@ -62,6 +62,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     private ?string $phone = null;
 
+    #[ORM\Column(length: 500, nullable: true)]
+    #[Groups(['user:read', 'user:update'])]
+    private ?string $fcmToken = null;
+
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
@@ -256,6 +260,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPhone(?string $phone): static
     {
         $this->phone = $phone;
+
+        return $this;
+    }
+
+    public function getFcmToken(): ?string
+    {
+        return $this->fcmToken;
+    }
+
+    public function setFcmToken(?string $fcmToken): static
+    {
+        $this->fcmToken = $fcmToken;
 
         return $this;
     }

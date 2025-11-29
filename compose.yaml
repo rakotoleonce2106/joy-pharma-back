@@ -15,6 +15,9 @@ services:
       # Elasticsearch
       ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST:-http://elasticsearch:9200}
       ELASTICSEARCH_INDEX_PREFIX: ${ELASTICSEARCH_INDEX_PREFIX:-joy_pharma}
+      # n8n Configuration
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://n8n:5678/}
+      N8N_API_KEY: ${N8N_API_KEY:-}
       # The two next lines can be removed after initial installation
       SYMFONY_VERSION: ${SYMFONY_VERSION:-}
       STABILITY: ${STABILITY:-stable}
@@ -82,6 +85,38 @@ services:
       retries: 5
       start_period: 40s
 
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-!ChangeMe!}
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://n8n:5678/}
+      - GENERIC_TIMEZONE=${TIMEZONE:-Europe/Paris}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=database
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB:-app}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER:-app}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD:-!ChangeMe!}
+      - DB_POSTGRESDB_PORT=5432
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
 volumes:
   caddy_data:
   caddy_config:
@@ -92,3 +127,4 @@ volumes:
   database_data:
 ###< doctrine/doctrine-bundle ###
   elasticsearch_data:
+  n8n_data:

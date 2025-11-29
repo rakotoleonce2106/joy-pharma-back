@@ -44,3 +44,7 @@ services:
   elasticsearch:
     ports:
       - "9200:9200"
+
+  n8n:
+    ports:
+      - "${N8N_PORT:-5678}:5678"
