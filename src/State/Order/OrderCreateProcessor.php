@@ -12,6 +12,7 @@ use App\Entity\Payment;
 use App\Entity\Promotion;
 use App\Entity\User;
 use App\Repository\ProductRepository;
+use App\Repository\ProductPromotionRepository;
 use App\Repository\PromotionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -27,6 +28,7 @@ class OrderCreateProcessor implements ProcessorInterface
         private readonly ValidatorInterface $validator,
         private readonly ProductRepository $productRepository,
         private readonly PromotionRepository $promotionRepository,
+        private readonly ProductPromotionRepository $productPromotionRepository,
         private readonly LoggerInterface $logger
     ) {}
 
@@ -198,10 +200,23 @@ class OrderCreateProcessor implements ProcessorInterface
                 throw new BadRequestHttpException(sprintf('Product %s (ID: %d) is not active', $product->getName(), $product->getId()));
             }
 
-            // Calculate total price
+            // Calculate base product price
             $productPrice = $product->getTotalPrice() ?? $product->getUnitPrice() ?? 0.0;
             if ($productPrice <= 0) {
                 throw new BadRequestHttpException(sprintf('Product %s (ID: %d) has invalid price', $product->getName(), $product->getId()));
+            }
+
+            // Apply product promotion if exists and not expired
+            $productPromotion = $this->productPromotionRepository->findActiveForProduct($product->getId());
+            if ($productPromotion && $productPromotion->isValid()) {
+                $productPrice = $productPromotion->calculateDiscountedPrice($productPrice);
+                $this->logger->info('Product promotion applied', [
+                    'product_id' => $product->getId(),
+                    'promotion_id' => $productPromotion->getId(),
+                    'original_price' => $product->getTotalPrice() ?? $product->getUnitPrice(),
+                    'discounted_price' => $productPrice,
+                    'discount_percentage' => $productPromotion->getDiscountPercentage(),
+                ]);
             }
 
             $totalPrice = $productPrice * $item->quantity;

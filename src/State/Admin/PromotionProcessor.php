@@ -6,7 +6,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\Admin\PromotionInput;
 use App\Entity\Promotion;
-use App\Entity\PromotionType;
+use App\Entity\DiscountType;
 use App\Repository\PromotionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -52,22 +52,29 @@ class PromotionProcessor implements ProcessorInterface
 
         // Set properties
         $promotion->setCode($data->code);
-        $promotion->setValue($data->value);
+        $promotion->setName($data->name);
+        $promotion->setDescription($data->description);
+        $promotion->setDiscountValue($data->discountValue);
+        $promotion->setMinimumOrderAmount($data->minimumOrderAmount);
+        $promotion->setMaximumDiscountAmount($data->maximumDiscountAmount);
         $promotion->setStartDate($data->startDate);
         $promotion->setEndDate($data->endDate);
-        $promotion->setDescription($data->description);
-        $promotion->setMinimumOrderAmount($data->minimumOrderAmount);
-
-        // Set type
-        try {
-            $type = PromotionType::from($data->type);
-            $promotion->setType($type);
-        } catch (\ValueError $e) {
-            throw new BadRequestHttpException('Invalid promotion type: ' . $data->type);
+        $promotion->setUsageLimit($data->usageLimit);
+        
+        if ($data->isActive !== null) {
+            $promotion->setIsActive($data->isActive);
         }
 
-        // Validate dates
-        if ($data->startDate >= $data->endDate) {
+        // Set discount type
+        try {
+            $discountType = DiscountType::from($data->discountType);
+            $promotion->setDiscountType($discountType);
+        } catch (\ValueError $e) {
+            throw new BadRequestHttpException('Invalid discount type: ' . $data->discountType . '. Must be "percentage" or "fixed_amount"');
+        }
+
+        // Validate dates if both are provided
+        if ($data->startDate && $data->endDate && $data->startDate >= $data->endDate) {
             throw new BadRequestHttpException('Start date must be before end date');
         }
 

@@ -7,6 +7,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Dto\OrderInput;
 use App\Dto\OrderSimulationOutput;
 use App\Entity\User;
+use App\Repository\ProductPromotionRepository;
 use App\Repository\ProductRepository;
 use App\Repository\PromotionRepository;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -19,7 +20,8 @@ class OrderSimulationProvider implements ProcessorInterface
         private readonly TokenStorageInterface $tokenStorage,
         private readonly ValidatorInterface $validator,
         private readonly ProductRepository $productRepository,
-        private readonly PromotionRepository $promotionRepository
+        private readonly PromotionRepository $promotionRepository,
+        private readonly ProductPromotionRepository $productPromotionRepository
     ) {
     }
 
@@ -105,10 +107,16 @@ class OrderSimulationProvider implements ProcessorInterface
                 throw new BadRequestHttpException(sprintf('Product %s (ID: %d) is not active', $product->getName(), $product->getId()));
             }
 
-            // Calculate total price
+            // Calculate base product price
             $productPrice = $product->getTotalPrice() ?? $product->getUnitPrice() ?? 0.0;
             if ($productPrice <= 0) {
                 throw new BadRequestHttpException(sprintf('Product %s (ID: %d) has invalid price', $product->getName(), $product->getId()));
+            }
+
+            // Apply product promotion if exists and not expired
+            $productPromotion = $this->productPromotionRepository->findActiveForProduct($product->getId());
+            if ($productPromotion && $productPromotion->isValid()) {
+                $productPrice = $productPromotion->calculateDiscountedPrice($productPrice);
             }
 
             $totalPrice = $productPrice * $item->quantity;
@@ -132,6 +140,14 @@ class OrderSimulationProvider implements ProcessorInterface
             }
 
             $productPrice = $product->getTotalPrice() ?? $product->getUnitPrice() ?? 0.0;
+            
+            // Apply product promotion if exists and not expired
+            $productPromotion = $this->productPromotionRepository->findActiveForProduct($product->getId());
+            $originalPrice = $productPrice;
+            if ($productPromotion && $productPromotion->isValid()) {
+                $productPrice = $productPromotion->calculateDiscountedPrice($productPrice);
+            }
+            
             $totalPrice = $productPrice * $item->quantity;
 
             $outputItems[] = [
@@ -139,7 +155,10 @@ class OrderSimulationProvider implements ProcessorInterface
                 'productName' => $product->getName(),
                 'quantity' => $item->quantity,
                 'unitPrice' => $productPrice,
+                'originalPrice' => $originalPrice !== $productPrice ? $originalPrice : null,
                 'totalPrice' => $totalPrice,
+                'hasPromotion' => $productPromotion && $productPromotion->isValid(),
+                'promotionDiscount' => $productPromotion && $productPromotion->isValid() ? $productPromotion->getDiscountPercentage() : null,
             ];
         }
 

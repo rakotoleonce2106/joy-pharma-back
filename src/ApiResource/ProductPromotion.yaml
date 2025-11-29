@@ -1,0 +1,52 @@
+App\Entity\ProductPromotion:
+    operations:
+        admin_get_product_promotions:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/product-promotions'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'product-promotion:read']
+            openapi:
+                summary: 'List all product promotions (Admin)'
+
+        admin_get_product_promotion:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/product-promotions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'product-promotion:read']
+            openapi:
+                summary: 'Get product promotion by ID (Admin)'
+
+        admin_create_product_promotion:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/product-promotions'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\ProductPromotionInput
+            processor: App\State\Admin\ProductPromotionProcessor
+            normalizationContext:
+                groups: ['id:read', 'product-promotion:read']
+            openapi:
+                summary: 'Create new product promotion (Admin)'
+
+        admin_update_product_promotion:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/product-promotions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\Admin\ProductPromotionInput
+            processor: App\State\Admin\ProductPromotionProcessor
+            normalizationContext:
+                groups: ['id:read', 'product-promotion:read']
+            openapi:
+                summary: 'Update product promotion (Admin)'
+
+        admin_delete_product_promotion:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/product-promotions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete product promotion (Admin)'
+
+    normalizationContext:
+        groups: ['id:read', 'product-promotion:read']
+
