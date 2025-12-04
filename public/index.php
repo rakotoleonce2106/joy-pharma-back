@@ -1,6 +1,10 @@
 <?php
 
 use App\Kernel;
+use App\Stub\TwigAutoloader;
+
+// Register Twig stub autoloader before Composer autoloader
+TwigAutoloader::register();
 
 // Load dotenv-vault before Symfony runtime
 require_once dirname(__DIR__).'/load-dotenv-vault.php';
