@@ -18,9 +18,7 @@ VOLUME /app/var/
 # persistent / runtime deps
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
-	acl \
 	file \
-	gettext \
 	git \
 	&& rm -rf /var/lib/apt/lists/*
 
@@ -35,9 +33,6 @@ RUN set -eux; \
 
 # https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
 ENV COMPOSER_ALLOW_SUPERUSER=1
-ENV COMPOSER_MEMORY_LIMIT=-1
-ENV COMPOSER_NO_INTERACTION=1
-ENV COMPOSER_DISABLE_XDEBUG_WARN=1
 
 ENV PHP_INI_SCAN_DIR=":$PHP_INI_DIR/app.conf.d"
 
@@ -49,12 +44,12 @@ RUN install-php-extensions pdo_pgsql
 
 COPY --link frankenphp/conf.d/10-app.ini $PHP_INI_DIR/app.conf.d/
 COPY --link --chmod=755 frankenphp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
-COPY --link frankenphp/Caddyfile /etc/caddy/Caddyfile
+COPY --link frankenphp/Caddyfile /etc/frankenphp/Caddyfile
 
 ENTRYPOINT ["docker-entrypoint"]
 
 HEALTHCHECK --start-period=60s CMD curl -f http://localhost:2019/metrics || exit 1
-CMD [ "frankenphp", "run", "--config", "/etc/caddy/Caddyfile" ]
+CMD [ "frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile" ]
 
 # Dev FrankenPHP image
 FROM frankenphp_base AS frankenphp_dev
@@ -70,7 +65,7 @@ RUN set -eux; \
 
 COPY --link frankenphp/conf.d/20-app.dev.ini $PHP_INI_DIR/app.conf.d/
 
-CMD [ "frankenphp", "run", "--config", "/etc/caddy/Caddyfile", "--watch" ]
+CMD [ "frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--watch" ]
 
 # Prod FrankenPHP image
 FROM frankenphp_base AS frankenphp_prod
@@ -81,54 +76,19 @@ ENV FRANKENPHP_CONFIG="import worker.Caddyfile"
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 COPY --link frankenphp/conf.d/20-app.prod.ini $PHP_INI_DIR/app.conf.d/
-COPY --link frankenphp/worker.Caddyfile /etc/caddy/worker.Caddyfile
+COPY --link frankenphp/worker.Caddyfile /etc/frankenphp/worker.Caddyfile
 
 # prevent the reinstallation of vendors at every changes in the source code
-COPY --link composer.json composer.lock ./
-
-# Verify Composer installation and update if needed
+COPY --link composer.* ./
 RUN set -eux; \
-	COMPOSER_BIN=$(which composer 2>/dev/null || echo /usr/local/bin/composer); \
-	if [ ! -f "$COMPOSER_BIN" ]; then \
-		echo "ERROR: Composer not found at $COMPOSER_BIN"; \
-		find /usr -name composer 2>/dev/null || true; \
-		exit 1; \
-	fi; \
-	php -d memory_limit=-1 "$COMPOSER_BIN" --version; \
-	php -d memory_limit=-1 "$COMPOSER_BIN" self-update --2 || true; \
-	php -d memory_limit=-1 "$COMPOSER_BIN" clear-cache || true
-
-# Install dependencies (we'll regenerate autoloader later for optimization)
-RUN set -eux; \
-	COMPOSER_BIN=$(which composer 2>/dev/null || echo /usr/local/bin/composer); \
-	php -d memory_limit=-1 "$COMPOSER_BIN" install \
-		--prefer-dist \
-		--no-dev \
-		--no-scripts \
-		--no-interaction \
-		--no-progress \
-		--verbose || { \
-		echo "=== COMPOSER INSTALL FAILED ==="; \
-		echo "Composer location: $COMPOSER_BIN"; \
-		echo "PHP version:"; \
-		php -v; \
-		echo "PHP extensions:"; \
-		php -m; \
-		echo "Running composer diagnose..."; \
-		php -d memory_limit=-1 "$COMPOSER_BIN" diagnose || true; \
-		echo "Checking composer.json..."; \
-		php -d memory_limit=-1 "$COMPOSER_BIN" validate --no-check-publish || true; \
-		exit 1; \
-	}
+	composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress
 
 # copy sources
-COPY --link . ./
-RUN rm -Rf frankenphp/
+COPY --link --exclude=frankenphp/ . ./
 
 RUN set -eux; \
-	COMPOSER_BIN=$(which composer 2>/dev/null || echo /usr/local/bin/composer); \
 	mkdir -p var/cache var/log; \
-	php -d memory_limit=-1 "$COMPOSER_BIN" dump-autoload --classmap-authoritative --no-dev; \
-	php -d memory_limit=-1 "$COMPOSER_BIN" dump-env prod; \
-	php -d memory_limit=-1 "$COMPOSER_BIN" run-script --no-dev post-install-cmd; \
+	composer dump-autoload --classmap-authoritative --no-dev; \
+	composer dump-env prod; \
+	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
