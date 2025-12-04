@@ -6,7 +6,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\User;
 use App\Service\UserService;
-use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Component\Mime\Email;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
@@ -42,11 +42,11 @@ class UpdatePasswordProcessor implements ProcessorInterface
 
         // Send confirmation email
         try {
-            $emailMessage = (new TemplatedEmail())
+            $emailMessage = (new Email())
                 ->from('noreply@joypharma.com')
                 ->to($user->getEmail())
                 ->subject('Password Changed - Joy Pharma')
-                ->htmlTemplate('emails/password_changed.html.twig');
+                ->html('<p>Your password has been successfully changed.</p>');
             $this->mailer->send($emailMessage);
         } catch (\Exception $e) {
             // Log error but don't fail the password change
