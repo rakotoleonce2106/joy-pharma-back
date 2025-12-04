@@ -5,6 +5,9 @@ services:
       context: .
       target: frankenphp_prod
     environment:
+      # Dotenv Vault key for decrypting .env.vault
+      # Get your key with: dotenv-vault keys production
+      DOTENV_KEY: ${DOTENV_KEY:-}
       APP_SECRET: ${APP_SECRET}
       MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}
       MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}

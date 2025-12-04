@@ -40,7 +40,8 @@
         "symfony/translation": "7.2.*",
         "symfony/validator": "7.2.*",
         "symfony/yaml": "7.2.*",
-        "vich/uploader-bundle": "^2.6.1"
+        "vich/uploader-bundle": "^2.6.1",
+        "dotenv-php/dotenv-vault": "^1.0"
     },
     "config": {
         "allow-plugins": {
