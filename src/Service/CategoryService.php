@@ -7,7 +7,6 @@ use App\Entity\MediaObject;
 use App\Repository\CategoryRepository;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Form\FormInterface;
 
 
 readonly class CategoryService

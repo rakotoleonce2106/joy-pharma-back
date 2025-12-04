@@ -6,7 +6,6 @@ use App\Entity\StoreCategory;
 use App\Entity\Store;
 use App\Repository\StoreCategoryRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Form\FormInterface;
 
 
 readonly class StoreCategoryService
