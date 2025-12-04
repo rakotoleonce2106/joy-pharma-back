@@ -104,6 +104,108 @@ class ProductElasticsearchService
         $this->elasticsearchService->deleteDocument(self::INDEX_NAME, (string) $productId);
     }
 
+    /**
+     * Search for product title suggestions using Elasticsearch
+     * Returns an array of unique product titles matching the query
+     * 
+     * @param string $query Search query (minimum 2 characters)
+     * @param int $limit Maximum number of suggestions to return (default: 10)
+     * @return array Array of unique product titles
+     */
+    public function searchTitleSuggestions(string $query, int $limit = 10): array
+    {
+        // Require minimum 2 characters for suggestions
+        if (strlen(trim($query)) < 2) {
+            return [];
+        }
+
+        $searchQuery = [
+            'size' => min($limit * 2, 50), // Get more results to ensure uniqueness
+            '_source' => ['name'], // Only return the name field
+            'query' => [
+                'bool' => [
+                    'must' => [
+                        ['term' => ['isActive' => true]] // Only active products
+                    ],
+                    'should' => [
+                        // Match phrase prefix for autocomplete (highest priority)
+                        [
+                            'match_phrase_prefix' => [
+                                'name' => [
+                                    'query' => $query,
+                                    'boost' => 3,
+                                    'max_expansions' => 50
+                                ]
+                            ]
+                        ],
+                        // Prefix match for better autocomplete (exact prefix match)
+                        [
+                            'prefix' => [
+                                'name.keyword' => [
+                                    'value' => strtolower($query),
+                                    'boost' => 2.5
+                                ]
+                            ]
+                        ],
+                        // Match query for partial matches
+                        [
+                            'match' => [
+                                'name' => [
+                                    'query' => $query,
+                                    'operator' => 'and',
+                                    'boost' => 2,
+                                    'fuzziness' => 'AUTO'
+                                ]
+                            ]
+                        ],
+                        // Match query with OR operator for more flexible matching
+                        [
+                            'match' => [
+                                'name' => [
+                                    'query' => $query,
+                                    'operator' => 'or',
+                                    'boost' => 1.5
+                                ]
+                            ]
+                        ]
+                    ],
+                    'minimum_should_match' => 1
+                ]
+            ],
+            'sort' => [
+                '_score' => ['order' => 'desc']
+            ]
+        ];
+
+        try {
+            $result = $this->elasticsearchService->search(self::INDEX_NAME, $searchQuery);
+        } catch (\Exception $e) {
+            // Log error and return empty array if Elasticsearch is unavailable
+            error_log('Elasticsearch suggestion search error: ' . $e->getMessage());
+            return [];
+        }
+
+        // Extract unique product titles from search results
+        $suggestions = [];
+        $seenTitles = [];
+        
+        foreach ($result['hits']['hits'] ?? [] as $hit) {
+            $title = $hit['_source']['name'] ?? null;
+            
+            if ($title && !in_array(strtolower($title), $seenTitles, true)) {
+                $suggestions[] = $title;
+                $seenTitles[] = strtolower($title);
+                
+                // Stop when we have enough unique suggestions
+                if (count($suggestions) >= $limit) {
+                    break;
+                }
+            }
+        }
+
+        return $suggestions;
+    }
+
     public function searchProducts(string $query, array $filters = [], int $page = 1, int $limit = 10): array
     {
         $from = ($page - 1) * $limit;
