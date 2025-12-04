@@ -81,7 +81,7 @@ COPY --link frankenphp/worker.Caddyfile /etc/frankenphp/worker.Caddyfile
 # prevent the reinstallation of vendors at every changes in the source code
 COPY --link composer.* ./
 RUN set -eux; \
-	composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress
+	composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress --ignore-platform-reqs
 
 # copy sources
 COPY --link --exclude=frankenphp/ . ./
