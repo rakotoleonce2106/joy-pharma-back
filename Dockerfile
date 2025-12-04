@@ -89,6 +89,9 @@ COPY --link --exclude=frankenphp/ . ./
 RUN set -eux; \
 	mkdir -p var/cache var/log; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
+	if [ ! -f .env ]; then \
+		echo "APP_ENV=prod" > .env; \
+	fi; \
 	composer dump-env prod; \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
