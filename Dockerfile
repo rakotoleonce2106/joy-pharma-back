@@ -86,28 +86,49 @@ COPY --link frankenphp/worker.Caddyfile /etc/caddy/worker.Caddyfile
 # prevent the reinstallation of vendors at every changes in the source code
 COPY --link composer.json composer.lock ./
 
-# Set PHP memory limit for Composer and update Composer
+# Verify Composer installation and update if needed
 RUN set -eux; \
-	php -d memory_limit=-1 /usr/local/bin/composer self-update --2 || true; \
-	php -d memory_limit=-1 /usr/local/bin/composer clear-cache || true
+	COMPOSER_BIN=$(which composer 2>/dev/null || echo /usr/local/bin/composer); \
+	if [ ! -f "$COMPOSER_BIN" ]; then \
+		echo "ERROR: Composer not found at $COMPOSER_BIN"; \
+		find /usr -name composer 2>/dev/null || true; \
+		exit 1; \
+	fi; \
+	php -d memory_limit=-1 "$COMPOSER_BIN" --version; \
+	php -d memory_limit=-1 "$COMPOSER_BIN" self-update --2 || true; \
+	php -d memory_limit=-1 "$COMPOSER_BIN" clear-cache || true
 
+# Install dependencies (we'll regenerate autoloader later for optimization)
 RUN set -eux; \
-	php -d memory_limit=-1 /usr/local/bin/composer install \
+	COMPOSER_BIN=$(which composer 2>/dev/null || echo /usr/local/bin/composer); \
+	php -d memory_limit=-1 "$COMPOSER_BIN" install \
 		--prefer-dist \
 		--no-dev \
-		--no-autoloader \
 		--no-scripts \
 		--no-interaction \
 		--no-progress \
-		--optimize-autoloader || (echo "Composer install failed, showing error:" && php -d memory_limit=-1 /usr/local/bin/composer diagnose && exit 1)
+		--verbose || { \
+		echo "=== COMPOSER INSTALL FAILED ==="; \
+		echo "Composer location: $COMPOSER_BIN"; \
+		echo "PHP version:"; \
+		php -v; \
+		echo "PHP extensions:"; \
+		php -m; \
+		echo "Running composer diagnose..."; \
+		php -d memory_limit=-1 "$COMPOSER_BIN" diagnose || true; \
+		echo "Checking composer.json..."; \
+		php -d memory_limit=-1 "$COMPOSER_BIN" validate --no-check-publish || true; \
+		exit 1; \
+	}
 
 # copy sources
 COPY --link . ./
 RUN rm -Rf frankenphp/
 
 RUN set -eux; \
+	COMPOSER_BIN=$(which composer 2>/dev/null || echo /usr/local/bin/composer); \
 	mkdir -p var/cache var/log; \
-	php -d memory_limit=-1 /usr/local/bin/composer dump-autoload --classmap-authoritative --no-dev; \
-	php -d memory_limit=-1 /usr/local/bin/composer dump-env prod; \
-	php -d memory_limit=-1 /usr/local/bin/composer run-script --no-dev post-install-cmd; \
+	php -d memory_limit=-1 "$COMPOSER_BIN" dump-autoload --classmap-authoritative --no-dev; \
+	php -d memory_limit=-1 "$COMPOSER_BIN" dump-env prod; \
+	php -d memory_limit=-1 "$COMPOSER_BIN" run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
