@@ -3,14 +3,10 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use Gesdinet\JWTRefreshTokenBundle\Entity\RefreshToken as BaseRefreshToken;
+use Gesdinet\JWTRefreshTokenBundle\Model\AbstractRefreshToken;
 
-/**
- * @ORM\Entity
- * @ORM\Table("refresh_tokens")
- */
 #[ORM\Entity]
 #[ORM\Table(name: 'refresh_tokens')]
-class RefreshToken extends BaseRefreshToken
+class RefreshToken extends AbstractRefreshToken
 {
 }
