@@ -39,9 +39,9 @@ dotenv-vault build
 
 ## Configuration GitHub Actions
 
-1. Obtenez votre `DOTENV_KEY` pour l'environnement CI:
+1. Obtenez votre `DOTENV_KEY` pour l'environnement de production:
 ```bash
-dotenv-vault keys ci
+dotenv-vault keys production
 ```
 
 2. Ajoutez `DOTENV_KEY` comme secret dans GitHub:
@@ -49,9 +49,15 @@ dotenv-vault keys ci
    - Ajoutez un nouveau secret nommé `DOTENV_KEY`
    - Collez la valeur obtenue (commence par `dotenv://`)
 
-3. Le workflow de déploiement utilisera automatiquement cette clé pour déchiffrer les variables d'environnement.
+3. Le workflow de déploiement (`.github/workflows/deploy.yml`) est déjà configuré pour passer `DOTENV_KEY` comme build argument au Docker build.
 
-**Note importante**: `DOTENV_KEY` doit être défini comme variable d'environnement au **runtime** du conteneur Docker (pas au moment du build). Assurez-vous de définir `DOTENV_KEY` dans votre configuration de déploiement (docker-compose, Kubernetes, etc.).
+4. **GitHub Auto-build add-on** (optionnel mais recommandé):
+   - Activez l'add-on "GitHub Auto-build" depuis votre compte dotenv.org
+   - Autorisez GitHub et sélectionnez ce dépôt
+   - Cela créera automatiquement une PR qui ajoute `.env.vault` à votre repo
+   - Chaque fois que vous modifiez des variables via l'UI dotenv, une PR sera automatiquement créée pour mettre à jour `.env.vault`
+
+**Note importante**: `DOTENV_KEY` est passé comme build argument dans le workflow GitHub Actions. Pour le runtime du conteneur Docker, assurez-vous également de définir `DOTENV_KEY` dans votre configuration de déploiement (docker-compose, Kubernetes, etc.) si vous avez besoin des variables d'environnement au runtime.
 
 ## Utilisation locale
 

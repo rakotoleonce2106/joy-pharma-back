@@ -86,12 +86,15 @@ RUN set -eux; \
 # copy sources
 COPY --link --exclude=frankenphp/ . ./
 
+# Create minimal .env file if it doesn't exist (needed for composer dump-env)
+RUN if [ ! -f .env ]; then \
+	echo "APP_ENV=prod" > .env; \
+	echo "APP_SECRET=" >> .env; \
+	fi
+
 RUN set -eux; \
 	mkdir -p var/cache var/log; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
-	if [ ! -f .env ]; then \
-		echo "APP_ENV=prod" > .env; \
-	fi; \
 	composer dump-env prod; \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
