@@ -1,5 +1,8 @@
 <?php
 
+// Load Twig stub autoloader manually before Composer autoloader
+require_once dirname(__DIR__) . '/src/Stub/TwigAutoloader.php';
+
 use App\Kernel;
 use App\Stub\TwigAutoloader;
 
