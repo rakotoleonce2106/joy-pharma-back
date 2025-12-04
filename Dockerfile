@@ -35,6 +35,9 @@ RUN set -eux; \
 
 # https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
 ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV COMPOSER_MEMORY_LIMIT=-1
+ENV COMPOSER_NO_INTERACTION=1
+ENV COMPOSER_DISABLE_XDEBUG_WARN=1
 
 ENV PHP_INI_SCAN_DIR=":$PHP_INI_DIR/app.conf.d"
 
@@ -82,8 +85,21 @@ COPY --link frankenphp/worker.Caddyfile /etc/caddy/worker.Caddyfile
 
 # prevent the reinstallation of vendors at every changes in the source code
 COPY --link composer.json composer.lock ./
+
+# Set PHP memory limit for Composer and update Composer
 RUN set -eux; \
-	composer install --prefer-dist --no-dev --no-autoloader --no-scripts --no-interaction
+	php -d memory_limit=-1 /usr/local/bin/composer self-update --2 || true; \
+	php -d memory_limit=-1 /usr/local/bin/composer clear-cache || true
+
+RUN set -eux; \
+	php -d memory_limit=-1 /usr/local/bin/composer install \
+		--prefer-dist \
+		--no-dev \
+		--no-autoloader \
+		--no-scripts \
+		--no-interaction \
+		--no-progress \
+		--optimize-autoloader || (echo "Composer install failed, showing error:" && php -d memory_limit=-1 /usr/local/bin/composer diagnose && exit 1)
 
 # copy sources
 COPY --link . ./
@@ -91,7 +107,7 @@ RUN rm -Rf frankenphp/
 
 RUN set -eux; \
 	mkdir -p var/cache var/log; \
-	composer dump-autoload --classmap-authoritative --no-dev; \
-	composer dump-env prod; \
-	composer run-script --no-dev post-install-cmd; \
+	php -d memory_limit=-1 /usr/local/bin/composer dump-autoload --classmap-authoritative --no-dev; \
+	php -d memory_limit=-1 /usr/local/bin/composer dump-env prod; \
+	php -d memory_limit=-1 /usr/local/bin/composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
