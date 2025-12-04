@@ -1,15 +1,8 @@
 #!/usr/bin/env php
 <?php
 
-// Load Twig stub autoloader manually before Composer autoloader
-require_once dirname(__DIR__) . '/src/Stub/TwigAutoloader.php';
-
 use App\Kernel;
-use App\Stub\TwigAutoloader;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
-
-// Register Twig stub autoloader before Composer autoloader
-TwigAutoloader::register();
 
 if (!is_dir(dirname(__DIR__).'/vendor')) {
     throw new LogicException('Dependencies are missing. Try running "composer install".');

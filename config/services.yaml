@@ -33,6 +33,7 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+            - '../src/Stub/'
         
     App\Security\CustomEntryPoint:
         tags: [ 'security.entry_point' ]
