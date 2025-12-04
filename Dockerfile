@@ -81,9 +81,8 @@ COPY --link frankenphp/conf.d/20-app.prod.ini $PHP_INI_DIR/app.conf.d/
 COPY --link frankenphp/worker.Caddyfile /etc/caddy/worker.Caddyfile
 
 # prevent the reinstallation of vendors at every changes in the source code
-COPY --link composer.json composer.lock symfony.lock ./
+COPY --link composer.json composer.lock ./
 RUN set -eux; \
-	composer --version; \
 	composer install --prefer-dist --no-dev --no-autoloader --no-scripts --no-interaction
 
 # copy sources
