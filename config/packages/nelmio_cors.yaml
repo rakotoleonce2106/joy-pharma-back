@@ -1,7 +1,7 @@
 nelmio_cors:
     defaults:
         origin_regex: true
-        allow_origin: ['^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$']
+        allow_origin: ['^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$', '^https?://(.*\.)?joy-pharma\.com$']
         allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
         allow_headers: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
         expose_headers: ['Link']
@@ -9,7 +9,7 @@ nelmio_cors:
         allow_credentials: true
     paths:
         '^/api':
-            allow_origin: ['http://localhost:3000']
+            allow_origin: ['http://localhost:3000', 'https://back-preprod.joy-pharma.com', 'https://www.joy-pharma.com', 'https://joy-pharma.com', '^https?://(.*\.)?joy-pharma\.com$']
             allow_headers: ['*']
             allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
             max_age: 3600

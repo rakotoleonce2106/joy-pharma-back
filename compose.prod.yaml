@@ -5,9 +5,16 @@ services:
       context: .
       target: frankenphp_prod
     environment:
+      # Domain configuration for preprod
+      SERVER_NAME: ${SERVER_NAME:-back-preprod.joy-pharma.com}
       # Dotenv Vault key for decrypting .env.vault
       # Get your key with: dotenv-vault keys production
       DOTENV_KEY: ${DOTENV_KEY:-}
       APP_SECRET: ${APP_SECRET}
       MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}
       MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}
+      # Mercure public URL for preprod
+      MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:-https://back-preprod.joy-pharma.com/.well-known/mercure}
+      # n8n configuration for preprod
+      N8N_HOST: ${N8N_HOST:-back-preprod.joy-pharma.com}
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
