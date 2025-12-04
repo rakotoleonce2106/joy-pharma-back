@@ -37,3 +37,7 @@
 .env.staging
 .env.test
 ###< Environment files ### 
+.env*
+.flaskenv*
+!.env.project
+!.env.vault

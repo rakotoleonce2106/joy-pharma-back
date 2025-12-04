@@ -32,3 +32,8 @@ vendor/
 .env.local
 .env.local.php
 .env.test
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
