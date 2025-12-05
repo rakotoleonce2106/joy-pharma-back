@@ -101,29 +101,29 @@ jobs:
             echo "$DOTENV_ME" | dotenv-vault login
             
             # Pull the .env.vault file for production environment
-            dotenv-vault pull production .env.vault || {
-              echo "Error: Failed to pull .env.vault from dotenv-vault"
+            dotenv-vault pull production .env.production  || {
+              echo "Error: Failed to pull .env.production from dotenv-vault"
               exit 1
             }
             
             # Verify the file exists
-            if [ ! -f .env.vault ]; then
-              echo "Error: .env.vault file not found after pull"
+            if [ ! -f .env.production ]; then
+              echo "Error: .env.production file not found after pull"
               exit 1
             fi
             
-            echo ".env.vault file pulled successfully"
-            ls -la .env.vault
+            echo ".env.production file pulled successfully"
+            ls -la .env.production
           fi
       -
-        name: Copy .env.vault to server
+        name: Copy .env.production to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          source: ".env.vault"
+          source: ".env.production"
           target: "joypharma/"
           strip_components: 0
 
