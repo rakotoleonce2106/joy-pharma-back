@@ -59,12 +59,111 @@ jobs:
           build-args: |
             DOTENV_KEY=${{ secrets.DOTENV_KEY }}
 
-  deploy:
-    name: Deploy to Server
+  pull-vault:
+    name: Pull and Copy .env.vault
     runs-on: ubuntu-latest
     needs: build-and-push
     if: github.ref == 'refs/heads/preprod'
     steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      -
+        name: Install dotenv-vault CLI
+        run: npm install -g dotenv-vault
+      -
+        name: Pull .env.vault from dotenv-vault
+        env:
+          DOTENV_KEY: ${{ secrets.DOTENV_KEY }}
+          DOTENV_ME: ${{ secrets.DOTENV_ME }}
+        run: |
+          # Check if .env.vault already exists in the repo
+          if [ -f .env.vault ]; then
+            echo ".env.vault file found in repository, using it"
+            ls -la .env.vault
+          else
+            echo ".env.vault not found in repository, pulling from dotenv-vault..."
+            
+            # Check if DOTENV_ME (authentication token) is set
+            if [ -z "$DOTENV_ME" ]; then
+              echo "Warning: DOTENV_ME not set, cannot pull from dotenv-vault API"
+              echo "Note: .env.vault should be committed to the repository via dotenv-vault GitHub Auto-build add-on"
+              echo "Or set DOTENV_ME secret with your dotenv-vault authentication token"
+              exit 1
+            fi
+            
+            # Authenticate with dotenv-vault
+            echo "$DOTENV_ME" | dotenv-vault login
+            
+            # Pull the .env.vault file for production environment
+            dotenv-vault pull production .env.vault || {
+              echo "Error: Failed to pull .env.vault from dotenv-vault"
+              exit 1
+            }
+            
+            # Verify the file exists
+            if [ ! -f .env.vault ]; then
+              echo "Error: .env.vault file not found after pull"
+              exit 1
+            fi
+            
+            echo ".env.vault file pulled successfully"
+            ls -la .env.vault
+          fi
+      -
+        name: Copy .env.vault to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: ".env.vault"
+          target: "joypharma/"
+          strip_components: 0
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: [build-and-push, pull-vault]
+    if: github.ref == 'refs/heads/preprod'
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      -
+        name: Extract tag from metadata
+        id: extract-tag
+        run: |
+
+          TAGS="${{ steps.meta.outputs.tags }}"
+          # Get the first tag line and extract the tag name (after the colon)
+          TAG=$(echo "$TAGS" | head -n1 | cut -d':' -f2)
+          # If no colon found, use the branch name as fallback
+          if [ -z "$TAG" ] || [ "$TAG" = "$TAGS" ]; then
+            TAG="preprod"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Extracted tag: ${TAG}"
+          echo "All tags: ${TAGS}"
       -
         name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -84,10 +183,8 @@ jobs:
             # Login to Docker Hub
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             
-
-
-            # Determine the image tag to use
-            IMAGE_TAG="preprod"
+            # Use the tag extracted from metadata
+            IMAGE_TAG="${{ steps.extract-tag.outputs.tag }}"
             IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
             
             # Pull the latest image
@@ -110,9 +207,7 @@ jobs:
             # Ensure Traefik network exists (create if it doesn't)
             docker network create traefik 2>/dev/null || true
             
-            # Run the new container with Traefik integration
-            # Using ${IMAGE_NAME} which contains the full image name with tag (e.g., username/joy-pharma-back:preprod)
-            # No port mapping needed - Traefik will route traffic to the container
+  
             docker run -d \
               --name joy-pharma-back \
               --restart unless-stopped \
@@ -125,6 +220,7 @@ jobs:
               -l "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt" \
               -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
               -l "traefik.docker.network=traefik" \
+              
               ${IMAGE_NAME} 
 
 
