@@ -103,6 +103,6 @@ jobs:
             export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
             export IMAGE_TAG="${IMAGE_TAG}"
             
-            docker run joyleonce/joy-pharma-back:${IMAGE_TAG} -p 80:80
+            docker run -p 80:80  joyleonce/joy-pharma-back:${IMAGE_TAG} 
 
 
