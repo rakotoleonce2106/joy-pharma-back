@@ -76,5 +76,31 @@ jobs:
           timeout: 60s
           command_timeout: 15m
           script: |
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" > secret_dockerhub_token.txt
+            set -e
+            
+            # Navigate to the project directory
+            cd joypharma
+            
+            # Login to Docker Hub
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            
+            # Determine the image tag to use
+            IMAGE_TAG="preprod"
+            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
+            
+            # Pull the latest image
+            echo "Pulling image: ${IMAGE_NAME}"
+            docker pull ${IMAGE_NAME} || {
+              echo "Warning: Failed to pull ${IMAGE_TAG}, trying latest..."
+              IMAGE_TAG="latest"
+              IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
+              docker pull ${IMAGE_NAME}
+            }
+            
+            # Set environment variables for docker-compose
+            export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
+            export IMAGE_TAG="${IMAGE_TAG}"
+            
+            docker run -p 80:80 joy-pharma-back:${IMAGE_TAG}
+
 
