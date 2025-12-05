@@ -95,27 +95,112 @@ La configuration CORS est déjà mise à jour dans `config/packages/nelmio_cors.
 
 ## Déploiement via GitHub Actions
 
-Le workflow de déploiement (`.github/workflows/deploy.yml`) construit et pousse l'image Docker vers Docker Hub.
+Le workflow de déploiement (`.github/workflows/deploy.yml`) construit, pousse l'image Docker vers Docker Hub et **déploie automatiquement** sur le serveur.
 
-### Étapes de déploiement
+### Configuration des secrets GitHub
 
-1. **Push vers la branche `preprod`** déclenche automatiquement le build
-2. L'image est poussée vers Docker Hub avec les tags appropriés
-3. Sur votre serveur de production, récupérez et lancez l'image :
+Pour que le déploiement automatique fonctionne, vous devez configurer les secrets suivants dans GitHub (Settings > Secrets and variables > Actions) :
+
+#### Secrets requis pour le build et push :
+
+- `DOCKERHUB_USERNAME` : Votre nom d'utilisateur Docker Hub
+- `DOCKERHUB_TOKEN` : Votre token d'accès Docker Hub (généré dans Docker Hub > Account Settings > Security)
+- `DOTENV_KEY` : La clé de déchiffrement dotenv-vault pour l'environnement de production (obtenue avec `dotenv-vault keys production`)
+
+#### Secrets requis pour le déploiement SSH :
+
+- `SSH_HOST` : L'adresse IP ou le nom d'hôte de votre serveur de production
+- `SSH_USER` : Le nom d'utilisateur SSH pour se connecter au serveur
+- `SSH_PRIVATE_KEY` : La clé privée SSH pour l'authentification (sans mot de passe recommandé)
+- `SSH_PORT` : (Optionnel) Le port SSH, par défaut 22
+- `SSH_DEPLOY_PATH` : (Optionnel) Le chemin du répertoire de déploiement sur le serveur, par défaut `~/joy-pharma-back`
+
+### Génération de la clé SSH
+
+Pour générer une paire de clés SSH sans mot de passe :
 
 ```bash
-# Récupérer l'image
-docker pull <votre-username>/joy-pharma-back:latest
+# Générer une nouvelle paire de clés
+ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_actions_deploy -N ""
 
-# Lancer avec les variables d'environnement
-docker run -d \
-  --name joy-pharma-back \
-  -p 80:80 -p 443:443 \
-  -e SERVER_NAME=back-preprod.joy-pharma.com \
-  -e DOTENV_KEY=$DOTENV_KEY \
-  -e APP_SECRET=$APP_SECRET \
-  -e DATABASE_URL=$DATABASE_URL \
-  <votre-username>/joy-pharma-back:latest
+# Afficher la clé privée (à copier dans le secret SSH_PRIVATE_KEY)
+cat ~/.ssh/github_actions_deploy
+
+# Afficher la clé publique (à ajouter sur le serveur)
+cat ~/.ssh/github_actions_deploy.pub
+```
+
+Sur le serveur, ajoutez la clé publique au fichier `~/.ssh/authorized_keys` :
+
+```bash
+# Sur le serveur
+echo "VOTRE_CLE_PUBLIQUE" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+```
+
+### Préparation du serveur
+
+1. **Installer Docker et Docker Compose** sur le serveur :
+   ```bash
+   # Installation Docker (exemple pour Ubuntu/Debian)
+   curl -fsSL https://get.docker.com -o get-docker.sh
+   sudo sh get-docker.sh
+   sudo usermod -aG docker $USER
+   ```
+
+2. **Créer le répertoire de déploiement** :
+   ```bash
+   mkdir -p ~/joy-pharma-back
+   cd ~/joy-pharma-back
+   ```
+
+3. **Copier les fichiers de configuration** :
+   ```bash
+   # Copier compose.yaml et compose.prod.yaml depuis le repository
+   # Vous pouvez cloner le repo ou copier manuellement ces fichiers
+   ```
+
+4. **Créer le fichier `.env` sur le serveur** avec toutes les variables d'environnement nécessaires (voir section "Variables d'environnement requises" ci-dessus)
+
+### Étapes de déploiement automatique
+
+1. **Push vers la branche `preprod`** déclenche automatiquement :
+   - Le build de l'image Docker
+   - Le push vers Docker Hub avec le tag `preprod`
+   - La connexion SSH au serveur
+   - Le pull de la nouvelle image
+   - Le redémarrage des services avec `docker compose`
+
+2. Le workflow se connecte automatiquement au serveur et exécute :
+   ```bash
+   docker login
+   docker pull <username>/joy-pharma-back:preprod
+   docker compose -f compose.yaml -f compose.prod.yaml pull php
+   docker compose -f compose.yaml -f compose.prod.yaml up -d --no-deps php
+   ```
+
+### Déploiement manuel (si nécessaire)
+
+Si vous devez déployer manuellement sur le serveur :
+
+```bash
+# Se connecter au serveur
+ssh user@server
+
+# Aller dans le répertoire de déploiement
+cd ~/joy-pharma-back
+
+# Se connecter à Docker Hub
+docker login
+
+# Récupérer la dernière image
+docker pull <votre-username>/joy-pharma-back:preprod
+
+# Mettre à jour les services
+export IMAGES_PREFIX="<votre-username>/"
+export IMAGE_TAG="preprod"
+docker compose -f compose.yaml -f compose.prod.yaml pull php
+docker compose -f compose.yaml -f compose.prod.yaml up -d --no-deps php
 ```
 
 ## Vérification du déploiement

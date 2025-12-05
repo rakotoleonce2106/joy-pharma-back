@@ -1,9 +1,7 @@
 # Production environment override
 services:
   php:
-    build:
-      context: .
-      target: frankenphp_prod
+    image: ${IMAGES_PREFIX:-}joy-pharma-back:${IMAGE_TAG:-preprod}
     environment:
       # Domain configuration for preprod
       SERVER_NAME: ${SERVER_NAME:-back-preprod.joy-pharma.com}
