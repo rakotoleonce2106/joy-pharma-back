@@ -61,7 +61,7 @@ jobs:
 
   pull-vault:
     name: Pull and Copy .env.production
-    needs: [build-and-push]
+    needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/preprod'
     steps:
