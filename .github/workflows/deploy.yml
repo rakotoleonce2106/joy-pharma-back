@@ -60,7 +60,7 @@ jobs:
             DOTENV_KEY=${{ secrets.DOTENV_KEY }}
 
   pull-vault:
-    name: Pull and Copy .env.vault
+    name: Pull and Copy .env.production
     runs-on: ubuntu-latest
     needs: build-and-push
     if: github.ref == 'refs/heads/preprod'
@@ -77,31 +77,29 @@ jobs:
         name: Install dotenv-vault CLI
         run: npm install -g dotenv-vault
       -
-        name: Pull .env.vault from dotenv-vault
+        name: Pull .env.production from dotenv-vault
         env:
           DOTENV_KEY: ${{ secrets.DOTENV_KEY }}
           DOTENV_ME: ${{ secrets.DOTENV_ME }}
         run: |
-          # Check if .env.vault already exists in the repo
-          if [ -f .env.vault ]; then
-            echo ".env.vault file found in repository, using it"
-            ls -la .env.vault
+          # Check if .env.production already exists in the repo
+          if [ -f .env.production ]; then
+            echo ".env.production file found in repository, using it"
+            ls -la .env.production
           else
-            echo ".env.vault not found in repository, pulling from dotenv-vault..."
+            echo ".env.production not found in repository, pulling from dotenv-vault..."
             
             # Check if DOTENV_ME (authentication token) is set
             if [ -z "$DOTENV_ME" ]; then
               echo "Warning: DOTENV_ME not set, cannot pull from dotenv-vault API"
-              echo "Note: .env.vault should be committed to the repository via dotenv-vault GitHub Auto-build add-on"
+              echo "Note: .env.production should be committed to the repository"
               echo "Or set DOTENV_ME secret with your dotenv-vault authentication token"
               exit 1
             fi
             
-            # Authenticate with dotenv-vault
             echo "$DOTENV_ME" | dotenv-vault login
             
-            # Pull the .env.vault file for production environment
-            dotenv-vault pull production .env.production  || {
+            dotenv-vault pull production .env.production || {
               echo "Error: Failed to pull .env.production from dotenv-vault"
               exit 1
             }
@@ -126,101 +124,3 @@ jobs:
           source: ".env.production"
           target: "joypharma/"
           strip_components: 0
-
-  deploy:
-    name: Deploy to Server
-    runs-on: ubuntu-latest
-    needs: [build-and-push, pull-vault]
-    if: github.ref == 'refs/heads/preprod'
-    steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v4
-      -
-        name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-      -
-        name: Extract tag from metadata
-        id: extract-tag
-        run: |
-
-          TAGS="${{ steps.meta.outputs.tags }}"
-          # Get the first tag line and extract the tag name (after the colon)
-          TAG=$(echo "$TAGS" | head -n1 | cut -d':' -f2)
-          # If no colon found, use the branch name as fallback
-          if [ -z "$TAG" ] || [ "$TAG" = "$TAGS" ]; then
-            TAG="preprod"
-          fi
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "Extracted tag: ${TAG}"
-          echo "All tags: ${TAGS}"
-      -
-        name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT  }}
-          timeout: 60s
-          command_timeout: 15m
-          script: |
-            set -e
-            
-            # Navigate to the project directory
-            cd joypharma
-            
-            # Login to Docker Hub
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            
-            # Use the tag extracted from metadata
-            IMAGE_TAG="${{ steps.extract-tag.outputs.tag }}"
-            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
-            
-            # Pull the latest image
-            echo "Pulling image: ${IMAGE_NAME}"
-            docker pull ${IMAGE_NAME} || {
-              echo "Warning: Failed to pull ${IMAGE_TAG}, trying latest..."
-              IMAGE_TAG="latest"
-              IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
-              docker pull ${IMAGE_NAME}
-            }
-            
-            # Set environment variables for docker-compose
-            export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
-            export IMAGE_TAG="${IMAGE_TAG}"
-            
-            # Stop and remove existing container if it exists
-            docker stop joy-pharma-back 2>/dev/null || true
-            docker rm joy-pharma-back 2>/dev/null || true
-            
-            # Ensure Traefik network exists (create if it doesn't)
-            docker network create traefik 2>/dev/null || true
-            
-  
-            docker run -d \
-              --name joy-pharma-back \
-              --restart unless-stopped \
-              --network traefik \
-              -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
-              -e SERVER_NAME="back-preprod.joy-pharma.com" \
-              -l "traefik.enable=true" \
-              -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
-              -l "traefik.http.routers.joy-pharma-back.entrypoints=websecure" \
-              -l "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt" \
-              -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
-              -l "traefik.docker.network=traefik" \
-              
-              ${IMAGE_NAME} 
-
-
