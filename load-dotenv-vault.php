@@ -23,6 +23,7 @@ $_ENV['DOTENV_KEY'] = $dotenvKey;
 $_SERVER['DOTENV_KEY'] = $dotenvKey;
 putenv('DOTENV_KEY=' . $dotenvKey);
 
+
 // Load dotenv-vault if available
 $vaultFile = __DIR__ . '/.env.vault';
 if (!file_exists($vaultFile)) {

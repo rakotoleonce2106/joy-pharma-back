@@ -93,9 +93,18 @@ RUN if [ ! -f .env ]; then \
 	echo "APP_SECRET=" >> .env; \
 	fi
 
+# Load dotenv-vault before composer dump-env if DOTENV_KEY is provided
+ARG DOTENV_KEY
+ENV DOTENV_KEY=${DOTENV_KEY}
+
 RUN set -eux; \
 	mkdir -p var/cache var/log; \
+	chmod +x load-dotenv-vault.sh || true; \
+	if [ -n "$DOTENV_KEY" ] && [ -f .env.vault ]; then \
+		export DOTENV_KEY="$DOTENV_KEY"; \
+		. ./load-dotenv-vault.sh || true; \
+	fi; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
-	composer dump-env prod; \
+	composer dump-env prod || (echo "Warning: composer dump-env failed, continuing anyway..." && true); \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
