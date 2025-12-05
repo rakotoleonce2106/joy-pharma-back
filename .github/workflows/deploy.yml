@@ -76,5 +76,5 @@ jobs:
           timeout: 60s
           command_timeout: 15m
           script: |
-            mkdir server_leonce
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" > secret_dockerhub_token.txt
 
