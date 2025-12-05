@@ -58,6 +58,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             DOTENV_KEY=${{ secrets.DOTENV_KEY }}
+            DATABASE_URL=postgresql://app:!ChangeMe!@localhost:5432/app?serverVersion=15&charset=utf8
 
   pull-vault:
     name: Pull and Copy .env.production

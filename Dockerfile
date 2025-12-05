@@ -74,6 +74,10 @@ FROM frankenphp_base AS frankenphp_prod
 ENV APP_ENV=prod
 ENV FRANKENPHP_CONFIG="import worker.Caddyfile"
 
+# Accept build args for environment variables needed during build
+ARG DATABASE_URL="postgresql://app:!ChangeMe!@localhost:5432/app?serverVersion=15&charset=utf8"
+ENV DATABASE_URL=${DATABASE_URL}
+
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 COPY --link frankenphp/conf.d/20-app.prod.ini $PHP_INI_DIR/app.conf.d/
