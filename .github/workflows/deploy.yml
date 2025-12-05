@@ -103,6 +103,28 @@ jobs:
             export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
             export IMAGE_TAG="${IMAGE_TAG}"
             
-            docker run -p 80:80  joyleonce/joy-pharma-back:${IMAGE_TAG} 
+            # Stop and remove existing container if it exists
+            docker stop joy-pharma-back 2>/dev/null || true
+            docker rm joy-pharma-back 2>/dev/null || true
+            
+            # Ensure Traefik network exists (create if it doesn't)
+            docker network create traefik 2>/dev/null || true
+            
+            # Run the new container with Traefik integration
+            # Using ${IMAGE_NAME} which contains the full image name with tag (e.g., username/joy-pharma-back:preprod)
+            # No port mapping needed - Traefik will route traffic to the container
+            docker run -d \
+              --name joy-pharma-back \
+              --restart unless-stopped \
+              --network traefik \
+              -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
+              -e SERVER_NAME="back-preprod.joy-pharma.com" \
+              -l "traefik.enable=true" \
+              -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
+              -l "traefik.http.routers.joy-pharma-back.entrypoints=websecure" \
+              -l "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt" \
+              -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
+              -l "traefik.docker.network=traefik" \
+              ${IMAGE_NAME} 
 
 
