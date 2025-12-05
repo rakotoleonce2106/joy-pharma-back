@@ -84,6 +84,8 @@ jobs:
             # Login to Docker Hub
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             
+
+
             # Determine the image tag to use
             IMAGE_TAG="preprod"
             IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
@@ -101,6 +103,6 @@ jobs:
             export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
             export IMAGE_TAG="${IMAGE_TAG}"
             
-            docker run -p 80:80 joy-pharma-back:${IMAGE_TAG}
+            docker run joyleonce/joy-pharma-back:${IMAGE_TAG} -p 80:80
 
 
