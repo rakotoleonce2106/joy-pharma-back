@@ -101,5 +101,6 @@ RUN set -eux; \
 	mkdir -p var/cache var/log; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
 	composer dump-env prod || (echo "Warning: composer dump-env failed, continuing anyway..." && true); \
-	composer run-script --no-dev post-install-cmd; \
+	php bin/console cache:clear --no-warmup --env=prod || (echo "Warning: cache:clear failed, continuing anyway..." && true); \
+	php bin/console lexik:jwt:generate-keypair --overwrite --env=prod || (echo "Warning: jwt keypair generation failed, continuing anyway..." && true); \
 	chmod +x bin/console; sync;
