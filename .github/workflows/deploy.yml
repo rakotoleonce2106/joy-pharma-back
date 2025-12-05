@@ -17,19 +17,18 @@ jobs:
     needs: build-and-push
     if: github.ref == 'refs/heads/preprod'
     steps:
-      -
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v4
-      -
-        name: Setup Node.js
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      -
-        name: Install dotenv-vault CLI
+
+      - name: Install dotenv-vault CLI
         run: npm install -g dotenv-vault
-      -
-        name: Pull .env.production from dotenv-vault
+
+      - name: Pull .env.production from dotenv-vault
         env:
           DOTENV_KEY: ${{ secrets.DOTENV_KEY }}
           DOTENV_ME: ${{ secrets.DOTENV_ME }}
@@ -40,7 +39,7 @@ jobs:
             ls -la .env.production
           else
             echo ".env.production not found in repository, pulling from dotenv-vault..."
-            
+
             # Check if DOTENV_ME (authentication token) is set
             if [ -z "$DOTENV_ME" ]; then
               echo "Warning: DOTENV_ME not set, cannot pull from dotenv-vault API"
@@ -48,25 +47,25 @@ jobs:
               echo "Or set DOTENV_ME secret with your dotenv-vault authentication token"
               exit 1
             fi
-            
+
             echo "$DOTENV_ME" | dotenv-vault login
-            
+
             dotenv-vault pull production || {
               echo "Error: Failed to pull .env.production from dotenv-vault"
               exit 1
             }
-            
+
             # Verify the file exists
             if [ ! -f .env.production ]; then
               echo "Error: .env.production file not found after pull"
               exit 1
             fi
-            
+
             echo ".env.production file pulled successfully"
             ls -la .env.production
           fi
-      -
-        name: Copy .env.production to server
+
+      - name: Copy .env.production to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
