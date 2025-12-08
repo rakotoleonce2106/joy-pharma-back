@@ -54,8 +54,16 @@ jobs:
             docker stop joy-pharma-back 2>/dev/null || true
             docker rm joy-pharma-back 2>/dev/null || true
             
+            # Ensure Traefik network exists (create if it doesn't)
             docker network create traefik-network 2>/dev/null || true
+            
+            # Verify network exists
+            if ! docker network inspect traefik-network >/dev/null 2>&1; then
+              echo "Error: traefik-network does not exist and could not be created"
+              exit 1
+            fi
 
+            # Start the container
             docker run -d \
               --name joy-pharma-back \
               --restart unless-stopped \
@@ -65,11 +73,57 @@ jobs:
               -e SERVER_NAME="back-preprod.joy-pharma.com" \
               -e CADDY_TLS_CONFIG="tls internal" \
               -l "traefik.enable=true" \
-              -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
-              -l "traefik.http.routers.joy-pharma-back.entrypoints=web,websecure" \
-              -l "traefik.http.routers.joy-pharma-back.tls=true" \
-              -l "traefik.http.routers.joy-pharma-back.tls.certresolver=mytlschallenge" \
+              -l "traefik.http.routers.joy-pharma-back-https.rule=Host(\`back-preprod.joy-pharma.com\`)" \
+              -l "traefik.http.routers.joy-pharma-back-https.entrypoints=websecure" \
+              -l "traefik.http.routers.joy-pharma-back-https.tls=true" \
+              -l "traefik.http.routers.joy-pharma-back-https.tls.certresolver=letsencrypt" \
+              -l "traefik.http.routers.joy-pharma-back-https.service=joy-pharma-back" \
+              -l "traefik.http.routers.joy-pharma-back-http.rule=Host(\`back-preprod.joy-pharma.com\`)" \
+              -l "traefik.http.routers.joy-pharma-back-http.entrypoints=web" \
+              -l "traefik.http.routers.joy-pharma-back-http.middlewares=redirect-to-https" \
+              -l "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https" \
+              -l "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true" \
               -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
               -l "traefik.docker.network=traefik-network" \
               ${IMAGE_NAME}
+
+            # Wait for container to be ready
+            echo "Waiting for container to start..."
+            sleep 10
+
+            # Check if container is running
+            if ! docker ps | grep -q joy-pharma-back; then
+              echo "Error: Container joy-pharma-back is not running"
+              echo "Container logs:"
+              docker logs joy-pharma-back 2>&1 | tail -50
+              exit 1
+            fi
+
+            # Get container IP and test connectivity
+            echo "Checking container connectivity..."
+            CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' joy-pharma-back 2>/dev/null || echo "")
+            if [ -n "${CONTAINER_IP}" ]; then
+              echo "Container IP: ${CONTAINER_IP}"
+              # Test if port 80 is accessible (using timeout to avoid hanging)
+              if command -v curl >/dev/null 2>&1; then
+                if curl -f -s -o /dev/null -w "%{http_code}" --max-time 5 --connect-timeout 3 http://${CONTAINER_IP}:80 >/dev/null 2>&1; then
+                  echo "✓ Container is responding on port 80"
+                else
+                  echo "⚠ Warning: Could not connect to container on port 80"
+                fi
+              fi
+            fi
+
+            # Display container status
+            echo ""
+            echo "Container status:"
+            docker ps --filter "name=joy-pharma-back" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo ""
+            echo "Network configuration:"
+            docker network inspect traefik-network --format '{{range .Containers}}{{.Name}} - {{.IPv4Address}}{{println}}{{end}}' 2>/dev/null || echo "Could not inspect network"
+            
+            # Show recent container logs
+            echo ""
+            echo "Recent container logs (last 20 lines):"
+            docker logs --tail 20 joy-pharma-back 2>&1 || echo "Could not retrieve logs"
 
