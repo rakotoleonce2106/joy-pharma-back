@@ -84,12 +84,10 @@ jobs:
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.browserXSSFilter=true" \
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.contentTypeNosniff=true" \
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.forceSTSHeader=true" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.SSLHost=back-preprod.joy-pharma.com"
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSIncludeSubdomains=true"
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSPreload=true"
-              -l "traefik.http.routers.joy-pharma-back.middlewares=joy-pharma-back-headers@docker"
-
-              
+              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.SSLHost=back-preprod.joy-pharma.com" \
+              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSIncludeSubdomains=true" \
+              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSPreload=true" \
+              -l "traefik.http.routers.joy-pharma-back.middlewares=joy-pharma-back-headers@docker" \
               ${IMAGE_NAME}
 
           
