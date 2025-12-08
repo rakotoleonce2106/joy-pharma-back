@@ -1,0 +1,75 @@
+name: Deploy - Server Deployment
+
+on:
+  workflow_call:
+    inputs:
+      image-tag:
+        description: "Docker image tag to deploy"
+        required: false
+        type: string
+        default: preprod
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: "Docker image tag to deploy"
+        required: false
+        type: string
+        default: preprod
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          timeout: 60s
+          command_timeout: 15m
+          script: |
+            set -e
+            cd joypharma
+            
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            # Determine the image tag to use
+            IMAGE_TAG="${{ inputs.image-tag }}"
+            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
+            
+            echo "Pulling image: ${IMAGE_NAME}"
+            docker pull ${IMAGE_NAME} || {
+              echo "Warning: Failed to pull ${IMAGE_TAG}, trying latest..."
+              IMAGE_TAG="latest"
+              IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
+              docker pull ${IMAGE_NAME}
+            }
+            
+            export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
+            export IMAGE_TAG="${IMAGE_TAG}"
+
+            docker stop joy-pharma-back 2>/dev/null || true
+            docker rm joy-pharma-back 2>/dev/null || true
+            
+            docker network create traefik 2>/dev/null || true
+            
+
+            docker run -d \
+              --name joy-pharma-back \
+              --restart unless-stopped \
+              --network traefik \
+              --env-file .env.production \
+              -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
+              -e SERVER_NAME="back-preprod.joy-pharma.com" \
+              -e CADDY_TLS_CONFIG="tls internal" \
+              -l "traefik.enable=true" \
+              -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
+              -l "traefik.http.routers.joy-pharma-back.entrypoints=web,websecure" \
+              -l "traefik.http.routers.joy-pharma-back.tls=true" \
+              -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
+              -l "traefik.docker.network=traefik" \
+              ${IMAGE_NAME}
+

