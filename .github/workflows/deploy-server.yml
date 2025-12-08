@@ -71,7 +71,6 @@ jobs:
               --env-file .env.production \
               -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
               -e SERVER_NAME="back-preprod.joy-pharma.com" \
-              -e CADDY_TLS_CONFIG="tls internal" \
               -l "traefik.enable=true" \
               -l "traefik.http.routers.joy-pharma-back-https.rule=Host(\`back-preprod.joy-pharma.com\`)" \
               -l "traefik.http.routers.joy-pharma-back-https.entrypoints=websecure" \
