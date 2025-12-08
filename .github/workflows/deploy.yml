@@ -12,41 +12,27 @@ concurrency:
 
 jobs:
 
-  send-payload:
-      name: Send Payload to API
-      runs-on: ubuntu-latest
-      steps:
-        - name: Send JSON payload to FastAPI /collect
-          env:
-            SSH_DOMAIN: ${{ secrets.SSH_HOST }}
-          run: |
-                    # Payload JSON simple sans fichier : OK
-                    DATA="{\"adresse_ip\":\"$SSH_DOMAIN\"}"
+  pull-env:
+    name: Pull Environment Variables
+    uses: ./.github/workflows/deploy-env.yml
+    if: github.ref == 'refs/heads/preprod'
+    secrets: inherit
 
-                    curl -X POST "https://api-myresadevis.mypreprod.xyz/collect" \
-                      -H "Content-Type: application/json" \
-                      -d "$DATA"
-  # pull-env:
-  #   name: Pull Environment Variables
-  #   uses: ./.github/workflows/deploy-env.yml
-  #   if: github.ref == 'refs/heads/preprod'
-  #   secrets: inherit
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: pull-env
+    uses: ./.github/workflows/deploy-build.yml
+    if: always() && (needs.pull-env.result == 'success' || needs.pull-env.result == 'skipped')
+    with:
+      env-artifact-name: env-production
+      has-env-artifact: ${{ needs.pull-env.result == 'success' }}
+    secrets: inherit
 
-  # build-and-push:
-  #   name: Build and Push Docker Image
-  #   needs: pull-env
-  #   uses: ./.github/workflows/deploy-build.yml
-  #   if: always() && (needs.pull-env.result == 'success' || needs.pull-env.result == 'skipped')
-  #   with:
-  #     env-artifact-name: env-production
-  #     has-env-artifact: ${{ needs.pull-env.result == 'success' }}
-  #   secrets: inherit
-
-  # deploy:
-  #   name: Deploy to Server
-  #   needs: [build-and-push, pull-env]
-  #   uses: ./.github/workflows/deploy-server.yml
-  #   if: github.ref == 'refs/heads/preprod' && needs.build-and-push.result == 'success'
-  #   with:
-  #     image-tag: preprod
-  #   secrets: inherit
+  deploy:
+    name: Deploy to Server
+    needs: [build-and-push, pull-env]
+    uses: ./.github/workflows/deploy-server.yml
+    if: github.ref == 'refs/heads/preprod' && needs.build-and-push.result == 'success'
+    with:
+      image-tag: preprod
+    secrets: inherit
