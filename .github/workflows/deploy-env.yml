@@ -43,7 +43,8 @@ jobs:
               echo "Warning: DOTENV_ME not set, cannot pull from dotenv-vault API"
               echo "Note: .env.production should be committed to the repository"
               echo "Or set DOTENV_ME secret with your dotenv-vault authentication token"
-              exit 1
+              echo "Continuing without .env.production file..."
+              exit 0
             fi
 
             echo "$DOTENV_ME" | dotenv-vault login

@@ -54,13 +54,12 @@ jobs:
             docker stop joy-pharma-back 2>/dev/null || true
             docker rm joy-pharma-back 2>/dev/null || true
             
-            docker network create traefik-network 2>/dev/null || true
-            
+            docker network create traefik 2>/dev/null || true
 
             docker run -d \
               --name joy-pharma-back \
               --restart unless-stopped \
-              --network traefik-network \
+              --network traefik \
               --env-file .env.production \
               -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
               -e SERVER_NAME="back-preprod.joy-pharma.com" \
@@ -68,6 +67,7 @@ jobs:
               -l "traefik.enable=true" \
               -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
               -l "traefik.http.routers.joy-pharma-back.entrypoints=web,websecure" \
+              -l "traefik.http.routers.joy-pharma-back.tls=true" \
               -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
               -l "traefik.docker.network=traefik" \
               ${IMAGE_NAME}
