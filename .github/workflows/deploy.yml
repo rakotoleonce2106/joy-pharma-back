@@ -95,11 +95,11 @@ jobs:
         uses: actions/checkout@v4
       -
         name: Download .env.production (if available)
+        if: needs.pull-vault.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: env-production
           path: .
-          continue-on-error: true
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
