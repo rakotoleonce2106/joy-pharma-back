@@ -67,7 +67,6 @@ jobs:
               -l "traefik.enable=true" \
               -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
               -l "traefik.http.routers.joy-pharma-back.entrypoints=web,websecure" \
-              -l "traefik.http.routers.joy-pharma-back.tls=true" \
               -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
               -l "traefik.docker.network=traefik" \
               ${IMAGE_NAME}
