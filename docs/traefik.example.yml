@@ -1,0 +1,70 @@
+# Exemple de configuration Traefik avec certresolver Let's Encrypt
+# 
+# Ce fichier montre comment configurer Traefik pour utiliser Let's Encrypt
+# avec le certresolver 'letsencrypt'
+#
+# Usage:
+#   - Si vous utilisez docker-compose, ajoutez cette configuration à votre service Traefik
+#   - Si vous utilisez docker run, passez ces options en arguments de commande
+#   - Si vous utilisez un fichier traefik.yml, utilisez cette structure
+
+# Configuration globale
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+# Points d'entrée (entrypoints)
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+# Configuration des certificats (certresolvers)
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # Email utilisé par Let's Encrypt pour les notifications
+      email: votre-email@example.com  # ⚠️ REMPLACEZ par votre email
+      # Fichier de stockage des certificats
+      storage: /data/acme.json
+      # Challenge HTTP-01 (nécessite le port 80 accessible)
+      httpChallenge:
+        entryPoint: web
+      # Alternative : Challenge DNS-01 (si le port 80 n'est pas accessible)
+      # dnsChallenge:
+      #   provider: cloudflare  # ou autre provider DNS
+      #   delayBeforeCheck: 0
+
+# Provider Docker (pour découvrir automatiquement les conteneurs)
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: traefik
+
+# API et Dashboard (optionnel, pour le monitoring)
+api:
+  dashboard: true
+  insecure: false  # Mettez à true pour accéder au dashboard sans authentification (non recommandé en production)
+
+# Logs
+log:
+  level: INFO
+  filePath: ""
+
+accessLog: {}
+
+# Options SSL/TLS
+options:
+  default:
+    sslProtocols:
+      - "TLSv1.2"
+      - "TLSv1.3"
+

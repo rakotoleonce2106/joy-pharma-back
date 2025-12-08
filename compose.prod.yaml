@@ -5,6 +5,9 @@ services:
     environment:
       # Domain configuration for preprod
       SERVER_NAME: ${SERVER_NAME:-back-preprod.joy-pharma.com}
+      # Disable automatic TLS certificate generation in Caddy
+      # Traefik handles SSL/TLS certificates in production
+      CADDY_TLS_CONFIG: ${CADDY_TLS_CONFIG:-tls internal}
       # Dotenv Vault key for decrypting .env.vault
       # Get your key with: dotenv-vault keys production
       DOTENV_KEY: ${DOTENV_KEY:-}
