@@ -87,43 +87,5 @@ jobs:
               -l "traefik.docker.network=traefik-network" \
               ${IMAGE_NAME}
 
-            # Wait for container to be ready
-            echo "Waiting for container to start..."
-            sleep 10
-
-            # Check if container is running
-            if ! docker ps | grep -q joy-pharma-back; then
-              echo "Error: Container joy-pharma-back is not running"
-              echo "Container logs:"
-              docker logs joy-pharma-back 2>&1 | tail -50
-              exit 1
-            fi
-
-            # Get container IP and test connectivity
-            echo "Checking container connectivity..."
-            CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' joy-pharma-back 2>/dev/null || echo "")
-            if [ -n "${CONTAINER_IP}" ]; then
-              echo "Container IP: ${CONTAINER_IP}"
-              # Test if port 80 is accessible (using timeout to avoid hanging)
-              if command -v curl >/dev/null 2>&1; then
-                if curl -f -s -o /dev/null -w "%{http_code}" --max-time 5 --connect-timeout 3 http://${CONTAINER_IP}:80 >/dev/null 2>&1; then
-                  echo "✓ Container is responding on port 80"
-                else
-                  echo "⚠ Warning: Could not connect to container on port 80"
-                fi
-              fi
-            fi
-
-            # Display container status
-            echo ""
-            echo "Container status:"
-            docker ps --filter "name=joy-pharma-back" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            echo ""
-            echo "Network configuration:"
-            docker network inspect traefik-network --format '{{range .Containers}}{{.Name}} - {{.IPv4Address}}{{println}}{{end}}' 2>/dev/null || echo "Could not inspect network"
-            
-            # Show recent container logs
-            echo ""
-            echo "Recent container logs (last 20 lines):"
-            docker logs --tail 20 joy-pharma-back 2>&1 || echo "Could not retrieve logs"
+          
 
