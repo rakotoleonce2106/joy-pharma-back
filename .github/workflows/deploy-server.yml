@@ -75,7 +75,8 @@ jobs:
               -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
               -l "traefik.http.routers.joy-pharma-back.entrypoints=websecure" \
               -l "traefik.http.routers.joy-pharma-back.tls=true" \
-              -l "traefik.http.routers.joy-pharma-back.tls.certresolver=mytlschallenge" \
+              -l "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt" \
+              -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.SSLRedirect=true" \
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSSeconds=315360000" \
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.browserXSSFilter=true" \
