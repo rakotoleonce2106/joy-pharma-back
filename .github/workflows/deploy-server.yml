@@ -54,20 +54,18 @@ jobs:
             docker stop joy-pharma-back 2>/dev/null || true
             docker rm joy-pharma-back 2>/dev/null || true
             
-            # Ensure Traefik network exists (create if it doesn't)
-            docker network create traefik-network 2>/dev/null || true
+            echo "Finding Traefik network..."
+            TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
             
-            # Verify network exists
-            if ! docker network inspect traefik-network >/dev/null 2>&1; then
-              echo "Error: traefik-network does not exist and could not be created"
-              exit 1
-            fi
+            
+            echo "Traefik is on network: $TRAEFIK_NETWORK"
+            
 
-            # Start the container
+            # Start the container on the same network as Traefik
             docker run -d \
               --name joy-pharma-back \
               --restart unless-stopped \
-              --network traefik-network \
+              --network "$TRAEFIK_NETWORK" \
               --env-file .env.production \
               -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
               -e SERVER_NAME="back-preprod.joy-pharma.com" \
