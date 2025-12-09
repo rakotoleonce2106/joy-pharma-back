@@ -69,7 +69,6 @@ jobs:
               --env-file .env.production \
               -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
               -e SERVER_NAME="back-preprod.joy-pharma.com" \
-              -e CADDY_TLS_CONFIG="tls off" \
               -l "traefik.enable=true" \
               -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
               -l "traefik.http.routers.joy-pharma-back.entrypoints=websecure" \
@@ -85,7 +84,7 @@ jobs:
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSIncludeSubdomains=true" \
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSPreload=true" \
               -l "traefik.http.routers.joy-pharma-back.middlewares=joy-pharma-back-headers@docker" \
-              ${IMAGE_NAME}
+              nginx:alpine
 
             
 
