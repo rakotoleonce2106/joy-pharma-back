@@ -69,6 +69,9 @@ RUN rm -rf frankenphp/
 
 RUN touch .env
 
+ARG DATABASE_URL
+
+
 
 RUN set -eux; \
 	mkdir -p var/cache var/log; \
