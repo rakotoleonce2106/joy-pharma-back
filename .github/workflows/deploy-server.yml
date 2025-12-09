@@ -33,6 +33,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           source: "compose.yaml"
           target: "joypharma/"
+          overwrite: true
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -47,6 +48,12 @@ jobs:
             set -e
             cd joypharma
             
+            echo "============================================"
+            echo "Starting deployment process..."
+            echo "============================================"
+            
+            # Login to Docker Hub
+            echo "→ Logging in to Docker Hub..."
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
             # Determine the image tag to use
@@ -56,27 +63,95 @@ jobs:
             fi
             
             export IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
+            echo "→ Using image: $IMAGE_NAME"
             
             # Find Traefik network
+            echo "→ Detecting Traefik network..."
             export TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
             
             if [ -z "$TRAEFIK_NETWORK" ]; then
-                echo "Warning: Could not find Traefik network. Defaulting to 'proxy' or letting compose create default."
-                # We do not set it, so compose uses default specified in yaml which is 'joy-pharma-back_default' 
-                # effectively disabling external network if we don't handle it in YAML carefully.
-                # But yaml has: name: ${TRAEFIK_NETWORK:-joy-pharma-back_default}
-                # If variable is empty, it uses default.
-                # But if we want it to work WITH Traefik, we need that network.
+                echo "⚠ Warning: Could not find Traefik network. Using default network."
             else
-                echo "Found Traefik network: $TRAEFIK_NETWORK"
+                echo "✓ Found Traefik network: $TRAEFIK_NETWORK"
             fi
             
-            echo "Deploying image: $IMAGE_NAME"
-            
-            # Ensure .env exists (renaming .env.production if needed, though deploy-env handles it)
+            # Verify .env file exists
+            echo "→ Checking environment file..."
             if [ -f .env.production ] && [ ! -f .env ]; then
                 cp .env.production .env
+                echo "✓ Copied .env.production to .env"
             fi
-
-            docker compose pull
-            docker compose up -d
+            
+            if [ ! -f .env ]; then
+                echo "✗ Error: No .env file found!"
+                exit 1
+            fi
+            
+            echo "✓ Environment file exists"
+            
+            # Backup current container for rollback
+            echo "→ Backing up current deployment..."
+            CURRENT_CONTAINER=$(docker compose ps -q php 2>/dev/null || echo "")
+            if [ -n "$CURRENT_CONTAINER" ]; then
+                echo "✓ Current container ID: $CURRENT_CONTAINER"
+            else
+                echo "ℹ No existing container to backup"
+            fi
+            
+            # Pull new image with retry logic
+            echo "→ Pulling Docker image (with retry)..."
+            MAX_RETRIES=3
+            RETRY_COUNT=0
+            until docker compose pull || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+                RETRY_COUNT=$((RETRY_COUNT+1))
+                echo "⚠ Pull failed. Retry $RETRY_COUNT/$MAX_RETRIES..."
+                sleep 5
+            done
+            
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+                echo "✗ Failed to pull image after $MAX_RETRIES attempts"
+                exit 1
+            fi
+            
+            echo "✓ Image pulled successfully"
+            
+            # Deploy new version
+            echo "→ Deploying new version..."
+            if docker compose up -d; then
+                echo "✓ Deployment successful"
+                
+                # Wait for container to be healthy
+                echo "→ Waiting for health check..."
+                sleep 10
+                
+                NEW_CONTAINER=$(docker compose ps -q php 2>/dev/null || echo "")
+                if [ -n "$NEW_CONTAINER" ]; then
+                    CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $NEW_CONTAINER)
+                    if [ "$CONTAINER_STATUS" = "running" ]; then
+                        echo "✓ Container is running and healthy"
+                        
+                        # Clean up old images
+                        echo "→ Cleaning up old images..."
+                        docker image prune -f
+                        
+                        echo "============================================"
+                        echo "✓ Deployment completed successfully!"
+                        echo "============================================"
+                    else
+                        echo "✗ Container is not running (status: $CONTAINER_STATUS)"
+                        echo "→ Attempting rollback..."
+                        if [ -n "$CURRENT_CONTAINER" ]; then
+                            docker compose down
+                            docker start $CURRENT_CONTAINER
+                            echo "✓ Rollback completed"
+                        fi
+                        exit 1
+                    fi
+                else
+                    echo "✗ Failed to get new container ID"
+                    exit 1
+                fi
+            else
+                echo "✗ Deployment failed"
+                exit 1
+            fi

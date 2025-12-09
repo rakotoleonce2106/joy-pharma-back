@@ -31,6 +31,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Download environment artifact
+        if: inputs.has-env-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.env-artifact-name }}
+          path: .
+
+      - name: Verify environment file
+        if: inputs.has-env-artifact
+        run: |
+          if [ -f .env.production ]; then
+            echo "✓ Environment file downloaded successfully"
+            echo "File size: $(wc -c < .env.production) bytes"
+            # Create .env for Docker build context
+            cp .env.production .env
+          else
+            echo "⚠ Warning: Environment file not found, proceeding without it"
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         continue-on-error: false
@@ -63,10 +82,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=deploy
-          cache-to: type=gha,mode=max,scope=deploy
+          cache-from: |
+            type=gha,scope=build-${{ github.ref_name }}
+            type=gha,scope=build-main
+          cache-to: type=gha,mode=max,scope=build-${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64
-          build-args: |
-
-            DATABASE_URL=postgresql://app:!ChangeMe!@localhost:5432/app?serverVersion=15&charset=utf8
+          # Environment variables are loaded from .env file in build context
+          # No need to pass DATABASE_URL as build-arg anymore
 
