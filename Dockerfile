@@ -65,7 +65,7 @@ RUN set -eux; \
 
 # Copy sources
 COPY --link . ./
-RUN rm -hhrf frankenphp/
+RUN rm -rf frankenphp/
 
 RUN set -eux; \
 	mkdir -p var/cache var/log; \
