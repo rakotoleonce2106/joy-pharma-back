@@ -1,0 +1,91 @@
+services:
+  php:
+    image: ${IMAGE_NAME:-app-php}
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: :80
+      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      PROFILE: ${PROFILE:-0}
+      APP_SECRET: ${APP_SECRET:-!ChangeMe!}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-16}&charset=${POSTGRES_CHARSET:-utf8}
+      # Run "composer require symfony/mercure-bundle" to install Mercure and remove this comment
+      # MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
+      # MERCURE_PUBLIC_URL: ${CADDY_MERCURE_PUBLIC_URL:-https://${SERVER_NAME:-localhost}/.well-known/mercure}
+      # MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    # ports:
+    #   # HTTP
+    #   - target: 80
+    #     published: ${HTTP_PORT:-80}
+    #     protocol: tcp
+    #   # HTTPS
+    #   - target: 443
+    #     published: ${HTTPS_PORT:-443}
+    #     protocol: tcp
+    #   # HTTP/3
+    #   - target: 443
+    #     published: ${HTTPS_PORT:-443}
+    #     protocol: udp
+    labels:
+        # Traefik configuration
+        - "traefik.enable=true"
+        - "traefik.http.routers.php.rule=Host(`${DOMAIN_NAME:-localhost}`)"
+        - "traefik.http.routers.php.entrypoints=web,websecure"
+        - "traefik.http.routers.php.tls=true"
+        - "traefik.http.services.php.loadbalancer.server.port=80"
+        # If we want Traefik to handle SSL, we might not need Caddy to do it, OR we let Caddy allow HTTP and Traefik terminates TLS.
+        # But FrankenPHP uses Caddy internally.
+        # The simplest way is to let Traefik proxy to port 80 of the php container.
+        
+  # Mercure is installed as a Caddy module, prevent the prebuilt image from being used
+  # mercure:
+  #   image: dunglas/mercure
+  #   restart: unless-stopped
+  #   environment:
+  #     SERVER_NAME: ':80'
+  #     MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+  #     MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+  #     # Set the URL of your hub
+  #     MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
+  #     # Set the public URL of your hub
+  #     MERCURE_PUBLIC_URL: ${CADDY_MERCURE_PUBLIC_URL:-https://${SERVER_NAME:-localhost}/.well-known/mercure}
+  #     # Set the secret key for the JWT
+  #     MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+
+###> doctrine/doctrine-bundle ###
+  database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      # You should definitely change the password in production
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/db/data:/var/lib/postgresql/data:rw
+###< doctrine/doctrine-bundle ###
+
+
+volumes:
+  caddy_data:
+  caddy_config:
+###> doctrine/doctrine-bundle ###
+  database_data:
+###< doctrine/doctrine-bundle ###
+
+networks:
+  default:
+    external: true
+    name: ${TRAEFIK_NETWORK:-joy-pharma-back_default}

@@ -1,0 +1,32 @@
+# The Caddyfile is a configuration file for Caddy.
+# It is used to configure the Caddy web server.
+#
+# Documentation: https://caddyserver.com/docs/caddyfile
+
+{
+	# Debug
+	# debug
+	
+	# FrankenPHP options
+	frankenphp {
+		# Enable the worker mode
+		worker {
+			file public/index.php
+			num 42
+			env APP_RUNTIME Runtime\FrankenPhpSymfony\Runtime
+		}
+	}
+
+	# Order of the directives
+	order frankenphp before file_server
+	order php_server before file_server
+}
+
+# The block below is the configuration for the server
+:80 {
+	# Set the webroot
+	root * public/
+
+	# Enable the PHP file server
+	php_server
+}
