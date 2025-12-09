@@ -21,6 +21,19 @@ jobs:
     name: Deploy to Server
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy compose.yaml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "compose.yaml"
+          target: "joypharma/"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -38,53 +51,32 @@ jobs:
 
             # Determine the image tag to use
             IMAGE_TAG="${{ inputs.image-tag }}"
-            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
+            if [ -z "$IMAGE_TAG" ]; then
+              IMAGE_TAG="preprod"
+            fi
             
-            echo "Pulling image: ${IMAGE_NAME}"
-            docker pull ${IMAGE_NAME} || {
-              echo "Warning: Failed to pull ${IMAGE_TAG}, trying latest..."
-              IMAGE_TAG="latest"
-              IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
-              docker pull ${IMAGE_NAME}
-            }
+            export IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
             
-            export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
-            export IMAGE_TAG="${IMAGE_TAG}"
+            # Find Traefik network
+            export TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
+            
+            if [ -z "$TRAEFIK_NETWORK" ]; then
+                echo "Warning: Could not find Traefik network. Defaulting to 'proxy' or letting compose create default."
+                # We do not set it, so compose uses default specified in yaml which is 'joy-pharma-back_default' 
+                # effectively disabling external network if we don't handle it in YAML carefully.
+                # But yaml has: name: ${TRAEFIK_NETWORK:-joy-pharma-back_default}
+                # If variable is empty, it uses default.
+                # But if we want it to work WITH Traefik, we need that network.
+            else
+                echo "Found Traefik network: $TRAEFIK_NETWORK"
+            fi
+            
+            echo "Deploying image: $IMAGE_NAME"
+            
+            # Ensure .env exists (renaming .env.production if needed, though deploy-env handles it)
+            if [ -f .env.production ] && [ ! -f .env ]; then
+                cp .env.production .env
+            fi
 
-            docker stop joy-pharma-back 2>/dev/null || true
-            docker rm joy-pharma-back 2>/dev/null || true
-            
-            echo "Finding Traefik network..."
-            TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
-            
-            
-            echo "Traefik is on network: $TRAEFIK_NETWORK" > deploy.log
-            
-
-            # Start the container on the same network as Traefik
-            docker run -d \
-              --name joy-pharma-back \
-              --restart unless-stopped \
-              --network "$TRAEFIK_NETWORK" \
-              --env-file .env.production \
-              -e DOTENV_KEY="${{ secrets.DOTENV_KEY }}" \
-              -e SERVER_NAME="back-preprod.joy-pharma.com" \
-              -l "traefik.enable=true" \
-              -l "traefik.http.routers.joy-pharma-back.rule=Host(\`back-preprod.joy-pharma.com\`)" \
-              -l "traefik.http.routers.joy-pharma-back.entrypoints=websecure" \
-              -l "traefik.http.routers.joy-pharma-back.tls=true" \
-              -l "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt" \
-              -l "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.SSLRedirect=true" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSSeconds=315360000" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.browserXSSFilter=true" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.contentTypeNosniff=true" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.forceSTSHeader=true" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.SSLHost=back-preprod.joy-pharma.com" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSIncludeSubdomains=true" \
-              -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSPreload=true" \
-              -l "traefik.http.routers.joy-pharma-back.middlewares=joy-pharma-back-headers@docker" \
-              nginx:alpine
-
-            
-
+            docker compose pull
+            docker compose up -d
