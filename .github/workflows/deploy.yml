@@ -32,7 +32,7 @@ jobs:
     name: Deploy to Server
     # needs: [build-and-push, pull-env]
     uses: ./.github/workflows/deploy-server.yml
-    if: github.ref == 'refs/heads/preprod' && needs.build-and-push.result == 'success'
+    # if: github.ref == 'refs/heads/preprod' && needs.build-and-push.result == 'success'
     with:
       image-tag: preprod
     secrets: inherit
