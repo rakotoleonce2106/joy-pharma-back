@@ -86,7 +86,7 @@ jobs:
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSIncludeSubdomains=true" \
               -l "traefik.http.middlewares.joy-pharma-back-headers.headers.STSPreload=true" \
               -l "traefik.http.routers.joy-pharma-back.middlewares=joy-pharma-back-headers@docker" \
-              ${IMAGE_NAME}
+              nginx:alpine
 
-          
+            
 

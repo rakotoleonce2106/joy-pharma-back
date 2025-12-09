@@ -12,25 +12,25 @@ concurrency:
 
 jobs:
 
-  pull-env:
-    name: Pull Environment Variables
-    uses: ./.github/workflows/deploy-env.yml
-    if: github.ref == 'refs/heads/preprod'
-    secrets: inherit
+  # pull-env:
+  #   name: Pull Environment Variables
+  #   uses: ./.github/workflows/deploy-env.yml
+  #   if: github.ref == 'refs/heads/preprod'
+  #   secrets: inherit
 
-  build-and-push:
-    name: Build and Push Docker Image
-    needs: pull-env
-    uses: ./.github/workflows/deploy-build.yml
-    if: always() && (needs.pull-env.result == 'success' || needs.pull-env.result == 'skipped')
-    with:
-      env-artifact-name: env-production
-      has-env-artifact: ${{ needs.pull-env.result == 'success' }}
-    secrets: inherit
+  # build-and-push:
+  #   name: Build and Push Docker Image
+  #   needs: pull-env
+  #   uses: ./.github/workflows/deploy-build.yml
+  #   if: always() && (needs.pull-env.result == 'success' || needs.pull-env.result == 'skipped')
+  #   with:
+  #     env-artifact-name: env-production
+  #     has-env-artifact: ${{ needs.pull-env.result == 'success' }}
+  #   secrets: inherit
 
   deploy:
     name: Deploy to Server
-    needs: [build-and-push, pull-env]
+    # needs: [build-and-push, pull-env]
     uses: ./.github/workflows/deploy-server.yml
     if: github.ref == 'refs/heads/preprod' && needs.build-and-push.result == 'success'
     with:
