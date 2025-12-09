@@ -9,4 +9,8 @@ use Gesdinet\JWTRefreshTokenBundle\Model\AbstractRefreshToken;
 #[ORM\Table(name: 'refresh_tokens')]
 class RefreshToken extends AbstractRefreshToken
 {
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
+    protected $id;
 }
