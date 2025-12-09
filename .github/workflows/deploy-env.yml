@@ -18,17 +18,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Infisical CLI
+        run: |
+          echo "→ Installing Infisical CLI..."
+          curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo -E bash
+          sudo apt-get update && sudo apt-get install -y infisical
+          infisical --version
+
+      - name: Authenticate with Infisical
+        run: |
+          echo "→ Authenticating with Infisical..."
+          infisical login --method=universal-auth \
+            --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" \
+            --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" \
+            --silent --plain
+          echo "✓ Authentication successful"
+
       - name: Fetch secrets from Infisical
-        uses: Infisical/secrets-action@v1.0.9
-        with:
-          method: universal
-          client-id: ${{ secrets.INFISICAL_CLIENT_ID }}
-          client-secret: ${{ secrets.INFISICAL_CLIENT_SECRET }}
-          project-slug: ${{ secrets.INFISICAL_PROJECT_SLUG }}
-          env-slug: ${{ secrets.INFISICAL_ENV_SLUG }}
-          domain: "https://app.infisical.com"
-          export-type: file
-          file-output-path: .env.production
+        run: |
+          echo "→ Fetching secrets from Infisical..."
+          
+          # Export secrets to .env.production file
+          infisical export \
+            --projectId="${{ secrets.INFISICAL_PROJECT_ID }}" \
+            --env="${{ secrets.INFISICAL_ENV_SLUG }}" \
+            --format=dotenv \
+            > .env.production
+          
+          echo "✓ Secrets exported successfully"
 
       - name: Verify .env.production
         run: |
@@ -36,6 +53,13 @@ jobs:
             echo "✓ .env.production file successfully generated from Infisical"
             echo "File size: $(wc -c < .env.production) bytes"
             echo "Number of variables: $(grep -c "=" .env.production || echo 0)"
+            
+            # Validate file is not empty
+            if [ ! -s .env.production ]; then
+              echo "✗ Error: .env.production is empty!"
+              exit 1
+            fi
+            
             # We do NOT cat the file to avoid leaking secrets in logs
           else
             echo "✗ Error: .env.production not generated from Infisical"
