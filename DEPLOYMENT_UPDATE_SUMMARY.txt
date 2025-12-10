@@ -1,0 +1,312 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║   ✅  WORKFLOWS GITHUB ACTIONS MIS À JOUR POUR DOCKER + INFISICAL  ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📦 FICHIERS MODIFIÉS
+═══════════════════════════════════════════════════════════════════════
+
+🤖 Workflows GitHub Actions (3 fichiers modifiés)
+──────────────────────────────────────────────────────────────────────
+✅ .github/workflows/deploy-build.yml     - Build avec FrankenPHP
+✅ .github/workflows/deploy-server.yml    - Déploiement avec Infisical
+✅ .github/workflows/deploy-env.yml       - Copie fichiers config
+
+📖 Documentation (2 fichiers créés)
+──────────────────────────────────────────────────────────────────────
+✅ docs/infisical.md                      - Guide Infisical complet
+✅ DEPLOYMENT.md                          - Guide déploiement complet
+
+═══════════════════════════════════════════════════════════════════════
+
+🔄 CHANGEMENTS PRINCIPAUX
+═══════════════════════════════════════════════════════════════════════
+
+1. deploy-build.yml
+   ✅ Target changé vers : frankenphp_prod
+   ✅ Build argument : PHP_VERSION=8.3
+   ✅ Platform : linux/amd64 (optimisé)
+   ✅ Cache GitHub Actions maintenu
+
+2. deploy-env.yml
+   ✅ Copie de compose.prod.yaml
+   ✅ Copie du dossier frankenphp/
+   ✅ Structure complète pour FrankenPHP
+
+3. deploy-server.yml (changements majeurs)
+   ✅ Utilise compose.yaml + compose.prod.yaml
+   ✅ Export Infisical en format dotenv
+   ✅ Ajout variables Docker (IMAGES_PREFIX, etc.)
+   ✅ Pull multi-services (php, database, elasticsearch)
+   ✅ Démarrage avec compose.prod.yaml
+   ✅ Vérification santé de tous les services
+   ✅ Attente que PostgreSQL soit prêt
+   ✅ Exécution automatique des migrations
+   ✅ Clear et warmup du cache Symfony
+   ✅ Health checks améliorés
+   ✅ Rollback automatique si échec
+
+═══════════════════════════════════════════════════════════════════════
+
+🔐 CONFIGURATION INFISICAL REQUISE
+═══════════════════════════════════════════════════════════════════════
+
+Secrets GitHub à Configurer:
+─────────────────────────────────────────────────────────────────────
+INFISICAL_CLIENT_ID       → Client ID de la Machine Identity
+INFISICAL_CLIENT_SECRET    → Client Secret de la Machine Identity
+INFISICAL_PROJECTID        → ID du projet Infisical
+INFISICAL_DOMAIN          → https://app.infisical.com (ou votre instance)
+
+SSH_HOST                  → Adresse du serveur
+SSH_USER                  → Utilisateur SSH
+SSH_PRIVATE_KEY           → Clé SSH privée
+SSH_PORT                  → Port SSH (défaut: 22)
+
+DOCKERHUB_USERNAME        → Nom d'utilisateur Docker Hub
+DOCKERHUB_TOKEN           → Token d'accès Docker Hub
+
+SERVER_NAME               → Nom de domaine (ex: api.example.com)
+
+Variables dans Infisical (environnement prod):
+─────────────────────────────────────────────────────────────────────
+APP_ENV=prod
+APP_SECRET=votre_secret_unique
+APP_DEBUG=0
+
+DATABASE_URL=postgresql://app:password@database:5432/app?serverVersion=16&charset=utf8
+POSTGRES_PASSWORD=mot_de_passe_securise
+
+JWT_PASSPHRASE=votre_passphrase_jwt
+
+SERVER_NAME=api.votre-domaine.com
+CADDY_MERCURE_JWT_SECRET=secret_mercure_unique
+
+CORS_ALLOW_ORIGIN='^https?://(www\.)?votre-domaine\.com$'
+
+ELASTICSEARCH_URL=http://elasticsearch:9200
+
+MAILER_DSN=smtp://user:pass@smtp.example.com:587
+
+═══════════════════════════════════════════════════════════════════════
+
+🚀 PROCESSUS DE DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+Automatique:
+───────────────────────────────────────────────────────────────────
+1. Push vers branche "preprod"
+2. GitHub Actions déclenche automatiquement le workflow
+3. Build de l'image Docker (target: frankenphp_prod)
+4. Push vers Docker Hub
+5. Copie des fichiers de config sur le serveur
+6. Installation/Vérification Infisical CLI
+7. Connexion à Infisical et export des secrets
+8. Pull de la nouvelle image
+9. Démarrage des conteneurs (php, database, elasticsearch)
+10. Attente que PostgreSQL soit prêt
+11. Exécution des migrations Doctrine
+12. Clear + warmup du cache Symfony
+13. Vérification de la santé des services
+14. Nettoyage des anciennes images
+15. Déploiement terminé ✅
+
+Manuel via GitHub:
+───────────────────────────────────────────────────────────────────
+1. Aller sur GitHub → Actions
+2. Sélectionner "Deploy to Production"
+3. Cliquer "Run workflow"
+4. Sélectionner la branche
+5. Cliquer "Run workflow"
+
+Manuel via SSH:
+───────────────────────────────────────────────────────────────────
+ssh deploy@serveur.com
+cd ~/joypharma
+infisical login --method=universal-auth ...
+infisical export --env=prod --format=dotenv > .env
+echo "IMAGES_PREFIX=user/" >> .env
+docker compose -f compose.yaml -f compose.prod.yaml pull
+docker compose -f compose.yaml -f compose.prod.yaml up -d
+docker compose -f compose.yaml -f compose.prod.yaml exec php \
+  bin/console doctrine:migrations:migrate --no-interaction
+
+═══════════════════════════════════════════════════════════════════════
+
+✨ NOUVELLES FONCTIONNALITÉS
+═══════════════════════════════════════════════════════════════════════
+
+✅ Support FrankenPHP avec Mode Worker
+   → Performances 15x supérieures en production
+   → HTTP/2 et HTTP/3 natifs
+   → HTTPS automatique avec Let's Encrypt
+
+✅ Multi-services
+   → PostgreSQL 16 (base de données)
+   → Elasticsearch 8.11 (recherche)
+   → Healthchecks pour tous les services
+
+✅ Gestion des Secrets avec Infisical
+   → Centralisation sécurisée
+   → Synchronisation automatique
+   → Audit et traçabilité
+   → Rotation facilitée
+
+✅ Migrations Automatiques
+   → Exécution automatique lors du déploiement
+   → Rollback si échec
+
+✅ Health Checks Améliorés
+   → Vérification de tous les services
+   → Détection des restart loops
+   → Rollback automatique si problème
+
+✅ Cache Optimisé
+   → Clear automatique du cache
+   → Warmup pour performances
+
+═══════════════════════════════════════════════════════════════════════
+
+📋 CHECKLIST POST-DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+Configuration Infisical:
+☐ Projet créé dans Infisical
+☐ Tous les secrets ajoutés dans l'environnement "prod"
+☐ Machine Identity créée avec Universal Auth
+☐ Permissions Read/Write configurées
+
+Configuration GitHub:
+☐ Tous les secrets GitHub configurés
+☐ Clé SSH ajoutée et testée
+☐ Token Docker Hub valide
+☐ Variables d'environnement définies
+
+Sur le Serveur:
+☐ Docker et Docker Compose installés
+☐ Répertoire ~/joypharma créé
+☐ Firewall configuré (ports 22, 80, 443)
+☐ Domaine pointant vers le serveur
+
+Premier Déploiement:
+☐ Push vers preprod effectué
+☐ Workflow GitHub Actions réussi
+☐ Services démarrés (docker compose ps)
+☐ Migrations exécutées
+☐ Application accessible via HTTPS
+☐ Certificat SSL valide
+☐ API fonctionnelle (/api, /docs)
+
+═══════════════════════════════════════════════════════════════════════
+
+🔍 VÉRIFICATIONS
+═══════════════════════════════════════════════════════════════════════
+
+Après Déploiement:
+───────────────────────────────────────────────────────────────────
+# Vérifier les services
+docker compose -f compose.yaml -f compose.prod.yaml ps
+
+# Résultat attendu :
+NAME           STATUS         PORTS
+php            Up (healthy)   80/tcp, 443/tcp
+database       Up (healthy)   5432/tcp
+elasticsearch  Up (healthy)   9200/tcp
+
+# Vérifier les logs
+docker compose -f compose.yaml -f compose.prod.yaml logs
+
+# Tester l'application
+curl https://api.votre-domaine.com
+curl https://api.votre-domaine.com/api
+curl https://api.votre-domaine.com/docs
+
+═══════════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════
+
+Guides Disponibles:
+───────────────────────────────────────────────────────────────────
+📖 DEPLOYMENT.md              → Guide complet de déploiement
+🔐 docs/infisical.md          → Configuration Infisical détaillée
+🚢 docs/production.md         → Guide production
+🐳 DOCKER.md                  → Documentation Docker
+📥 INSTALLATION.md            → Installation locale
+
+Workflows:
+───────────────────────────────────────────────────────────────────
+.github/workflows/deploy.yml          → Workflow principal
+.github/workflows/deploy-build.yml    → Build Docker
+.github/workflows/deploy-server.yml   → Déploiement serveur
+.github/workflows/deploy-env.yml      → Préparation environnement
+.github/workflows/docker.yml          → CI Docker (tests)
+
+═══════════════════════════════════════════════════════════════════════
+
+🆘 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════
+
+Erreur : "Failed to generate Infisical token"
+→ Vérifier CLIENT_ID et CLIENT_SECRET dans GitHub Secrets
+→ Vérifier les permissions de la Machine Identity
+
+Erreur : ".env file is empty"
+→ Vérifier que les secrets sont définis dans Infisical
+→ Vérifier l'environnement cible (prod)
+
+Erreur : "Container keeps restarting"
+→ Vérifier les logs : docker compose logs php
+→ Vérifier DATABASE_URL dans Infisical
+→ Vérifier que tous les secrets requis sont définis
+
+Erreur : "Database connection failed"
+→ Vérifier que PostgreSQL est démarré
+→ Vérifier DATABASE_URL (host = "database" pas "localhost")
+→ Format : postgresql://user:pass@database:5432/dbname
+
+═══════════════════════════════════════════════════════════════════════
+
+🎉 AVANTAGES DE CETTE CONFIGURATION
+═══════════════════════════════════════════════════════════════════════
+
+✨ Sécurité
+   → Secrets jamais en clair
+   → Rotation facilitée
+   → Audit complet
+
+✨ Performance
+   → FrankenPHP Mode Worker
+   → HTTP/3 natif
+   → Cache optimisé
+
+✨ Fiabilité
+   → Healthchecks automatiques
+   → Rollback automatique
+   → Migrations automatiques
+
+✨ Maintenabilité
+   → Documentation complète
+   → Workflows standardisés
+   → Logs structurés
+
+✨ DevOps
+   → CI/CD automatique
+   → Déploiement en 1 push
+   → Monitoring intégré
+
+═══════════════════════════════════════════════════════════════════════
+
+📞 SUPPORT
+═══════════════════════════════════════════════════════════════════════
+
+Documentation : Consultez les guides dans docs/
+Issues GitHub : Ouvrez une issue pour tout problème
+Email : support@joypharma.com
+
+═══════════════════════════════════════════════════════════════════════
+
+            ✅  Workflows mis à jour avec succès !  ✅
+
+═══════════════════════════════════════════════════════════════════════

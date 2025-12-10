@@ -17,6 +17,20 @@ Ce guide décrit comment déployer Joy Pharma Backend en production avec Docker 
 - DNS pointant vers votre serveur (record A)
 - Port 80 et 443 ouverts
 
+## 🔐 Gestion des Secrets avec Infisical
+
+Ce projet utilise **Infisical** pour gérer les secrets de manière sécurisée en production.
+
+Pour la configuration complète d'Infisical, consultez : **[docs/infisical.md](infisical.md)**
+
+### Avantages d'Infisical
+
+- ✅ Centralisation des secrets
+- ✅ Synchronisation automatique
+- ✅ Audit des accès
+- ✅ Rotation facilitée
+- ✅ Intégration CI/CD native
+
 ## 🔒 Préparation
 
 ### 1. Configuration du Serveur

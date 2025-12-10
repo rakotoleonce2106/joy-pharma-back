@@ -24,14 +24,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Copy compose.yaml to server
+      - name: Copy Docker configuration to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          source: "compose.yaml"
+          source: "compose.yaml,compose.prod.yaml,frankenphp"
           target: "joypharma/"
           overwrite: true
 
@@ -106,19 +106,29 @@ jobs:
             echo "✓ Infisical token generated successfully"
             
             # Export environment variables to .env file
-            infisical export --token=$INFISICAL_TOKEN --domain="${{ secrets.INFISICAL_DOMAIN }}" --projectId="${{ secrets.INFISICAL_PROJECTID }}" --env=prod > .env
+            infisical export --token=$INFISICAL_TOKEN --domain="${{ secrets.INFISICAL_DOMAIN }}" --projectId="${{ secrets.INFISICAL_PROJECTID }}" --env=prod --format=dotenv > .env
             
             if [ ! -s .env ]; then
                 echo "✗ Failed to generate .env file or file is empty"
                 exit 1
             fi
             
-            # Add INFISICAL_TOKEN, INFISICAL_PROJECT_ID, IMAGE_NAME and TRAEFIK_NETWORK to .env for docker compose
-            # These are needed by compose.yaml but may not be in the Infisical export
+            # Add Docker-specific variables to .env
+            echo "" >> .env
+            echo "# Docker Configuration" >> .env
             echo "INFISICAL_TOKEN=$INFISICAL_TOKEN" >> .env
             echo "INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECTID }}" >> .env
-            echo "IMAGE_NAME=$IMAGE_NAME" >> .env
+            echo "IMAGES_PREFIX=${{ secrets.DOCKERHUB_USERNAME }}/" >> .env
             echo "TRAEFIK_NETWORK=$TRAEFIK_NETWORK" >> .env
+            
+            # Ensure critical Symfony/FrankenPHP variables are set
+            if ! grep -q "^APP_ENV=" .env; then
+                echo "APP_ENV=prod" >> .env
+            fi
+            
+            if ! grep -q "^SERVER_NAME=" .env; then
+                echo "SERVER_NAME=${{ secrets.SERVER_NAME }}" >> .env
+            fi
             
             # Export variables for docker compose commands (as backup)
             export INFISICAL_TOKEN
@@ -142,89 +152,150 @@ jobs:
             
             # Backup current container for rollback
             echo "→ Backing up current deployment..."
-            CURRENT_CONTAINER=$(docker compose --env-file .env ps -q php 2>/dev/null || echo "")
-            if [ -n "$CURRENT_CONTAINER" ]; then
-                echo "✓ Current container ID: $CURRENT_CONTAINER"
+            if [ -f compose.yaml ] && [ -f .env ]; then
+                CURRENT_CONTAINER=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -q php 2>/dev/null || echo "")
+                if [ -n "$CURRENT_CONTAINER" ]; then
+                    echo "✓ Current container ID: $CURRENT_CONTAINER"
+                else
+                    echo "ℹ No existing container to backup"
+                fi
             else
-                echo "ℹ No existing container to backup"
+                echo "ℹ First deployment - no containers to backup"
+                CURRENT_CONTAINER=""
             fi
             
-            # Pull new image with retry logic
-            echo "→ Pulling Docker image (with retry)..."
+            # Pull new images with retry logic
+            echo "→ Pulling Docker images (with retry)..."
             MAX_RETRIES=3
             RETRY_COUNT=0
-            until docker compose --env-file .env pull || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+            until docker compose -f compose.yaml -f compose.prod.yaml --env-file .env pull || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
                 RETRY_COUNT=$((RETRY_COUNT+1))
                 echo "⚠ Pull failed. Retry $RETRY_COUNT/$MAX_RETRIES..."
                 sleep 5
             done
             
             if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-                echo "✗ Failed to pull image after $MAX_RETRIES attempts"
+                echo "✗ Failed to pull images after $MAX_RETRIES attempts"
                 exit 1
             fi
             
-            echo "✓ Image pulled successfully"
+            echo "✓ Images pulled successfully"
             
             # Deploy new version
-            echo "→ Deploying new version..."
-            if docker compose --env-file .env up -d; then
+            echo "→ Deploying new version with FrankenPHP..."
+            if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d; then
                 echo "✓ Containers started"
                 
-                # Wait for container to be healthy
-                echo "→ Waiting for container to stabilize..."
-                sleep 5
+                # Wait for services to stabilize
+                echo "→ Waiting for services to stabilize..."
+                sleep 10
                 
-                NEW_CONTAINER=$(docker compose --env-file .env ps -q php 2>/dev/null || echo "")
-                if [ -n "$NEW_CONTAINER" ]; then
-                    # Check container status multiple times to catch restart loops
-                    sleep 5
-                    CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $NEW_CONTAINER 2>/dev/null || echo "unknown")
-                    RESTART_COUNT=$(docker inspect --format='{{.RestartCount}}' $NEW_CONTAINER 2>/dev/null || echo "0")
+                # Check all services
+                echo "→ Checking service health..."
+                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps
+                
+                # Get container IDs
+                PHP_CONTAINER=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -q php 2>/dev/null || echo "")
+                DB_CONTAINER=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -q database 2>/dev/null || echo "")
+                
+                if [ -z "$PHP_CONTAINER" ]; then
+                    echo "✗ PHP container not found"
+                    docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php
+                    exit 1
+                fi
+                
+                # Check PHP container status
+                sleep 5
+                CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $PHP_CONTAINER 2>/dev/null || echo "unknown")
+                RESTART_COUNT=$(docker inspect --format='{{.RestartCount}}' $PHP_CONTAINER 2>/dev/null || echo "0")
+                
+                echo "→ PHP Container status: $CONTAINER_STATUS (restart count: $RESTART_COUNT)"
+                
+                if [ "$CONTAINER_STATUS" = "running" ] && [ "$RESTART_COUNT" = "0" ]; then
+                    echo "✓ PHP container is running and healthy"
                     
-                    echo "→ Container status: $CONTAINER_STATUS (restart count: $RESTART_COUNT)"
+                    # Wait for database to be ready
+                    echo "→ Waiting for database to be ready..."
+                    MAX_DB_WAIT=30
+                    DB_WAIT=0
+                    until docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T database pg_isready -U app 2>/dev/null || [ $DB_WAIT -eq $MAX_DB_WAIT ]; do
+                        DB_WAIT=$((DB_WAIT+1))
+                        echo "⏳ Waiting for database... ($DB_WAIT/$MAX_DB_WAIT)"
+                        sleep 2
+                    done
                     
-                    if [ "$CONTAINER_STATUS" = "running" ] && [ "$RESTART_COUNT" = "0" ]; then
-                        echo "✓ Container is running and healthy"
-                        
-                        # Verify .env file is mounted correctly
-                        echo "→ Verifying .env file in container..."
-                        docker exec $NEW_CONTAINER test -f /app/.env && echo "✓ .env file is mounted" || echo "⚠ .env file not found in container"
-                        
-                        # Clean up old images
-                        echo "→ Cleaning up old images..."
-                        docker image prune -f
-                        
-                        echo "============================================"
-                        echo "✓ Deployment completed successfully!"
-                        echo "============================================"
+                    if [ $DB_WAIT -eq $MAX_DB_WAIT ]; then
+                        echo "⚠ Database did not become ready in time, but continuing..."
                     else
-                        echo "✗ Container is not running properly (status: $CONTAINER_STATUS, restarts: $RESTART_COUNT)"
-                        echo "→ Checking container logs..."
-                        docker logs $NEW_CONTAINER --tail 100 2>&1 || echo "Could not retrieve logs"
-                        echo "→ Checking container exit code..."
-                        EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' $NEW_CONTAINER 2>/dev/null || echo "unknown")
-                        echo "Exit code: $EXIT_CODE"
-                        echo "→ Attempting rollback..."
-                        if [ -n "$CURRENT_CONTAINER" ] && docker ps -a --format '{{.ID}}' | grep -q "$CURRENT_CONTAINER"; then
-                            docker compose --env-file .env down
-                            docker start $CURRENT_CONTAINER
-                            echo "✓ Rollback completed"
+                        echo "✓ Database is ready"
+                        
+                        # Run migrations
+                        echo "→ Running database migrations..."
+                        if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:migrate --no-interaction; then
+                            echo "✓ Migrations executed successfully"
                         else
-                            echo "⚠ No previous container to rollback to"
-                            docker compose --env-file .env down
+                            echo "⚠ Migrations failed, but deployment continues"
                         fi
-                        exit 1
+                        
+                        # Clear cache
+                        echo "→ Clearing Symfony cache..."
+                        if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console cache:clear --no-warmup; then
+                            echo "✓ Cache cleared successfully"
+                        else
+                            echo "⚠ Cache clear failed, but deployment continues"
+                        fi
+                        
+                        # Warmup cache
+                        echo "→ Warming up cache..."
+                        if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console cache:warmup; then
+                            echo "✓ Cache warmed up successfully"
+                        else
+                            echo "⚠ Cache warmup failed, but deployment continues"
+                        fi
                     fi
+                    
+                    # Test application health
+                    echo "→ Testing application health..."
+                    sleep 3
+                    if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1; then
+                        echo "✓ PHP is working"
+                    else
+                        echo "⚠ PHP health check failed"
+                    fi
+                    
+                    # Clean up old images
+                    echo "→ Cleaning up old images..."
+                    docker image prune -f
+                    
+                    # Show final status
+                    echo "→ Final service status:"
+                    docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps
+                    
+                    echo "============================================"
+                    echo "✓ Deployment completed successfully!"
+                    echo "============================================"
                 else
-                    echo "✗ Failed to get new container ID"
-                    echo "→ Checking all containers..."
-                    docker compose --env-file .env ps -a
+                    echo "✗ Container is not running properly (status: $CONTAINER_STATUS, restarts: $RESTART_COUNT)"
+                    echo "→ Checking container logs..."
+                    docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php --tail 100
+                    echo "→ Checking container exit code..."
+                    EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' $PHP_CONTAINER 2>/dev/null || echo "unknown")
+                    echo "Exit code: $EXIT_CODE"
+                    echo "→ Attempting rollback..."
+                    if [ -n "$CURRENT_CONTAINER" ] && docker ps -a --format '{{.ID}}' | grep -q "$CURRENT_CONTAINER"; then
+                        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down
+                        docker start $CURRENT_CONTAINER
+                        echo "✓ Rollback completed"
+                    else
+                        echo "⚠ No previous container to rollback to"
+                        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down
+                    fi
                     exit 1
                 fi
             else
                 echo "✗ Deployment failed"
                 echo "→ Checking compose status..."
-                docker compose --env-file .env ps -a
+                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -a
+                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs
                 exit 1
             fi
