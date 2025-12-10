@@ -2,17 +2,6 @@ name: Deploy - Build and Push Docker Image
 
 on:
   workflow_call:
-    inputs:
-      env-artifact-name:
-        description: "Name of the environment artifact to download"
-        required: false
-        type: string
-        default: env-production
-      has-env-artifact:
-        description: "Whether the environment artifact exists"
-        required: false
-        type: boolean
-        default: false
     outputs:
       image-tag:
         description: "Tag of the built Docker image"
@@ -30,25 +19,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Download environment artifact
-        if: inputs.has-env-artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.env-artifact-name }}
-          path: .
-
-      - name: Verify environment file
-        if: inputs.has-env-artifact
-        run: |
-          if [ -f .env.production ]; then
-            echo "✓ Environment file downloaded successfully"
-            echo "File size: $(wc -c < .env.production) bytes"
-            # Create .env for Docker build context
-            cp .env.production .env
-          else
-            echo "⚠ Warning: Environment file not found, proceeding without it"
-          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -87,6 +57,4 @@ jobs:
             type=gha,scope=build-main
           cache-to: type=gha,mode=max,scope=build-${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64
-          # Environment variables are loaded from .env file in build context
-          # No need to pass DATABASE_URL as build-arg anymore
 

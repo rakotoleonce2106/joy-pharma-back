@@ -18,7 +18,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	file \
 	gettext \
 	git \
+	curl \
+	bash \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Install Infisical CLI
+RUN curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | bash && \
+	apt-get update && \
+	apt-get install -y infisical && \
+	rm -rf /var/lib/apt/lists/*
 
 RUN set -eux; \
 	install-php-extensions \
@@ -67,9 +75,11 @@ RUN set -eux; \
 COPY --link . ./
 RUN rm -rf frankenphp/
 
-RUN touch .env
-
-ARG DATABASE_URL
+# Create dummy .env for build (real secrets injected at runtime via Infisical)
+RUN echo "APP_ENV=prod" > .env && \
+    echo "APP_SECRET=dummy_build_secret" >> .env && \
+    echo "DATABASE_URL=postgresql://app:pass@localhost:5432/app?serverVersion=15&charset=utf8" >> .env && \
+    echo "JWT_PASSPHRASE=dummy_passphrase" >> .env
 
 
 
@@ -78,3 +88,6 @@ RUN set -eux; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
+
+# Use Infisical to inject secrets at runtime
+CMD ["infisical", "run", "--projectId", "${INFISICAL_PROJECT_ID}", "--env", "${INFISICAL_ENV_SLUG}", "--", "frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
