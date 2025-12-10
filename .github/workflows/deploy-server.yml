@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          source: "compose.yaml,compose.prod.yaml,frankenphp"
+          source: "compose.yaml,compose.prod.yaml,Dockerfile,.dockerignore,frankenphp"
           target: "joypharma/"
           overwrite: true
 
@@ -70,22 +70,45 @@ jobs:
             
             # Find Traefik network
             echo "→ Detecting Traefik network..."
-            TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
+            TRAEFIK_NETWORK=""
             
+            # Méthode 1: Chercher le réseau Traefik via le conteneur Traefik
+            if docker ps --format '{{.Names}}' | grep -q "^traefik$"; then
+                TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
+                echo "✓ Found Traefik network via container: $TRAEFIK_NETWORK"
+            fi
+            
+            # Méthode 2: Chercher les réseaux Docker existants contenant "traefik"
             if [ -z "$TRAEFIK_NETWORK" ]; then
-                echo "⚠ Warning: Could not find Traefik network. Creating default network."
-                NETWORK_NAME="joy-pharma-back_default"
+                TRAEFIK_NETWORK=$(docker network ls --format '{{.Name}}' | grep -i traefik | head -n1)
+                if [ -n "$TRAEFIK_NETWORK" ]; then
+                    echo "✓ Found Traefik network via network list: $TRAEFIK_NETWORK"
+                fi
+            fi
+            
+            # Méthode 3: Utiliser le réseau par défaut de Traefik
+            if [ -z "$TRAEFIK_NETWORK" ]; then
+                if docker network inspect traefik_default &>/dev/null; then
+                    TRAEFIK_NETWORK="traefik_default"
+                    echo "✓ Using default Traefik network: $TRAEFIK_NETWORK"
+                fi
+            fi
+            
+            # Si toujours pas trouvé, créer un réseau par défaut
+            if [ -z "$TRAEFIK_NETWORK" ]; then
+                echo "⚠ Warning: Could not find Traefik network. Using default network."
+                NETWORK_NAME="traefik_default"
                 if ! docker network inspect $NETWORK_NAME &>/dev/null; then
                     docker network create $NETWORK_NAME
                     echo "✓ Created network: $NETWORK_NAME"
                 else
                     echo "✓ Network already exists: $NETWORK_NAME"
                 fi
-                export TRAEFIK_NETWORK=$NETWORK_NAME
-            else
-                echo "✓ Found Traefik network: $TRAEFIK_NETWORK"
-                export TRAEFIK_NETWORK
+                TRAEFIK_NETWORK=$NETWORK_NAME
             fi
+            
+            export TRAEFIK_NETWORK
+            echo "→ Final Traefik network: $TRAEFIK_NETWORK"
             
             # Install Infisical CLI on the server
             echo "→ Installing Infisical CLI on server..."
@@ -176,9 +199,21 @@ jobs:
                 echo "✗ compose.prod.yaml not found!"
                 exit 1
             fi
+            if [ ! -f Dockerfile ]; then
+                echo "✗ Dockerfile not found!"
+                exit 1
+            fi
             echo "✓ Docker Compose files present"
             echo "→ Checking image configuration in compose.yaml..."
             grep -A 2 "php:" compose.yaml | grep "image:" || echo "⚠ Could not find image in compose.yaml"
+            
+            # Vérifier que le réseau Traefik existe ou le créer
+            echo "→ Ensuring Traefik network exists..."
+            if ! docker network inspect $TRAEFIK_NETWORK &>/dev/null; then
+                echo "→ Creating Traefik network: $TRAEFIK_NETWORK"
+                docker network create $TRAEFIK_NETWORK || true
+            fi
+            echo "✓ Traefik network ready: $TRAEFIK_NETWORK"
             
             # Backup current container for rollback
             echo "→ Backing up current deployment..."
@@ -229,17 +264,9 @@ jobs:
             
             echo "✓ Images pulled successfully"
             
-            # Stop existing containers to free ports (especially port 80)
-            echo "→ Stopping existing containers to free ports..."
+            # Stop existing containers (Traefik gère le routage, pas besoin de libérer les ports)
+            echo "→ Stopping existing containers..."
             docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down 2>/dev/null || true
-            
-            # Also stop any containers that might be using port 80
-            echo "→ Checking for containers using port 80..."
-            CONTAINERS_ON_80=$(docker ps --filter "publish=80" --format "{{.ID}}" 2>/dev/null || echo "")
-            if [ -n "$CONTAINERS_ON_80" ]; then
-                echo "→ Found containers using port 80, stopping them..."
-                echo "$CONTAINERS_ON_80" | xargs -r docker stop 2>/dev/null || true
-            fi
             
             # Check for any containers with name containing joypharma
             echo "→ Checking for any remaining joypharma containers..."
@@ -250,24 +277,8 @@ jobs:
                 echo "$REMAINING_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
             fi
             
-            # Wait a moment for ports to be released
+            # Wait a moment for cleanup
             sleep 3
-            
-            # Verify port 80 is free
-            echo "→ Verifying port 80 is free..."
-            if command -v lsof >/dev/null 2>&1; then
-                PORT_80_USERS=$(lsof -i :80 2>/dev/null | wc -l || echo "0")
-                if [ "$PORT_80_USERS" -gt "0" ]; then
-                    echo "⚠ Port 80 is still in use:"
-                    lsof -i :80 2>/dev/null || true
-                    echo "→ Force stopping all containers using port 80..."
-                    docker ps --filter "publish=80" --format "{{.ID}}" | xargs -r docker stop 2>/dev/null || true
-                    docker ps --filter "publish=80" --format "{{.ID}}" | xargs -r docker rm 2>/dev/null || true
-                    sleep 2
-                else
-                    echo "✓ Port 80 is free"
-                fi
-            fi
             
             # Deploy new version
             echo "→ Deploying new version with FrankenPHP..."

@@ -1,0 +1,64 @@
+{
+    # Configuration globale Caddy
+    auto_https off
+    admin localhost:2019
+}
+
+:80 {
+    # Redirection HTTP vers HTTPS
+    redir https://{host}{uri} permanent
+}
+
+:443 {
+    # Configuration HTTPS
+    root * /app/public
+    
+    # Health check endpoint (sans authentification)
+    handle /health.php {
+        php_server
+    }
+    
+    # PHP-FPM pour les requêtes classiques
+    php_server
+    
+    # Headers de sécurité
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    # Gestion des fichiers statiques
+    @static {
+        file
+        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot
+    }
+    handle @static {
+        file_server
+        header Cache-Control "public, max-age=31536000, immutable"
+    }
+    
+    # Gestion des uploads
+    handle /images/* {
+        file_server
+        header Cache-Control "public, max-age=3600"
+    }
+    
+    # Proxy vers Mercure (si nécessaire)
+    handle /.well-known/mercure* {
+        reverse_proxy php:80
+    }
+    
+    # Toutes les autres requêtes vers PHP
+    handle {
+        php_server
+    }
+    
+    # Logs
+    log {
+        output stdout
+        format console
+    }
+}
+

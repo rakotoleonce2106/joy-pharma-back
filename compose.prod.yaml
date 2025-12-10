@@ -1,0 +1,90 @@
+# Configuration de production avec Traefik
+# Utilisation: docker compose -f compose.yaml -f compose.prod.yaml up -d
+
+services:
+  php:
+    build:
+      target: frankenphp_prod
+    image: ${IMAGES_PREFIX}joy-pharma-back:${IMAGE_TAG:-latest}
+    environment:
+      - APP_ENV=prod
+      - APP_DEBUG=0
+    # Ne pas exposer de ports directement - Traefik gère le routage
+    # ports:
+    #   - "80:80"
+    #   - "443:443"
+    labels:
+      # Labels Traefik pour le routage automatique
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik_default}"
+      
+      # HTTP
+      - "traefik.http.routers.joypharma-http.rule=Host(`${SERVER_NAME}`)"
+      - "traefik.http.routers.joypharma-http.entrypoints=web"
+      - "traefik.http.routers.joypharma-http.middlewares=joypharma-redirect"
+      
+      # HTTPS
+      - "traefik.http.routers.joypharma-https.rule=Host(`${SERVER_NAME}`)"
+      - "traefik.http.routers.joypharma-https.entrypoints=websecure"
+      - "traefik.http.routers.joypharma-https.tls=true"
+      - "traefik.http.routers.joypharma-https.tls.certresolver=letsencrypt"
+      
+      # Service
+      - "traefik.http.services.joypharma.loadbalancer.server.port=80"
+      
+      # Middleware pour redirection HTTP -> HTTPS
+      - "traefik.http.middlewares.joypharma-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.joypharma-redirect.redirectscheme.permanent=true"
+      
+      # Headers de sécurité
+      - "traefik.http.middlewares.joypharma-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.joypharma-headers.headers.customrequestheaders.X-Forwarded-Port=443"
+      - "traefik.http.middlewares.joypharma-headers.headers.customrequestheaders.X-Real-Ip="
+      
+      # Compression
+      - "traefik.http.middlewares.joypharma-compress.compress=true"
+      
+      # Appliquer les middlewares
+      - "traefik.http.routers.joypharma-https.middlewares=joypharma-headers,joypharma-compress"
+    networks:
+      - joypharma_network
+      - ${TRAEFIK_NETWORK:-traefik_default}
+    volumes:
+      # En production, on peut monter le code en lecture seule ou utiliser l'image
+      - ./public/images:/app/public/images:rw
+      - php_data:/app/var:rw
+
+  database:
+    # En production, la base de données peut être externe
+    # Décommentez pour utiliser une base externe
+    # external: true
+    # name: joypharma_database_prod
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-app}
+      - POSTGRES_USER=${POSTGRES_USER:-app}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    # Ne pas exposer le port PostgreSQL en production
+    # ports:
+    #   - "5432:5432"
+    networks:
+      - joypharma_network
+
+  elasticsearch:
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    # Ne pas exposer Elasticsearch en production (accès interne uniquement)
+    # ports:
+    #   - "9200:9200"
+    networks:
+      - joypharma_network
+
+networks:
+  joypharma_network:
+    driver: bridge
+  # Réseau Traefik (doit exister)
+  traefik_default:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik_default}
+

@@ -1,0 +1,103 @@
+name: joy-pharma-back
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: ${DOCKER_TARGET:-frankenphp_dev}
+      args:
+        PHP_VERSION: ${PHP_VERSION:-8.3}
+    image: ${IMAGES_PREFIX:-}joy-pharma-back:${IMAGE_TAG:-dev}
+    container_name: joypharma_php
+    restart: unless-stopped
+    environment:
+      - APP_ENV=${APP_ENV:-dev}
+      - APP_DEBUG=${APP_DEBUG:-1}
+      - APP_SECRET=${APP_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+      - MERCURE_URL=${MERCURE_URL:-http://php/.well-known/mercure}
+      - MERCURE_PUBLIC_URL=${MERCURE_PUBLIC_URL:-https://localhost/.well-known/mercure}
+      - MERCURE_JWT_SECRET=${MERCURE_JWT_SECRET}
+      - SERVER_NAME=${SERVER_NAME:-localhost}
+      - ELASTICSEARCH_URL=${ELASTICSEARCH_URL:-http://elasticsearch:9200}
+      - ELASTICSEARCH_INDEX_PREFIX=${ELASTICSEARCH_INDEX_PREFIX:-joy_pharma}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-%kernel.project_dir%/config/jwt/private.pem}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY:-%kernel.project_dir%/config/jwt/public.pem}
+      - JWT_PASSPHRASE=${JWT_PASSPHRASE}
+      - JWT_TTL=${JWT_TTL:-3600}
+      - FRANKENPHP_WORKER_COUNT=${FRANKENPHP_WORKER_COUNT:-auto}
+      - XDEBUG_MODE=${XDEBUG_MODE:-off}
+    volumes:
+      - ./:/app:rw,cached
+      - php_data:/app/var
+      - php_images:/app/public/images
+    depends_on:
+      database:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - joypharma_network
+    healthcheck:
+      test: ["CMD", "php", "-r", "echo file_get_contents('http://localhost/health.php') ? 'OK' : 'FAIL';"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  database:
+    image: postgres:16-alpine
+    container_name: joypharma_database
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-app}
+      - POSTGRES_USER=${POSTGRES_USER:-app}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    networks:
+      - joypharma_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: joypharma_elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - joypharma_network
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  php_data:
+  php_images:
+  database_data:
+  elasticsearch_data:
+
+networks:
+  joypharma_network:
+    driver: bridge
+

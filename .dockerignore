@@ -1,0 +1,76 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+CHANGELOG.md
+docs/
+*.md
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# PHP
+vendor/
+var/
+.phpunit.result.cache
+.php-cs-fixer.cache
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Docker
+docker-compose*.yml
+compose*.yaml
+Dockerfile*
+.dockerignore
+
+# CI/CD
+.github/
+
+# Logs
+*.log
+logs/
+
+# Cache
+cache/
+tmp/
+temp/
+
+# Database
+*.sql
+*.sqlite
+pgadmin_data/
+
+# Build artifacts
+build/
+dist/
+
+# Tests
+tests/
+phpunit.xml
+.phpunit.cache
+
+# Misc
+Makefile
+*.bak
+*.tmp
+
