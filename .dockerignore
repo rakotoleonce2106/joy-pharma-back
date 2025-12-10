@@ -1,9 +1,0 @@
-.git
-.env
-.env.local
-.env.*.local
-vendor/
-var/
-.idea
-.DS_Store
-docker-compose.override.yml
