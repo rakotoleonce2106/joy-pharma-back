@@ -1,0 +1,41 @@
+---
+# Production environment override
+services:
+  php:
+    image: ${IMAGES_PREFIX:-}joy-pharma-back:${IMAGE_TAG:-preprod}
+    restart: unless-stopped
+    environment:
+      APP_SECRET: ${APP_SECRET}
+      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}
+      # Infisical configuration
+      INFISICAL_TOKEN: ${INFISICAL_TOKEN:-}
+      INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID:-}
+    # Remove port mappings - Traefik handles routing
+    ports: []
+    # Connect to Traefik network
+    networks:
+      - default
+      - traefik
+    # Traefik labels for routing
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      # HTTP router (HTTPS)
+      - "traefik.http.routers.joy-pharma-back.rule=Host(`${SERVER_NAME:-localhost}`)"
+      - "traefik.http.routers.joy-pharma-back.entrypoints=websecure"
+      - "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.joy-pharma-back.tls=true"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.joy-pharma-back-redirect.rule=Host(`${SERVER_NAME:-localhost}`)"
+      - "traefik.http.routers.joy-pharma-back-redirect.entrypoints=web"
+      - "traefik.http.routers.joy-pharma-back-redirect.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      # Service configuration
+      - "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80"
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
