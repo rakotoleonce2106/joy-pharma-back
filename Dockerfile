@@ -26,7 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | bash && \
 	apt-get update && \
 	apt-get install -y infisical && \
-	rm -rf /var/lib/apt/lists/*
+	rm -rf /var/lib/apt/lists/* && \
+	which infisical && infisical --version
 
 RUN set -eux; \
 	install-php-extensions \

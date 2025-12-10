@@ -84,14 +84,23 @@ jobs:
             
             # Generate Infisical token for container
             echo "→ Generating Infisical access token..."
+            # Check if infisical is available in the image
+            if ! docker run --rm --entrypoint="" $IMAGE_NAME /bin/bash -c "command -v infisical >/dev/null 2>&1"; then
+                echo "✗ Error: infisical command not found in Docker image"
+                echo "→ Checking installation..."
+                docker run --rm --entrypoint="" $IMAGE_NAME /bin/bash -c "ls -la /usr/bin/infisical /usr/local/bin/infisical 2>/dev/null || echo 'Infisical binary not found'"
+                exit 1
+            fi
+            
             export INFISICAL_TOKEN=$(docker run --rm \
               -e INFISICAL_CLIENT_ID="$INFISICAL_CLIENT_ID" \
               -e INFISICAL_CLIENT_SECRET="$INFISICAL_CLIENT_SECRET" \
+              --entrypoint="" \
               $IMAGE_NAME \
-              infisical login --method=universal-auth \
-                --client-id="$INFISICAL_CLIENT_ID" \
-                --client-secret="$INFISICAL_CLIENT_SECRET" \
-                --plain --silent)
+              /bin/bash -c "infisical login --method=universal-auth \
+                --client-id=\"$INFISICAL_CLIENT_ID\" \
+                --client-secret=\"$INFISICAL_CLIENT_SECRET\" \
+                --plain --silent")
             
             if [ -z "$INFISICAL_TOKEN" ]; then
                 echo "✗ Failed to generate Infisical token"
