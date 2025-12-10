@@ -2,6 +2,7 @@
 # It is used to configure the Caddy web server.
 #
 # Documentation: https://caddyserver.com/docs/caddyfile
+# This file is imported by the main Caddyfile and should only contain the global block
 
 {
 	# Debug
@@ -20,13 +21,4 @@
 	# Order of the directives
 	order frankenphp before file_server
 	order php_server before file_server
-}
-
-# The block below is the configuration for the server
-:80 {
-	# Set the webroot
-	root * public/
-
-	# Enable the PHP file server
-	php_server
 }
