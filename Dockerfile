@@ -23,11 +23,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install Infisical CLI
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | bash && \
-	apt-get update && \
-	apt-get install -y infisical && \
-	rm -rf /var/lib/apt/lists/* && \
-	which infisical && infisical --version
+RUN set -eux; \
+	curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | bash; \
+	apt-get update; \
+	apt-get install -y infisical; \
+	rm -rf /var/lib/apt/lists/*; \
+	INFISICAL_PATH=$(which infisical || command -v infisical || echo ""); \
+	if [ -z "$INFISICAL_PATH" ]; then \
+		echo "ERROR: Infisical installation failed - binary not found in PATH"; \
+		echo "PATH: $PATH"; \
+		find /usr -name infisical 2>/dev/null || echo "Infisical not found in /usr"; \
+		exit 1; \
+	fi; \
+	echo "✓ Infisical installed successfully at: $INFISICAL_PATH"; \
+	infisical --version; \
+	echo "✓ Infisical installation verified"
 
 RUN set -eux; \
 	install-php-extensions \

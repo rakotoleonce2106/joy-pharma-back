@@ -85,13 +85,31 @@ jobs:
             # Generate Infisical token for container
             echo "→ Generating Infisical access token..."
             # Check if infisical is available in the image
-            if ! docker run --rm --entrypoint="" $IMAGE_NAME /bin/bash -c "command -v infisical >/dev/null 2>&1"; then
+            echo "→ Checking Infisical installation in image..."
+            INFISICAL_PATH=$(docker run --rm --entrypoint="" $IMAGE_NAME /bin/bash -c "command -v infisical 2>/dev/null || which infisical 2>/dev/null || echo ''")
+            
+            if [ -z "$INFISICAL_PATH" ]; then
                 echo "✗ Error: infisical command not found in Docker image"
-                echo "→ Checking installation..."
-                docker run --rm --entrypoint="" $IMAGE_NAME /bin/bash -c "ls -la /usr/bin/infisical /usr/local/bin/infisical 2>/dev/null || echo 'Infisical binary not found'"
+                echo "→ Checking common installation locations..."
+                docker run --rm --entrypoint="" $IMAGE_NAME /bin/bash -c "
+                    echo 'Checking /usr/bin/infisical:'
+                    ls -la /usr/bin/infisical 2>&1 || echo '  Not found'
+                    echo 'Checking /usr/local/bin/infisical:'
+                    ls -la /usr/local/bin/infisical 2>&1 || echo '  Not found'
+                    echo 'Checking PATH:'
+                    echo \$PATH
+                    echo 'Checking all infisical binaries:'
+                    find /usr -name infisical 2>/dev/null || echo '  Not found'
+                "
+                echo "⚠ The image may not have been built with Infisical installed."
+                echo "⚠ Please ensure the Dockerfile includes Infisical installation in the frankenphp_base stage."
                 exit 1
+            else
+                echo "✓ Found Infisical at: $INFISICAL_PATH"
             fi
             
+            # Generate token using Infisical (should be in PATH if found above)
+            echo "→ Generating Infisical access token..."
             export INFISICAL_TOKEN=$(docker run --rm \
               -e INFISICAL_CLIENT_ID="$INFISICAL_CLIENT_ID" \
               -e INFISICAL_CLIENT_SECRET="$INFISICAL_CLIENT_SECRET" \
