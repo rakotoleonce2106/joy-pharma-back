@@ -1,0 +1,175 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║        ✅  CORRECTIONS DÉPLOIEMENT - PROBLÈMES RÉSOLUS  ✅          ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🐛 PROBLÈMES IDENTIFIÉS ET CORRIGÉS
+═══════════════════════════════════════════════════════════════════════
+
+1. ❌ Port 80 déjà utilisé
+   ✅ Solution: Arrêt des conteneurs existants avant déploiement
+
+2. ❌ worker.Caddyfile non trouvé
+   ✅ Solution: Copie du fichier dans le Dockerfile vers /etc/caddy/
+
+3. ❌ JWT_PASSPHRASE manquant
+   ✅ Solution: Vérification et warning si absent dans Infisical
+
+═══════════════════════════════════════════════════════════════════════
+
+📦 CORRECTIONS APPLIQUÉES
+═══════════════════════════════════════════════════════════════════════
+
+1. Dockerfile
+─────────────────────────────────────────────────────────────────────
+✅ Ajout de la copie de worker.Caddyfile:
+   COPY --link frankenphp/worker.Caddyfile /etc/caddy/worker.Caddyfile
+
+   → Le fichier est maintenant disponible pour Caddy
+   → L'import "import worker.Caddyfile" fonctionne
+
+2. docker-entrypoint.sh
+─────────────────────────────────────────────────────────────────────
+✅ Vérification de JWT_PASSPHRASE avant génération:
+   if [ -z "$JWT_PASSPHRASE" ]; then
+       echo "⚠️  JWT_PASSPHRASE not set, skipping JWT key generation"
+   fi
+
+   → Le script ne crash plus si JWT_PASSPHRASE est absent
+   → Affiche un warning clair
+
+3. deploy-server.yml
+─────────────────────────────────────────────────────────────────────
+✅ Arrêt des conteneurs avant déploiement:
+   - docker compose down
+   - Arrêt des conteneurs utilisant le port 80
+   - Nettoyage des conteneurs joypharma restants
+   - Vérification que le port 80 est libre
+
+✅ Vérification de JWT_PASSPHRASE:
+   - Affiche un warning si JWT_PASSPHRASE n'est pas dans .env
+   - Indique qu'il faut l'ajouter dans Infisical
+
+═══════════════════════════════════════════════════════════════════════
+
+🔧 CONFIGURATION REQUISE DANS INFISICAL
+═══════════════════════════════════════════════════════════════════════
+
+Variables CRITIQUES à ajouter dans Infisical (environnement prod):
+─────────────────────────────────────────────────────────────────────
+✅ JWT_PASSPHRASE=votre_passphrase_securisee_unique
+
+   ⚠️  IMPORTANT: Sans cette variable, les clés JWT ne seront pas
+       générées automatiquement et l'authentification ne fonctionnera pas.
+
+Comment l'ajouter:
+─────────────────────────────────────────────────────────────────────
+1. Connectez-vous à Infisical
+2. Sélectionnez votre projet "Joy Pharma Backend"
+3. Allez dans l'environnement "prod"
+4. Cliquez sur "Add Secret"
+5. Key: JWT_PASSPHRASE
+6. Value: votre_passphrase_securisee (générez-en une unique)
+7. Sauvegardez
+
+Générer une Passphrase Sécurisée:
+─────────────────────────────────────────────────────────────────────
+openssl rand -base64 48
+# ou
+php -r "echo bin2hex(random_bytes(32));"
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ VÉRIFICATIONS POST-DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+1. Vérifier que le conteneur démarre:
+─────────────────────────────────────────────────────────────────────
+docker compose -f compose.yaml -f compose.prod.yaml ps
+
+# Le conteneur php doit être "Up" et "healthy"
+# Pas de restart en boucle
+
+2. Vérifier les logs:
+─────────────────────────────────────────────────────────────────────
+docker compose -f compose.yaml -f compose.prod.yaml logs php
+
+# Ne doit PAS afficher:
+# ❌ "File to import not found: worker.Caddyfile"
+# ❌ "Environment variable not found: JWT_PASSPHRASE"
+
+# Doit afficher:
+# ✅ "✅ Initialization complete, starting application..."
+# ✅ Caddy démarré correctement
+
+3. Vérifier les clés JWT:
+─────────────────────────────────────────────────────────────────────
+docker compose -f compose.yaml -f compose.prod.yaml exec php \
+  ls -la config/jwt/
+
+# Doit afficher:
+# private.pem
+# public.pem
+
+4. Tester l'application:
+─────────────────────────────────────────────────────────────────────
+curl -k https://api.votre-domaine.com/api
+
+# Doit retourner du JSON (pas d'erreur 500)
+
+═══════════════════════════════════════════════════════════════════════
+
+📋 CHECKLIST AVANT PROCHAIN DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+Configuration Infisical:
+☐ JWT_PASSPHRASE ajouté dans l'environnement "prod"
+☐ Toutes les autres variables requises présentes
+☐ Machine Identity configurée avec les bonnes permissions
+
+GitHub Secrets:
+☐ Tous les secrets configurés
+☐ INFISICAL_CLIENT_ID et INFISICAL_CLIENT_SECRET valides
+☐ DOCKERHUB_USERNAME et DOCKERHUB_TOKEN valides
+
+Code:
+☐ Dockerfile mis à jour (worker.Caddyfile copié)
+☐ docker-entrypoint.sh mis à jour (vérification JWT_PASSPHRASE)
+☐ deploy-server.yml mis à jour (arrêt conteneurs)
+
+═══════════════════════════════════════════════════════════════════════
+
+🚀 PROCHAIN DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+1. Ajouter JWT_PASSPHRASE dans Infisical
+2. Commiter et pousser les changements:
+   git add .
+   git commit -m "fix: add worker.Caddyfile copy and JWT_PASSPHRASE check"
+   git push origin preprod
+
+3. Le workflow va:
+   ✅ Arrêter les anciens conteneurs
+   ✅ Libérer le port 80
+   ✅ Puller la nouvelle image
+   ✅ Démarrer les nouveaux conteneurs
+   ✅ Générer les clés JWT (si JWT_PASSPHRASE présent)
+   ✅ Démarrer FrankenPHP avec worker.Caddyfile
+
+═══════════════════════════════════════════════════════════════════════
+
+🎉 RÉSUMÉ DES CORRECTIONS
+═══════════════════════════════════════════════════════════════════════
+
+✅ Port 80: Libération automatique avant déploiement
+✅ worker.Caddyfile: Copié dans l'image Docker
+✅ JWT_PASSPHRASE: Vérification et warning si absent
+✅ Logs améliorés: Meilleure visibilité des problèmes
+✅ Gestion d'erreur: Rollback automatique si échec
+
+═══════════════════════════════════════════════════════════════════════
+
+            ✅  Tous les problèmes corrigés !  ✅
+
+═══════════════════════════════════════════════════════════════════════

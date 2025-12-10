@@ -16,11 +16,19 @@ if [ ! -f "/app/config/jwt/private.pem" ] || [ ! -f "/app/config/jwt/public.pem"
     # Ensure config/jwt directory exists
     mkdir -p /app/config/jwt
     
-    # Generate JWT keypair
-    if php /app/bin/console lexik:jwt:generate-keypair --overwrite --no-interaction; then
-        echo "✅ JWT keypair generated successfully"
+    # Check if JWT_PASSPHRASE is set
+    if [ -z "$JWT_PASSPHRASE" ]; then
+        echo "⚠️  JWT_PASSPHRASE not set, skipping JWT key generation"
+        echo "⚠️  Please set JWT_PASSPHRASE in Infisical (environment: prod)"
+        echo "⚠️  The application may not work correctly without JWT keys"
     else
-        echo "⚠️  JWT generation failed, the application may not work correctly"
+        # Generate JWT keypair
+        if php /app/bin/console lexik:jwt:generate-keypair --overwrite --no-interaction; then
+            echo "✅ JWT keypair generated successfully"
+        else
+            echo "⚠️  JWT generation failed, the application may not work correctly"
+            echo "⚠️  Check that JWT_PASSPHRASE is correctly set"
+        fi
     fi
 else
     echo "✅ JWT keys already exist"

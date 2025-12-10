@@ -134,6 +134,15 @@ jobs:
                 echo "SERVER_NAME=${{ secrets.SERVER_NAME }}" >> .env
             fi
             
+            # Verify JWT_PASSPHRASE is present (required for JWT key generation)
+            if ! grep -q "^JWT_PASSPHRASE=" .env; then
+                echo "⚠ JWT_PASSPHRASE not found in Infisical export"
+                echo "⚠ JWT keys will not be generated automatically"
+                echo "⚠ Please add JWT_PASSPHRASE to Infisical (environment: prod)"
+            else
+                echo "✓ JWT_PASSPHRASE found in .env"
+            fi
+            
             # Export variables for docker compose commands (as backup)
             export INFISICAL_TOKEN
             export INFISICAL_PROJECT_ID="${{ secrets.INFISICAL_PROJECTID }}"
@@ -147,6 +156,7 @@ jobs:
             echo "TRAEFIK_NETWORK found: $(grep -c '^TRAEFIK_NETWORK=' .env || echo '0')"
             echo "IMAGES_PREFIX found: $(grep -c '^IMAGES_PREFIX=' .env || echo '0')"
             echo "IMAGE_TAG found: $(grep -c '^IMAGE_TAG=' .env || echo '0')"
+            echo "JWT_PASSPHRASE found: $(grep -c '^JWT_PASSPHRASE=' .env || echo '0')"
             echo "→ Verifying .env file exists and is readable..."
             if [ ! -f .env ]; then
                 echo "✗ .env file does not exist!"

@@ -40,6 +40,7 @@ COPY --link frankenphp/conf.d/20-app.prod.ini $PHP_INI_DIR/conf.d/
 
 COPY --link frankenphp/worker.php /app/frankenphp/worker.php
 COPY --link frankenphp/Caddyfile /etc/caddy/Caddyfile
+COPY --link frankenphp/worker.Caddyfile /etc/caddy/worker.Caddyfile
 COPY --link frankenphp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
