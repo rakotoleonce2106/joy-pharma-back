@@ -11,11 +11,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  #build-and-push:
-  #  name: Build and Push Docker Image
-  #  uses: ./.github/workflows/deploy-build.yml
-  #  if: github.ref == 'refs/heads/preprod'
-  #  secrets: inherit
+  build-and-push:
+    name: Build and Push Docker Image
+    uses: ./.github/workflows/deploy-build.yml
+    if: github.ref == 'refs/heads/preprod'
+    secrets: inherit
 
   deploy:
     name: Deploy to Server
