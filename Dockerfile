@@ -100,5 +100,5 @@ RUN set -eux; \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
 
-# Use Infisical to inject secrets at runtime
-CMD ["infisical", "run", "--projectId", "${INFISICAL_PROJECT_ID}", "--env", "${INFISICAL_ENV_SLUG}", "--", "frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
+# Run FrankenPHP directly (secrets are loaded from .env file mounted at runtime)
+CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]

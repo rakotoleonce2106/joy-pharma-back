@@ -75,50 +75,23 @@ jobs:
                 echo "✓ Found Traefik network: $TRAEFIK_NETWORK"
             fi
             
-            # Set Infisical credentials for runtime secret injection
-            echo "→ Configuring Infisical credentials..."
-            export INFISICAL_CLIENT_ID="${{ secrets.INFISICAL_CLIENT_ID }}"
-            export INFISICAL_CLIENT_SECRET="${{ secrets.INFISICAL_CLIENT_SECRET }}"
-            export INFISICAL_PROJECT_ID="${{ secrets.INFISICAL_PROJECT_ID }}"
-            export INFISICAL_ENV_SLUG="${{ secrets.INFISICAL_ENV_SLUG }}"
-            
-            # Generate Infisical token for container
-            echo "→ Generating Infisical access token..."
-            # Check if infisical is available in the image
-            echo "→ Checking Infisical installation in image..."
-            INFISICAL_PATH=$(docker run --rm --entrypoint="" $IMAGE_NAME /bin/bash -c "command -v infisical 2>/dev/null || which infisical 2>/dev/null || echo ''")
-            
-            if [ -z "$INFISICAL_PATH" ]; then
-                echo "✗ Error: infisical command not found in Docker image"
-                echo "→ Checking common installation locations..."
-                docker run --rm --entrypoint="" $IMAGE_NAME /bin/bash -c "
-                    echo 'Checking /usr/bin/infisical:'
-                    ls -la /usr/bin/infisical 2>&1 || echo '  Not found'
-                    echo 'Checking /usr/local/bin/infisical:'
-                    ls -la /usr/local/bin/infisical 2>&1 || echo '  Not found'
-                    echo 'Checking PATH:'
-                    echo \$PATH
-                    echo 'Checking all infisical binaries:'
-                    find /usr -name infisical 2>/dev/null || echo '  Not found'
-                "
-                echo "⚠ The image may not have been built with Infisical installed."
-                echo "⚠ Please ensure the Dockerfile includes Infisical installation in the frankenphp_base stage."
-                exit 1
+            # Install Infisical CLI on the server
+            echo "→ Installing Infisical CLI on server..."
+            if ! command -v infisical &> /dev/null; then
+                curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo -E bash
+                sudo apt-get update && sudo apt-get install -y infisical
+                echo "✓ Infisical installed successfully"
             else
-                echo "✓ Found Infisical at: $INFISICAL_PATH"
+                echo "✓ Infisical already installed"
             fi
             
-            # Generate token using Infisical (should be in PATH if found above)
-            echo "→ Generating Infisical access token..."
-            export INFISICAL_TOKEN=$(docker run --rm \
-              -e INFISICAL_CLIENT_ID="$INFISICAL_CLIENT_ID" \
-              -e INFISICAL_CLIENT_SECRET="$INFISICAL_CLIENT_SECRET" \
-              --entrypoint="" \
-              $IMAGE_NAME \
-              /bin/bash -c "infisical login --method=universal-auth \
-                --client-id=\"$INFISICAL_CLIENT_ID\" \
-                --client-secret=\"$INFISICAL_CLIENT_SECRET\" \
-                --plain --silent")
+            # Generate .env file using Infisical
+            echo "→ Generating .env file from Infisical..."
+            INFISICAL_TOKEN=$(infisical login --method=universal-auth \
+              --client-id="${{ secrets.INFISICAL_MACHINE_IDENTITY_ID }}" \
+              --client-secret="${{ secrets.ACC_FRONTOFFICE_INFISICAL_TOKEN }}" \
+              --silent --plain \
+              --domain="${{ secrets.INFISICAL_DOMAIN }}")
             
             if [ -z "$INFISICAL_TOKEN" ]; then
                 echo "✗ Failed to generate Infisical token"
@@ -126,6 +99,19 @@ jobs:
             fi
             
             echo "✓ Infisical token generated successfully"
+            
+            # Export environment variables to .env file
+            infisical export --token=$INFISICAL_TOKEN \
+              --domain="${{ secrets.INFISICAL_DOMAIN }}" \
+              --projectId="${{ secrets.INFISICAL_PROJECTID }}" \
+              --env=prod > .env
+            
+            if [ ! -s .env ]; then
+                echo "✗ Failed to generate .env file or file is empty"
+                exit 1
+            fi
+            
+            echo "✓ .env file generated successfully"
             
             # Backup current container for rollback
             echo "→ Backing up current deployment..."
