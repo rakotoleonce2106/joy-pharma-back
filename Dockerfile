@@ -53,6 +53,10 @@ RUN rm -Rf frankenphp/
 RUN set -eux; \
 	mkdir -p var/cache var/log; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
+	# Create minimal .env for build (real secrets injected by Infisical at runtime)
+	echo "APP_ENV=prod" > .env; \
+	echo "APP_SECRET=build_secret_replaced_at_runtime" >> .env; \
+	echo "DATABASE_URL=postgresql://app:pass@database:5432/app?serverVersion=16&charset=utf8" >> .env; \
 	composer dump-env prod; \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
