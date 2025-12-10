@@ -87,11 +87,7 @@ jobs:
             
             # Generate .env file using Infisical
             echo "→ Generating .env file from Infisical..."
-            INFISICAL_TOKEN=$(infisical login --method=universal-auth \
-              --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" \
-              --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" \
-              --silent --plain \
-              --domain="${{ secrets.INFISICAL_DOMAIN }}")
+            INFISICAL_TOKEN=$(infisical login --method=universal-auth --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" --domain="${{ secrets.INFISICAL_DOMAIN }}" --silent --plain)
             
             if [ -z "$INFISICAL_TOKEN" ]; then
                 echo "✗ Failed to generate Infisical token"
@@ -101,10 +97,7 @@ jobs:
             echo "✓ Infisical token generated successfully"
             
             # Export environment variables to .env file
-            infisical export --token=$INFISICAL_TOKEN \
-              --domain="${{ secrets.INFISICAL_DOMAIN }}" \
-              --projectId="${{ secrets.INFISICAL_PROJECTID }}" \
-              --env=prod > .env
+            infisical export --token=$INFISICAL_TOKEN --domain="${{ secrets.INFISICAL_DOMAIN }}" --projectId="${{ secrets.INFISICAL_PROJECTID }}" --env=prod > .env
             
             if [ ! -s .env ]; then
                 echo "✗ Failed to generate .env file or file is empty"
