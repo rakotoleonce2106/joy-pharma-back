@@ -3,6 +3,9 @@ services:
   php:
     # In production, use the pulled image, not build
     # image is defined in compose.yaml: ${IMAGES_PREFIX:-}joy-pharma-back:${IMAGE_TAG:-latest}
+    # Load all variables from .env file into container
+    env_file:
+      - .env
     environment:
       APP_ENV: prod
       APP_SECRET: ${APP_SECRET}
@@ -10,4 +13,10 @@ services:
       MERCURE_URL: ${CADDY_MERCURE_URL:-http://php/.well-known/mercure}
       MERCURE_PUBLIC_URL: https://${SERVER_NAME:-localhost}/.well-known/mercure
       MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET}
+      # JWT Configuration
+      JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+      JWT_SECRET_KEY: %kernel.project_dir%/config/jwt/private.pem
+      JWT_PUBLIC_KEY: %kernel.project_dir%/config/jwt/public.pem
+      # FrankenPHP Worker
+      FRANKENPHP_WORKER_COUNT: ${FRANKENPHP_WORKER_COUNT:-auto}
 

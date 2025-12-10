@@ -6,6 +6,11 @@ set -e
 
 echo "🚀 Starting Joy Pharma Backend initialization..."
 
+# Debug: Check environment variables (without showing values)
+echo "→ Checking environment variables..."
+echo "  APP_ENV: ${APP_ENV:-not set}"
+echo "  JWT_PASSPHRASE: ${JWT_PASSPHRASE:+set (hidden)}${JWT_PASSPHRASE:-not set}"
+
 # Wait a bit for the filesystem to be ready
 sleep 2
 

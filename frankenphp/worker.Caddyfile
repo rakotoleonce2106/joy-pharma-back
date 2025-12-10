@@ -1,6 +1,2 @@
-{
-	frankenphp {
-		worker /app/frankenphp/worker.php {$FRANKENPHP_WORKER_COUNT}
-	}
-}
+worker /app/frankenphp/worker.php {$FRANKENPHP_WORKER_COUNT}
 

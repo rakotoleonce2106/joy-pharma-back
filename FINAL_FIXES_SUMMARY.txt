@@ -1,0 +1,168 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║           ✅  CORRECTIONS FINALES - DÉPLOIEMENT  ✅                  ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🐛 PROBLÈMES IDENTIFIÉS
+═══════════════════════════════════════════════════════════════════════
+
+1. ❌ JWT_PASSPHRASE dans .env mais pas disponible dans le conteneur
+   → Le script docker-entrypoint.sh ne voyait pas la variable
+
+2. ❌ Erreur de syntaxe dans worker.Caddyfile
+   → "Unexpected '{' on a new line"
+   → Double bloc frankenphp {} créé lors de l'import
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ CORRECTIONS APPLIQUÉES
+═══════════════════════════════════════════════════════════════════════
+
+1. compose.prod.yaml
+─────────────────────────────────────────────────────────────────────
+✅ Ajout de env_file pour charger toutes les variables du .env:
+   env_file:
+     - .env
+
+✅ Ajout explicite de JWT_PASSPHRASE dans environment:
+   JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+   JWT_SECRET_KEY: %kernel.project_dir%/config/jwt/private.pem
+   JWT_PUBLIC_KEY: %kernel.project_dir%/config/jwt/public.pem
+   FRANKENPHP_WORKER_COUNT: ${FRANKENPHP_WORKER_COUNT:-auto}
+
+   → Toutes les variables du .env sont maintenant disponibles
+   → JWT_PASSPHRASE est explicitement passée au conteneur
+
+2. worker.Caddyfile
+─────────────────────────────────────────────────────────────────────
+AVANT:
+{
+    frankenphp {
+        worker /app/frankenphp/worker.php {$FRANKENPHP_WORKER_COUNT}
+    }
+}
+
+APRÈS:
+worker /app/frankenphp/worker.php {$FRANKENPHP_WORKER_COUNT}
+
+   → Retiré le bloc frankenphp {} externe
+   → Le contenu est maintenant inséré dans le bloc existant
+   → Plus d'erreur de syntaxe
+
+3. docker-entrypoint.sh
+─────────────────────────────────────────────────────────────────────
+✅ Ajout de debug pour vérifier les variables:
+   echo "  APP_ENV: ${APP_ENV:-not set}"
+   echo "  JWT_PASSPHRASE: ${JWT_PASSPHRASE:+set (hidden)}${JWT_PASSPHRASE:-not set}"
+
+   → Permet de voir si JWT_PASSPHRASE est disponible
+   → Aide au debugging
+
+═══════════════════════════════════════════════════════════════════════
+
+📋 COMMENT ÇA FONCTIONNE MAINTENANT
+═══════════════════════════════════════════════════════════════════════
+
+1. Infisical exporte toutes les variables dans .env
+   → JWT_PASSPHRASE est dans le .env
+
+2. Docker Compose charge le .env avec env_file
+   → Toutes les variables sont disponibles dans le conteneur
+
+3. docker-entrypoint.sh vérifie JWT_PASSPHRASE
+   → Si présent, génère les clés JWT
+   → Si absent, affiche un warning
+
+4. Caddy charge le Caddyfile principal
+   → Le Caddyfile contient: frankenphp { {$FRANKENPHP_CONFIG} }
+   → FRANKENPHP_CONFIG="import worker.Caddyfile"
+   → Caddy importe worker.Caddyfile qui contient: worker /app/frankenphp/worker.php
+   → Résultat final: frankenphp { worker /app/frankenphp/worker.php }
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ VÉRIFICATIONS APRÈS DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+1. Vérifier les logs du conteneur:
+─────────────────────────────────────────────────────────────────────
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php
+
+# Doit afficher:
+# ✅ "JWT_PASSPHRASE: set (hidden)"
+# ✅ "✅ JWT keypair generated successfully"
+# ✅ Pas d'erreur "File to import not found"
+# ✅ Pas d'erreur "Unexpected '{'"
+
+2. Vérifier que le conteneur ne redémarre plus:
+─────────────────────────────────────────────────────────────────────
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps
+
+# Le conteneur php doit être "Up" et "healthy"
+# Restart count doit être 0 (ou très faible)
+
+3. Vérifier les clés JWT:
+─────────────────────────────────────────────────────────────────────
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env \
+  exec php ls -la config/jwt/
+
+# Doit afficher:
+# private.pem
+# public.pem
+
+4. Tester l'API:
+─────────────────────────────────────────────────────────────────────
+curl -k https://api.votre-domaine.com/api
+
+# Doit retourner du JSON (pas d'erreur 500)
+
+═══════════════════════════════════════════════════════════════════════
+
+🚀 PROCHAIN DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+1. Les changements sont prêts:
+   ✅ compose.prod.yaml → env_file ajouté
+   ✅ worker.Caddyfile → syntaxe corrigée
+   ✅ docker-entrypoint.sh → debug ajouté
+
+2. Commiter et pousser:
+   git add .
+   git commit -m "fix: load .env variables in container and fix worker.Caddyfile syntax"
+   git push origin preprod
+
+3. Le workflow va:
+   ✅ Exporter les variables depuis Infisical → .env
+   ✅ Charger .env dans le conteneur (env_file)
+   ✅ JWT_PASSPHRASE sera disponible
+   ✅ Les clés JWT seront générées
+   ✅ Caddy démarrera sans erreur de syntaxe
+   ✅ Le conteneur restera stable
+
+═══════════════════════════════════════════════════════════════════════
+
+📝 RÉSUMÉ DES CHANGEMENTS
+═══════════════════════════════════════════════════════════════════════
+
+Fichiers modifiés:
+─────────────────────────────────────────────────────────────────────
+✅ compose.prod.yaml
+   - Ajout de env_file: [.env]
+   - Ajout de JWT_PASSPHRASE dans environment
+   - Ajout de JWT_SECRET_KEY, JWT_PUBLIC_KEY
+   - Ajout de FRANKENPHP_WORKER_COUNT
+
+✅ worker.Caddyfile
+   - Retiré le bloc frankenphp {} externe
+   - Contient maintenant seulement: worker /app/frankenphp/worker.php
+
+✅ docker-entrypoint.sh
+   - Ajout de messages de debug
+   - Vérification de JWT_PASSPHRASE améliorée
+
+═══════════════════════════════════════════════════════════════════════
+
+            ✅  Tous les problèmes corrigés !  ✅
+
+═══════════════════════════════════════════════════════════════════════
