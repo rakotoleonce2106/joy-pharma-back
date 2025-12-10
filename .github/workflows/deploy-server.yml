@@ -131,6 +131,14 @@ jobs:
             echo "INFISICAL_TOKEN found: $(grep -c '^INFISICAL_TOKEN=' .env || echo '0')"
             echo "INFISICAL_PROJECT_ID found: $(grep -c '^INFISICAL_PROJECT_ID=' .env || echo '0')"
             echo "TRAEFIK_NETWORK found: $(grep -c '^TRAEFIK_NETWORK=' .env || echo '0')"
+            echo "→ Verifying .env file exists and is readable..."
+            if [ ! -f .env ]; then
+                echo "✗ .env file does not exist!"
+                exit 1
+            fi
+            echo "✓ .env file exists ($(wc -l < .env) lines)"
+            echo "→ Showing first few lines of .env (without sensitive values)..."
+            head -n 5 .env | sed 's/=.*/=***/' || echo "Could not read .env file"
             
             # Backup current container for rollback
             echo "→ Backing up current deployment..."
@@ -161,17 +169,27 @@ jobs:
             # Deploy new version
             echo "→ Deploying new version..."
             if docker compose --env-file .env up -d; then
-                echo "✓ Deployment successful"
+                echo "✓ Containers started"
                 
                 # Wait for container to be healthy
-                echo "→ Waiting for health check..."
-                sleep 10
+                echo "→ Waiting for container to stabilize..."
+                sleep 5
                 
                 NEW_CONTAINER=$(docker compose --env-file .env ps -q php 2>/dev/null || echo "")
                 if [ -n "$NEW_CONTAINER" ]; then
-                    CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $NEW_CONTAINER)
-                    if [ "$CONTAINER_STATUS" = "running" ]; then
+                    # Check container status multiple times to catch restart loops
+                    sleep 5
+                    CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $NEW_CONTAINER 2>/dev/null || echo "unknown")
+                    RESTART_COUNT=$(docker inspect --format='{{.RestartCount}}' $NEW_CONTAINER 2>/dev/null || echo "0")
+                    
+                    echo "→ Container status: $CONTAINER_STATUS (restart count: $RESTART_COUNT)"
+                    
+                    if [ "$CONTAINER_STATUS" = "running" ] && [ "$RESTART_COUNT" = "0" ]; then
                         echo "✓ Container is running and healthy"
+                        
+                        # Verify .env file is mounted correctly
+                        echo "→ Verifying .env file in container..."
+                        docker exec $NEW_CONTAINER test -f /app/.env && echo "✓ .env file is mounted" || echo "⚠ .env file not found in container"
                         
                         # Clean up old images
                         echo "→ Cleaning up old images..."
@@ -181,20 +199,32 @@ jobs:
                         echo "✓ Deployment completed successfully!"
                         echo "============================================"
                     else
-                        echo "✗ Container is not running (status: $CONTAINER_STATUS)"
+                        echo "✗ Container is not running properly (status: $CONTAINER_STATUS, restarts: $RESTART_COUNT)"
+                        echo "→ Checking container logs..."
+                        docker logs $NEW_CONTAINER --tail 100 2>&1 || echo "Could not retrieve logs"
+                        echo "→ Checking container exit code..."
+                        EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' $NEW_CONTAINER 2>/dev/null || echo "unknown")
+                        echo "Exit code: $EXIT_CODE"
                         echo "→ Attempting rollback..."
-                        if [ -n "$CURRENT_CONTAINER" ]; then
+                        if [ -n "$CURRENT_CONTAINER" ] && docker ps -a --format '{{.ID}}' | grep -q "$CURRENT_CONTAINER"; then
                             docker compose --env-file .env down
                             docker start $CURRENT_CONTAINER
                             echo "✓ Rollback completed"
+                        else
+                            echo "⚠ No previous container to rollback to"
+                            docker compose --env-file .env down
                         fi
                         exit 1
                     fi
                 else
                     echo "✗ Failed to get new container ID"
+                    echo "→ Checking all containers..."
+                    docker compose --env-file .env ps -a
                     exit 1
                 fi
             else
                 echo "✗ Deployment failed"
+                echo "→ Checking compose status..."
+                docker compose --env-file .env ps -a
                 exit 1
             fi
