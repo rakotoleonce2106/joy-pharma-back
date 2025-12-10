@@ -219,6 +219,46 @@ jobs:
             
             echo "✓ Images pulled successfully"
             
+            # Stop existing containers to free ports (especially port 80)
+            echo "→ Stopping existing containers to free ports..."
+            docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down 2>/dev/null || true
+            
+            # Also stop any containers that might be using port 80
+            echo "→ Checking for containers using port 80..."
+            CONTAINERS_ON_80=$(docker ps --filter "publish=80" --format "{{.ID}}" 2>/dev/null || echo "")
+            if [ -n "$CONTAINERS_ON_80" ]; then
+                echo "→ Found containers using port 80, stopping them..."
+                echo "$CONTAINERS_ON_80" | xargs -r docker stop 2>/dev/null || true
+            fi
+            
+            # Check for any containers with name containing joypharma
+            echo "→ Checking for any remaining joypharma containers..."
+            REMAINING_CONTAINERS=$(docker ps -a --filter "name=joypharma" --format "{{.ID}}" 2>/dev/null || echo "")
+            if [ -n "$REMAINING_CONTAINERS" ]; then
+                echo "→ Stopping remaining containers..."
+                echo "$REMAINING_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
+                echo "$REMAINING_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
+            fi
+            
+            # Wait a moment for ports to be released
+            sleep 3
+            
+            # Verify port 80 is free
+            echo "→ Verifying port 80 is free..."
+            if command -v lsof >/dev/null 2>&1; then
+                PORT_80_USERS=$(lsof -i :80 2>/dev/null | wc -l || echo "0")
+                if [ "$PORT_80_USERS" -gt "0" ]; then
+                    echo "⚠ Port 80 is still in use:"
+                    lsof -i :80 2>/dev/null || true
+                    echo "→ Force stopping all containers using port 80..."
+                    docker ps --filter "publish=80" --format "{{.ID}}" | xargs -r docker stop 2>/dev/null || true
+                    docker ps --filter "publish=80" --format "{{.ID}}" | xargs -r docker rm 2>/dev/null || true
+                    sleep 2
+                else
+                    echo "✓ Port 80 is free"
+                fi
+            fi
+            
             # Deploy new version
             echo "→ Deploying new version with FrankenPHP..."
             if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d; then
@@ -343,5 +383,17 @@ jobs:
                 echo "→ Checking compose status..."
                 docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -a
                 docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs
+                
+                # Check if port 80 is the issue
+                echo "→ Checking port 80 usage..."
+                if command -v lsof >/dev/null 2>&1; then
+                    lsof -i :80 2>/dev/null || echo "lsof not available"
+                fi
+                docker ps --filter "publish=80" || true
+                
+                echo "→ Attempting to free port 80..."
+                docker ps -a --filter "name=joypharma" --format "{{.ID}}" | xargs -r docker stop 2>/dev/null || true
+                docker ps -a --filter "name=joypharma" --format "{{.ID}}" | xargs -r docker rm 2>/dev/null || true
+                
                 exit 1
             fi
