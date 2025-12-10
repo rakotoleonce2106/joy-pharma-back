@@ -43,7 +43,8 @@ COPY frankenphp/conf.d/20-app.prod.ini /usr/local/etc/php/conf.d/custom/
 WORKDIR /app
 
 # Copier les fichiers de configuration Composer et installer les dépendances
-COPY composer.json composer.lock symfony.lock ./
+# Note: symfony.lock n'est pas nécessaire pour composer install, il sera régénéré si besoin
+COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --optimize-autoloader
 
 # Copier le reste du code source
