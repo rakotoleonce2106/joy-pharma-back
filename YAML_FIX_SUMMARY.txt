@@ -1,0 +1,133 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║              ✅  CORRECTION ERREUR YAML  ✅                         ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🐛 PROBLÈME IDENTIFIÉ
+═══════════════════════════════════════════════════════════════════════
+
+Erreur:
+─────────────────────────────────────────────────────────────────────
+yaml: line 18: found character that cannot start any token
+
+Cause:
+─────────────────────────────────────────────────────────────────────
+1. Ligne 18 contenait: JWT_SECRET_KEY: %kernel.project_dir%/config/jwt/private.pem
+   → Le caractère % cause des problèmes en YAML
+   → %kernel.project_dir% est une syntaxe Symfony, pas Docker Compose
+
+2. Conflit potentiel entre env_file et --env-file
+   → Le workflow utilise déjà --env-file .env
+   → env_file dans compose.prod.yaml était redondant
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ CORRECTIONS APPLIQUÉES
+═══════════════════════════════════════════════════════════════════════
+
+1. compose.prod.yaml
+─────────────────────────────────────────────────────────────────────
+AVANT:
+   env_file:
+     - .env
+   environment:
+     ...
+     JWT_SECRET_KEY: %kernel.project_dir%/config/jwt/private.pem
+     JWT_PUBLIC_KEY: %kernel.project_dir%/config/jwt/public.pem
+
+APRÈS:
+   environment:
+     ...
+     # JWT Configuration - loaded from .env via --env-file in workflow
+     JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+     # FrankenPHP Worker
+     FRANKENPHP_WORKER_COUNT: ${FRANKENPHP_WORKER_COUNT:-auto}
+
+Changements:
+─────────────────────────────────────────────────────────────────────
+✅ Retiré env_file (redondant avec --env-file dans workflow)
+✅ Retiré JWT_SECRET_KEY et JWT_PUBLIC_KEY (non nécessaires)
+   → Symfony configure ces chemins automatiquement
+   → Pas besoin de les passer via Docker Compose
+
+═══════════════════════════════════════════════════════════════════════
+
+📋 COMMENT ÇA FONCTIONNE MAINTENANT
+═══════════════════════════════════════════════════════════════════════
+
+1. Workflow génère .env depuis Infisical
+   → Toutes les variables sont dans .env
+
+2. Docker Compose utilise --env-file .env
+   → Toutes les variables sont disponibles pour substitution ${VAR}
+
+3. compose.prod.yaml utilise ${JWT_PASSPHRASE}
+   → La variable est substituée depuis .env
+   → Passée au conteneur via environment:
+
+4. Symfony configure automatiquement les chemins JWT
+   → JWT_SECRET_KEY et JWT_PUBLIC_KEY sont configurés par Symfony
+   → Pas besoin de les passer via Docker Compose
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ VÉRIFICATIONS
+═══════════════════════════════════════════════════════════════════════
+
+Le fichier compose.prod.yaml est maintenant:
+─────────────────────────────────────────────────────────────────────
+✅ Syntaxe YAML valide
+✅ Pas de caractères spéciaux problématiques
+✅ Pas de conflit avec --env-file
+✅ Variables nécessaires explicitement listées
+
+═══════════════════════════════════════════════════════════════════════
+
+🚀 PROCHAIN DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+1. Les changements sont prêts:
+   ✅ compose.prod.yaml → YAML corrigé
+   ✅ Pas de caractères % problématiques
+   ✅ Pas de conflit env_file
+
+2. Commiter et pousser:
+   git add .
+   git commit -m "fix: remove problematic YAML syntax and env_file conflict"
+   git push origin preprod
+
+3. Le workflow va:
+   ✅ Parser le YAML sans erreur
+   ✅ Charger les variables depuis .env (--env-file)
+   ✅ Passer JWT_PASSPHRASE au conteneur
+   ✅ Démarrer les conteneurs correctement
+
+═══════════════════════════════════════════════════════════════════════
+
+📝 RÉSUMÉ DES CHANGEMENTS
+═══════════════════════════════════════════════════════════════════════
+
+Fichiers modifiés:
+─────────────────────────────────────────────────────────────────────
+✅ compose.prod.yaml
+   - Retiré env_file (redondant)
+   - Retiré JWT_SECRET_KEY et JWT_PUBLIC_KEY (non nécessaires)
+   - Gardé seulement les variables nécessaires
+
+Variables dans compose.prod.yaml:
+─────────────────────────────────────────────────────────────────────
+✅ APP_ENV
+✅ APP_SECRET
+✅ DATABASE_URL
+✅ MERCURE_URL
+✅ MERCURE_PUBLIC_URL
+✅ MERCURE_JWT_SECRET
+✅ JWT_PASSPHRASE (chargée depuis .env)
+✅ FRANKENPHP_WORKER_COUNT
+
+═══════════════════════════════════════════════════════════════════════
+
+            ✅  Erreur YAML corrigée !  ✅
+
+═══════════════════════════════════════════════════════════════════════
