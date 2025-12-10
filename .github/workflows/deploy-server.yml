@@ -104,7 +104,32 @@ jobs:
                 exit 1
             fi
             
+            # Add INFISICAL_TOKEN and INFISICAL_PROJECT_ID to .env for docker compose
+            echo "INFISICAL_TOKEN=$INFISICAL_TOKEN" >> .env
+            echo "INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECTID }}" >> .env
+            
+            # Export variables for docker compose commands
+            export INFISICAL_TOKEN
+            export INFISICAL_PROJECT_ID="${{ secrets.INFISICAL_PROJECTID }}"
+            
             echo "✓ .env file generated successfully"
+            
+            # Ensure Traefik network exists or create default network
+            if [ -z "$TRAEFIK_NETWORK" ]; then
+                echo "→ Creating default network..."
+                NETWORK_NAME="joy-pharma-back_default"
+                if ! docker network inspect $NETWORK_NAME &>/dev/null; then
+                    docker network create $NETWORK_NAME
+                    echo "✓ Created network: $NETWORK_NAME"
+                else
+                    echo "✓ Network already exists: $NETWORK_NAME"
+                fi
+                export TRAEFIK_NETWORK=$NETWORK_NAME
+            fi
+            
+            # Add IMAGE_NAME and TRAEFIK_NETWORK to .env for docker compose
+            echo "IMAGE_NAME=$IMAGE_NAME" >> .env
+            echo "TRAEFIK_NETWORK=$TRAEFIK_NETWORK" >> .env
             
             # Backup current container for rollback
             echo "→ Backing up current deployment..."
