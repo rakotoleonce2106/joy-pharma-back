@@ -145,14 +145,30 @@ jobs:
             echo "INFISICAL_TOKEN found: $(grep -c '^INFISICAL_TOKEN=' .env || echo '0')"
             echo "INFISICAL_PROJECT_ID found: $(grep -c '^INFISICAL_PROJECT_ID=' .env || echo '0')"
             echo "TRAEFIK_NETWORK found: $(grep -c '^TRAEFIK_NETWORK=' .env || echo '0')"
+            echo "IMAGES_PREFIX found: $(grep -c '^IMAGES_PREFIX=' .env || echo '0')"
+            echo "IMAGE_TAG found: $(grep -c '^IMAGE_TAG=' .env || echo '0')"
             echo "→ Verifying .env file exists and is readable..."
             if [ ! -f .env ]; then
                 echo "✗ .env file does not exist!"
                 exit 1
             fi
             echo "✓ .env file exists ($(wc -l < .env) lines)"
-            echo "→ Showing first few lines of .env (without sensitive values)..."
-            head -n 5 .env | sed 's/=.*/=***/' || echo "Could not read .env file"
+            echo "→ Showing Docker-related variables (without sensitive values)..."
+            grep -E "^IMAGES_PREFIX=|^IMAGE_TAG=" .env | sed 's/=.*/=***/' || echo "Could not find Docker variables"
+            
+            # Verify compose files are present and correct
+            echo "→ Verifying Docker Compose files..."
+            if [ ! -f compose.yaml ]; then
+                echo "✗ compose.yaml not found!"
+                exit 1
+            fi
+            if [ ! -f compose.prod.yaml ]; then
+                echo "✗ compose.prod.yaml not found!"
+                exit 1
+            fi
+            echo "✓ Docker Compose files present"
+            echo "→ Checking image configuration in compose.yaml..."
+            grep -A 2 "php:" compose.yaml | grep "image:" || echo "⚠ Could not find image in compose.yaml"
             
             # Backup current container for rollback
             echo "→ Backing up current deployment..."
@@ -168,6 +184,16 @@ jobs:
                 CURRENT_CONTAINER=""
             fi
             
+            # Verify image configuration before pulling
+            echo "→ Verifying image configuration..."
+            echo "IMAGES_PREFIX: $IMAGES_PREFIX"
+            echo "IMAGE_TAG: $IMAGE_TAG"
+            echo "Expected image: ${IMAGES_PREFIX}joy-pharma-back:${IMAGE_TAG}"
+            
+            # Check what image Docker Compose will use
+            echo "→ Checking Docker Compose configuration..."
+            docker compose -f compose.yaml -f compose.prod.yaml --env-file .env config | grep -A 5 "php:" | grep "image:" || echo "⚠ Could not find image configuration"
+            
             # Pull new images with retry logic
             echo "→ Pulling Docker images (with retry)..."
             MAX_RETRIES=3
@@ -175,11 +201,19 @@ jobs:
             until docker compose -f compose.yaml -f compose.prod.yaml --env-file .env pull || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
                 RETRY_COUNT=$((RETRY_COUNT+1))
                 echo "⚠ Pull failed. Retry $RETRY_COUNT/$MAX_RETRIES..."
+                echo "→ Debug: Checking .env file..."
+                grep -E "IMAGES_PREFIX|IMAGE_TAG" .env || echo "⚠ IMAGES_PREFIX or IMAGE_TAG not found in .env"
                 sleep 5
             done
             
             if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
                 echo "✗ Failed to pull images after $MAX_RETRIES attempts"
+                echo "→ Debug information:"
+                echo "  - .env file exists: $([ -f .env ] && echo 'yes' || echo 'no')"
+                echo "  - IMAGES_PREFIX in .env: $(grep IMAGES_PREFIX .env || echo 'NOT FOUND')"
+                echo "  - IMAGE_TAG in .env: $(grep IMAGE_TAG .env || echo 'NOT FOUND')"
+                echo "  - Docker Compose config:"
+                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env config | grep -A 3 "php:" || true
                 exit 1
             fi
             
