@@ -67,12 +67,21 @@ jobs:
             
             # Find Traefik network
             echo "→ Detecting Traefik network..."
-            export TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
+            TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
             
             if [ -z "$TRAEFIK_NETWORK" ]; then
-                echo "⚠ Warning: Could not find Traefik network. Using default network."
+                echo "⚠ Warning: Could not find Traefik network. Creating default network."
+                NETWORK_NAME="joy-pharma-back_default"
+                if ! docker network inspect $NETWORK_NAME &>/dev/null; then
+                    docker network create $NETWORK_NAME
+                    echo "✓ Created network: $NETWORK_NAME"
+                else
+                    echo "✓ Network already exists: $NETWORK_NAME"
+                fi
+                export TRAEFIK_NETWORK=$NETWORK_NAME
             else
                 echo "✓ Found Traefik network: $TRAEFIK_NETWORK"
+                export TRAEFIK_NETWORK
             fi
             
             # Install Infisical CLI on the server
@@ -104,36 +113,28 @@ jobs:
                 exit 1
             fi
             
-            # Add INFISICAL_TOKEN and INFISICAL_PROJECT_ID to .env for docker compose
+            # Add INFISICAL_TOKEN, INFISICAL_PROJECT_ID, IMAGE_NAME and TRAEFIK_NETWORK to .env for docker compose
+            # These are needed by compose.yaml but may not be in the Infisical export
             echo "INFISICAL_TOKEN=$INFISICAL_TOKEN" >> .env
             echo "INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECTID }}" >> .env
-            
-            # Export variables for docker compose commands
-            export INFISICAL_TOKEN
-            export INFISICAL_PROJECT_ID="${{ secrets.INFISICAL_PROJECTID }}"
-            
-            echo "✓ .env file generated successfully"
-            
-            # Ensure Traefik network exists or create default network
-            if [ -z "$TRAEFIK_NETWORK" ]; then
-                echo "→ Creating default network..."
-                NETWORK_NAME="joy-pharma-back_default"
-                if ! docker network inspect $NETWORK_NAME &>/dev/null; then
-                    docker network create $NETWORK_NAME
-                    echo "✓ Created network: $NETWORK_NAME"
-                else
-                    echo "✓ Network already exists: $NETWORK_NAME"
-                fi
-                export TRAEFIK_NETWORK=$NETWORK_NAME
-            fi
-            
-            # Add IMAGE_NAME and TRAEFIK_NETWORK to .env for docker compose
             echo "IMAGE_NAME=$IMAGE_NAME" >> .env
             echo "TRAEFIK_NETWORK=$TRAEFIK_NETWORK" >> .env
             
+            # Export variables for docker compose commands (as backup)
+            export INFISICAL_TOKEN
+            export INFISICAL_PROJECT_ID="${{ secrets.INFISICAL_PROJECTID }}"
+            export IMAGE_NAME
+            export TRAEFIK_NETWORK
+            
+            echo "✓ .env file generated successfully"
+            echo "→ Verifying .env file contents..."
+            echo "INFISICAL_TOKEN found: $(grep -c '^INFISICAL_TOKEN=' .env || echo '0')"
+            echo "INFISICAL_PROJECT_ID found: $(grep -c '^INFISICAL_PROJECT_ID=' .env || echo '0')"
+            echo "TRAEFIK_NETWORK found: $(grep -c '^TRAEFIK_NETWORK=' .env || echo '0')"
+            
             # Backup current container for rollback
             echo "→ Backing up current deployment..."
-            CURRENT_CONTAINER=$(docker compose ps -q php 2>/dev/null || echo "")
+            CURRENT_CONTAINER=$(docker compose --env-file .env ps -q php 2>/dev/null || echo "")
             if [ -n "$CURRENT_CONTAINER" ]; then
                 echo "✓ Current container ID: $CURRENT_CONTAINER"
             else
@@ -144,7 +145,7 @@ jobs:
             echo "→ Pulling Docker image (with retry)..."
             MAX_RETRIES=3
             RETRY_COUNT=0
-            until docker compose pull || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
+            until docker compose --env-file .env pull || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
                 RETRY_COUNT=$((RETRY_COUNT+1))
                 echo "⚠ Pull failed. Retry $RETRY_COUNT/$MAX_RETRIES..."
                 sleep 5
@@ -159,14 +160,14 @@ jobs:
             
             # Deploy new version
             echo "→ Deploying new version..."
-            if docker compose up -d; then
+            if docker compose --env-file .env up -d; then
                 echo "✓ Deployment successful"
                 
                 # Wait for container to be healthy
                 echo "→ Waiting for health check..."
                 sleep 10
                 
-                NEW_CONTAINER=$(docker compose ps -q php 2>/dev/null || echo "")
+                NEW_CONTAINER=$(docker compose --env-file .env ps -q php 2>/dev/null || echo "")
                 if [ -n "$NEW_CONTAINER" ]; then
                     CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $NEW_CONTAINER)
                     if [ "$CONTAINER_STATUS" = "running" ]; then
@@ -183,7 +184,7 @@ jobs:
                         echo "✗ Container is not running (status: $CONTAINER_STATUS)"
                         echo "→ Attempting rollback..."
                         if [ -n "$CURRENT_CONTAINER" ]; then
-                            docker compose down
+                            docker compose --env-file .env down
                             docker start $CURRENT_CONTAINER
                             echo "✓ Rollback completed"
                         fi
