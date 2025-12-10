@@ -28,6 +28,9 @@ jobs:
           tags: joy-pharma-backend:dev
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            PHP_VERSION=8.3
+            FRANKENPHP_VERSION=1.0
 
       - name: Build Docker image (prod)
         uses: docker/build-push-action@v5
@@ -39,6 +42,9 @@ jobs:
           tags: joy-pharma-backend:prod
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            PHP_VERSION=8.3
+            FRANKENPHP_VERSION=1.0
 
       - name: Start services
         run: docker compose up -d --wait

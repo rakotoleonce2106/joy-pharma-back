@@ -2,7 +2,8 @@
 # Utilise FrankenPHP avec Symfony 7.2
 
 ARG PHP_VERSION=8.3
-FROM dunglas/frankenphp:${PHP_VERSION} AS frankenphp_base
+ARG FRANKENPHP_VERSION=1.0
+FROM dunglas/frankenphp:${FRANKENPHP_VERSION}-php${PHP_VERSION}-bookworm AS frankenphp_base
 
 # Installer les dépendances système nécessaires
 RUN install-php-extensions \
