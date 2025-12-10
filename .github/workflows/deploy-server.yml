@@ -63,7 +63,10 @@ jobs:
             fi
             
             export IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
+            export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
             echo "→ Using image: $IMAGE_NAME"
+            echo "→ Image prefix: $IMAGES_PREFIX"
+            echo "→ Image tag: $IMAGE_TAG"
             
             # Find Traefik network
             echo "→ Detecting Traefik network..."
@@ -119,6 +122,7 @@ jobs:
             echo "INFISICAL_TOKEN=$INFISICAL_TOKEN" >> .env
             echo "INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECTID }}" >> .env
             echo "IMAGES_PREFIX=${{ secrets.DOCKERHUB_USERNAME }}/" >> .env
+            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
             echo "TRAEFIK_NETWORK=$TRAEFIK_NETWORK" >> .env
             
             # Ensure critical Symfony/FrankenPHP variables are set

@@ -1,6 +1,7 @@
 # Development environment override
 services:
   php:
+    image: ${IMAGES_PREFIX:-}joy-pharma-back:${IMAGE_TAG:-dev}
     build:
       context: .
       target: frankenphp_dev
