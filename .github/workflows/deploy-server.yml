@@ -88,8 +88,8 @@ jobs:
             # Generate .env file using Infisical
             echo "→ Generating .env file from Infisical..."
             INFISICAL_TOKEN=$(infisical login --method=universal-auth \
-              --client-id="${{ secrets.INFISICAL_MACHINE_IDENTITY_ID }}" \
-              --client-secret="${{ secrets.ACC_FRONTOFFICE_INFISICAL_TOKEN }}" \
+              --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" \
+              --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" \
               --silent --plain \
               --domain="${{ secrets.INFISICAL_DOMAIN }}")
             
