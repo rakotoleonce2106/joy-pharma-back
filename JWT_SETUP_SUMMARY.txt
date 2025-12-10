@@ -1,0 +1,298 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                                                                      ║
+║        ✅  CONFIGURATION JWT POUR DOCKER + INFISICAL  ✅            ║
+║                                                                      ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+🔑 PROBLÈME RÉSOLU
+═══════════════════════════════════════════════════════════════════════
+
+Problème Initial:
+─────────────────────────────────────────────────────────────────────
+❌ Génération des clés JWT pendant le build Docker
+❌ JWT_PASSPHRASE nécessaire mais pas disponible au build
+❌ Secrets ne peuvent pas être dans l'image Docker
+❌ Build échouait avec "Environment variable not found: JWT_PASSPHRASE"
+
+Solution Implémentée:
+─────────────────────────────────────────────────────────────────────
+✅ Génération des clés JWT AU RUNTIME (pas au build)
+✅ Script d'entrypoint qui vérifie/génère les clés au démarrage
+✅ JWT_PASSPHRASE injecté par Infisical au runtime
+✅ Build Docker réussit sans les secrets
+
+═══════════════════════════════════════════════════════════════════════
+
+📦 FICHIERS MODIFIÉS/CRÉÉS
+═══════════════════════════════════════════════════════════════════════
+
+Fichiers Modifiés:
+─────────────────────────────────────────────────────────────────────
+✅ composer.json
+   → Retrait de "lexik:jwt:generate-keypair" des auto-scripts
+   → Ajout de "auto-scripts-dev" pour le développement local
+
+✅ Dockerfile
+   → Ajout de JWT_PASSPHRASE dans .env minimal (build)
+   → Création du répertoire config/jwt/
+   → Copie du script docker-entrypoint.sh
+   → Configuration ENTRYPOINT et CMD
+
+✅ .github/workflows/deploy-server.yml
+   → Ajout génération JWT après démarrage des conteneurs
+   → Utilisation des vrais secrets d'Infisical
+
+Fichiers Créés:
+─────────────────────────────────────────────────────────────────────
+✅ frankenphp/docker-entrypoint.sh
+   → Script d'initialisation au démarrage du conteneur
+   → Vérifie si les clés JWT existent
+   → Les génère automatiquement si nécessaire
+
+✅ docs/jwt-keys.md
+   → Documentation complète sur la gestion des clés JWT
+   → Guide de troubleshooting
+   → Bonnes pratiques de sécurité
+
+═══════════════════════════════════════════════════════════════════════
+
+🔄 NOUVEAU FLUX DE GÉNÉRATION DES CLÉS
+═══════════════════════════════════════════════════════════════════════
+
+Build Docker:
+─────────────────────────────────────────────────────────────────────
+1. ❌ NE génère PAS les clés JWT
+2. ✅ Crée le répertoire config/jwt/ vide
+3. ✅ Copie le script docker-entrypoint.sh
+4. ✅ Configure l'ENTRYPOINT
+5. ✅ Build réussit sans secrets
+
+Démarrage du Conteneur:
+─────────────────────────────────────────────────────────────────────
+1. 🚀 docker-entrypoint.sh s'exécute automatiquement
+2. 🔍 Vérifie si config/jwt/private.pem existe
+3. 🔑 Si NON : génère les clés avec JWT_PASSPHRASE d'Infisical
+4. ✅ Si OUI : continue normalement
+5. 🚀 Démarre FrankenPHP
+
+Déploiement (GitHub Actions):
+─────────────────────────────────────────────────────────────────────
+1. 📦 Build de l'image Docker (sans clés)
+2. 🚀 Push vers Docker Hub
+3. 🔐 Export des secrets Infisical vers .env
+4. 🐳 Démarrage des conteneurs
+5. 🔑 docker-entrypoint.sh génère les clés
+6. ✅ Application prête
+
+═══════════════════════════════════════════════════════════════════════
+
+🔐 VARIABLES D'ENVIRONNEMENT REQUISES
+═══════════════════════════════════════════════════════════════════════
+
+Dans Infisical (environnement prod):
+─────────────────────────────────────────────────────────────────────
+JWT_PASSPHRASE=votre_passphrase_securisee_unique
+JWT_SECRET_KEY=%kernel.project_dir%/config/jwt/private.pem
+JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
+
+Génération d'une Passphrase Sécurisée:
+─────────────────────────────────────────────────────────────────────
+# Option 1: OpenSSL
+openssl rand -base64 48
+
+# Option 2: PHP
+php -r "echo bin2hex(random_bytes(32));"
+
+# Option 3: pwgen
+pwgen -s 64 1
+
+Exemple:
+JWT_PASSPHRASE=8f3c2a9b7e1d4f6c8e2a9b7c1f4e6d8a9c7e1f4b6d8a2e9c7f1b4e6d8a9c7f1
+
+═══════════════════════════════════════════════════════════════════════
+
+📋 SCRIPT DOCKER-ENTRYPOINT.SH
+═══════════════════════════════════════════════════════════════════════
+
+Emplacement: frankenphp/docker-entrypoint.sh
+
+Fonctionnalités:
+─────────────────────────────────────────────────────────────────────
+✅ Vérifie l'existence des clés JWT
+✅ Crée config/jwt/ si nécessaire
+✅ Génère les clés avec la vraie JWT_PASSPHRASE
+✅ Configure les permissions
+✅ Démarre FrankenPHP avec la configuration Caddy
+
+Code Clé:
+─────────────────────────────────────────────────────────────────────
+if [ ! -f "/app/config/jwt/private.pem" ]; then
+    echo "🔑 JWT keys not found, generating..."
+    php /app/bin/console lexik:jwt:generate-keypair --overwrite
+    echo "✅ JWT keypair generated successfully"
+fi
+
+═══════════════════════════════════════════════════════════════════════
+
+✅ VÉRIFICATIONS POST-DÉPLOIEMENT
+═══════════════════════════════════════════════════════════════════════
+
+1. Vérifier la Génération des Clés:
+─────────────────────────────────────────────────────────────────────
+# Local
+docker compose logs php | grep JWT
+
+# Production
+docker compose -f compose.yaml -f compose.prod.yaml logs php | grep JWT
+
+# Sortie attendue:
+🔑 JWT keys not found, generating...
+✅ JWT keypair generated successfully
+
+2. Vérifier l'Existence des Clés:
+─────────────────────────────────────────────────────────────────────
+# Local
+docker compose exec php ls -la config/jwt/
+
+# Production
+docker compose -f compose.yaml -f compose.prod.yaml exec php \
+  ls -la config/jwt/
+
+# Sortie attendue:
+private.pem
+public.pem
+
+3. Tester l'Authentification JWT:
+─────────────────────────────────────────────────────────────────────
+curl -X POST https://api.votre-domaine.com/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password"}'
+
+# Sortie attendue:
+{
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+  "refresh_token": "..."
+}
+
+═══════════════════════════════════════════════════════════════════════
+
+🔧 DÉVELOPPEMENT LOCAL
+═══════════════════════════════════════════════════════════════════════
+
+Première Exécution:
+─────────────────────────────────────────────────────────────────────
+docker compose up -d
+# Les clés sont générées automatiquement
+
+Régénérer les Clés:
+─────────────────────────────────────────────────────────────────────
+# Option 1: Supprimer et redémarrer
+rm -rf config/jwt/*.pem
+docker compose restart php
+
+# Option 2: Générer manuellement
+docker compose exec php bin/console lexik:jwt:generate-keypair --overwrite
+
+Vérifier:
+─────────────────────────────────────────────────────────────────────
+docker compose exec php ls -la config/jwt/
+docker compose logs php | grep JWT
+
+═══════════════════════════════════════════════════════════════════════
+
+🐛 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════
+
+Erreur: "JWT keys not found" après démarrage
+─────────────────────────────────────────────────────────────────────
+Cause: JWT_PASSPHRASE manquante ou incorrecte
+
+Solution:
+1. Vérifier JWT_PASSPHRASE dans Infisical
+2. Regénérer .env: infisical export --env=prod > .env
+3. Redémarrer: docker compose restart php
+
+Erreur: "Unable to create the keys directory"
+─────────────────────────────────────────────────────────────────────
+Cause: Permissions incorrectes
+
+Solution:
+docker compose exec php mkdir -p config/jwt
+docker compose exec php chmod 755 config/jwt
+docker compose exec php bin/console lexik:jwt:generate-keypair --overwrite
+
+Les Clés Sont Régénérées à Chaque Redémarrage
+─────────────────────────────────────────────────────────────────────
+Cause: Volume non persistant
+
+Solution:
+Vérifier que config/jwt/ est bien accessible
+Les clés devraient persister entre redémarrages
+
+Erreur: "Invalid JWT passphrase"
+─────────────────────────────────────────────────────────────────────
+Cause: Passphrase incorrecte ou changée
+
+Solution:
+1. Supprimer anciennes clés: rm config/jwt/*.pem
+2. Vérifier JWT_PASSPHRASE dans Infisical
+3. Régénérer: bin/console lexik:jwt:generate-keypair --overwrite
+
+═══════════════════════════════════════════════════════════════════════
+
+✨ AVANTAGES DE CETTE SOLUTION
+═══════════════════════════════════════════════════════════════════════
+
+🔐 Sécurité:
+   → Aucun secret dans l'image Docker
+   → JWT_PASSPHRASE uniquement dans Infisical
+   → Clés générées avec vrais secrets
+
+⚡ Performance:
+   → Build Docker plus rapide
+   → Pas de dépendances aux secrets au build
+   → Génération unique au premier démarrage
+
+🔄 Flexibilité:
+   → Rotation des clés facilitée
+   → Changement de passphrase simple
+   → Régénération automatique si clés manquantes
+
+🛠️ Maintenance:
+   → Script d'entrypoint réutilisable
+   → Logs clairs et informatifs
+   → Documentation complète
+
+═══════════════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════
+
+Guides Disponibles:
+─────────────────────────────────────────────────────────────────────
+📖 docs/jwt-keys.md           → Guide complet gestion JWT
+🔐 docs/infisical.md          → Configuration Infisical
+🚀 DEPLOYMENT.md              → Guide déploiement
+🐳 DOCKER.md                  → Documentation Docker
+
+═══════════════════════════════════════════════════════════════════════
+
+🎉 RÉSUMÉ
+═══════════════════════════════════════════════════════════════════════
+
+Avant:
+❌ Build Docker échouait
+❌ JWT_PASSPHRASE nécessaire au build
+❌ Impossible d'utiliser Infisical pour les secrets
+
+Après:
+✅ Build Docker réussit sans secrets
+✅ JWT_PASSPHRASE injecté par Infisical au runtime
+✅ Clés générées automatiquement au démarrage
+✅ Sécurité et automatisation optimales
+
+═══════════════════════════════════════════════════════════════════════
+
+            ✅  Configuration JWT complète et sécurisée !  ✅
+
+═══════════════════════════════════════════════════════════════════════

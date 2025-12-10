@@ -229,6 +229,14 @@ jobs:
                     else
                         echo "✓ Database is ready"
                         
+                        # Generate JWT keys with real secrets from Infisical
+                        echo "→ Generating JWT keypair..."
+                        if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction; then
+                            echo "✓ JWT keypair generated successfully"
+                        else
+                            echo "⚠ JWT generation failed, but deployment continues"
+                        fi
+                        
                         # Run migrations
                         echo "→ Running database migrations..."
                         if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:migrate --no-interaction; then

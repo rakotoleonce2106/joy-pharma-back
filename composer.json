@@ -76,6 +76,9 @@
     },
     "scripts": {
         "auto-scripts": {
+            "cache:clear": "symfony-cmd"
+        },
+        "auto-scripts-dev": {
             "cache:clear": "symfony-cmd",
             "lexik:jwt:generate-keypair --overwrite": "symfony-cmd"
         },

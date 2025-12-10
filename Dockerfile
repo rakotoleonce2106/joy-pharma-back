@@ -40,6 +40,9 @@ COPY --link frankenphp/conf.d/20-app.prod.ini $PHP_INI_DIR/conf.d/
 
 COPY --link frankenphp/worker.php /app/frankenphp/worker.php
 COPY --link frankenphp/Caddyfile /etc/caddy/Caddyfile
+COPY --link frankenphp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # prevent the reinstallation of vendors at every changes in the source code
 COPY --link composer.* symfony.* ./
@@ -51,7 +54,7 @@ COPY --link . ./
 RUN rm -Rf frankenphp/
 
 RUN set -eux; \
-	mkdir -p var/cache var/log; \
+	mkdir -p var/cache var/log config/jwt; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
 	# Create minimal .env for build (real secrets injected by Infisical at runtime)
 	echo "APP_ENV=prod" > .env; \
@@ -90,4 +93,7 @@ RUN set -eux; \
 	composer dump-env prod; \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync;
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
 
