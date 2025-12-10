@@ -90,5 +90,7 @@ RUN set -eux; \
 	mkdir -p var/cache var/log; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
 	composer dump-env prod --empty || true; \
-	composer run-script --no-dev post-install-cmd; \
+	DATABASE_URL="postgresql://app:!ChangeMe!@database:5432/app?serverVersion=15&charset=utf8" \
+	APP_SECRET="build-secret-not-used-in-production" \
+	composer run-script --no-dev post-install-cmd || true; \
 	chmod +x bin/console; sync;
