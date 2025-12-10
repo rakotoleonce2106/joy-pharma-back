@@ -1,93 +1,64 @@
 # Makefile pour Joy Pharma Backend
-.PHONY: help build up down logs shell db-migrate db-create composer-install tests clean
+.PHONY: help install up down logs shell db-migrate db-create composer-install tests clean
 
 .DEFAULT_GOAL := help
 
 help: ## Affiche cette aide
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-build: ## Construit les images Docker
-	docker compose build --pull --no-cache
+install: ## Installe les dépendances Composer
+	composer install
 
-up: ## Démarre les conteneurs
-	docker compose up -d
+update: ## Met à jour les dépendances Composer
+	composer update
 
-down: ## Arrête les conteneurs
-	docker compose down --remove-orphans
-
-restart: down up ## Redémarre les conteneurs
-
-logs: ## Affiche les logs
-	docker compose logs -f
-
-logs-php: ## Affiche les logs PHP
-	docker compose logs -f php
-
-shell: ## Accède au shell du conteneur PHP
-	docker compose exec php sh
-
-shell-root: ## Accède au shell du conteneur PHP en root
-	docker compose exec -u root php sh
+require: ## Installe un package Composer (usage: make require package=vendor/package)
+	composer require $(package)
 
 db-create: ## Crée la base de données
-	docker compose exec php bin/console doctrine:database:create --if-not-exists
+	php bin/console doctrine:database:create --if-not-exists
 
 db-migrate: ## Execute les migrations
-	docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
+	php bin/console doctrine:migrations:migrate --no-interaction
 
 db-reset: ## Réinitialise la base de données
-	docker compose exec php bin/console doctrine:database:drop --force --if-exists
-	docker compose exec php bin/console doctrine:database:create
-	docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
+	php bin/console doctrine:database:drop --force --if-exists
+	php bin/console doctrine:database:create
+	php bin/console doctrine:migrations:migrate --no-interaction
 
 db-backup: ## Sauvegarde la base de données
-	docker compose exec database pg_dump -U app app > backup_$(shell date +%Y%m%d_%H%M%S).sql
+	php bin/console doctrine:query:sql "SELECT * FROM pg_dump -U app app" > backup_$(shell date +%Y%m%d_%H%M%S).sql
 	@echo "Backup créé: backup_$(shell date +%Y%m%d_%H%M%S).sql"
 
-composer-install: ## Installe les dépendances Composer
-	docker compose exec php composer install
-
-composer-update: ## Met à jour les dépendances Composer
-	docker compose exec php composer update
-
-composer-require: ## Installe un package Composer (usage: make composer-require package=vendor/package)
-	docker compose exec php composer require $(package)
-
 cache-clear: ## Vide le cache Symfony
-	docker compose exec php bin/console cache:clear
+	php bin/console cache:clear
 
 cache-warmup: ## Préchauffe le cache Symfony
-	docker compose exec php bin/console cache:warmup
+	php bin/console cache:warmup
 
 jwt-generate: ## Génère les clés JWT
-	docker compose exec php bin/console lexik:jwt:generate-keypair --overwrite
+	php bin/console lexik:jwt:generate-keypair --overwrite
 
 admin-create: ## Crée un utilisateur admin
-	docker compose exec php bin/console app:create-admin-user
+	php bin/console app:create-admin-user
 
 elasticsearch-reindex: ## Réindexe Elasticsearch
-	docker compose exec php bin/console app:reindex-products
+	php bin/console app:reindex-products
 
 tests: ## Execute les tests
-	docker compose exec php bin/phpunit
+	php bin/phpunit
 
-clean: ## Nettoie tout (conteneurs, volumes, images)
-	docker compose down -v
-	docker system prune -a --volumes -f
+clean: ## Nettoie le cache
+	php bin/console cache:clear
+	rm -rf var/cache/*
 
-ps: ## Liste les conteneurs en cours d'exécution
-	docker compose ps
-
-start: build up db-create db-migrate ## Installation complète et démarrage
+start: install db-create db-migrate ## Installation complète et démarrage
 
 reset: clean start ## Réinitialisation complète
 
-prod-build: ## Build pour la production
-	docker compose -f compose.yaml -f compose.prod.yaml build --no-cache
+prod-install: ## Installation pour la production
+	composer install --no-dev --optimize-autoloader
 
-prod-up: ## Démarre en production
-	docker compose -f compose.yaml -f compose.prod.yaml up -d
-
-prod-down: ## Arrête la production
-	docker compose -f compose.yaml -f compose.prod.yaml down
-
+prod-cache: ## Cache de production
+	php bin/console cache:clear --env=prod
+	php bin/console cache:warmup --env=prod
