@@ -41,3 +41,7 @@
 .flaskenv*
 !.env.project
 !.env.vault
+
+###> Docker ###
+/docker-compose.override.yml
+###< Docker ###
