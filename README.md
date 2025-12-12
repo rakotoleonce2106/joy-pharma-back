@@ -252,6 +252,32 @@ SERVER_NAME=api.votre-domaine.com
 MERCURE_JWT_SECRET=secret_prod_unique
 ```
 
+### Exécution des Migrations sur le Serveur
+
+Les migrations sont automatiquement exécutées lors du déploiement. Si vous devez les exécuter manuellement :
+
+**Option 1 : Utiliser le script fourni**
+```bash
+# Sur le serveur, dans le répertoire joypharma/
+./scripts/run-migrations.sh
+```
+
+**Option 2 : Commande Docker Compose directe**
+```bash
+# Sur le serveur, dans le répertoire joypharma/
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec php bin/console doctrine:migrations:migrate --no-interaction
+```
+
+**Vérifier le statut des migrations**
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec php bin/console doctrine:migrations:status
+```
+
+**Lister les migrations en attente**
+```bash
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec php bin/console doctrine:migrations:list
+```
+
 ### Mode Worker FrankenPHP
 
 En production, FrankenPHP utilise automatiquement le **Worker Mode** pour des performances optimales :
