@@ -56,7 +56,7 @@ if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 		mkdir -p ./migrations
 		
 		if [ "$(find ./migrations -iname '*.php' -print -quit 2>/dev/null)" ]; then
-			php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing
+			php bin/console doctrine:migrations:migrate --no-interaction --all
 		fi
 	fi
 
