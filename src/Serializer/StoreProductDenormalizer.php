@@ -13,7 +13,7 @@ final class StoreProductDenormalizer implements DenormalizerInterface, Denormali
 
     private const ALREADY_CALLED = 'STORE_PRODUCT_DENORMALIZER_ALREADY_CALLED';
 
-    public function denormalize($data, string $type, string $format = null, array $context = []): mixed
+    public function denormalize($data, string $type, ?string $format = null, array $context = []): mixed
     {
         $context[self::ALREADY_CALLED] = true;
 
@@ -36,7 +36,7 @@ final class StoreProductDenormalizer implements DenormalizerInterface, Denormali
         return $this->denormalizer->denormalize($data, $type, $format, $context);
     }
 
-    public function supportsDenormalization($data, string $type, string $format = null, array $context = []): bool
+    public function supportsDenormalization($data, string $type, ?string $format = null, array $context = []): bool
     {
         // Skip if already called to prevent infinite recursion
         if (isset($context[self::ALREADY_CALLED])) {

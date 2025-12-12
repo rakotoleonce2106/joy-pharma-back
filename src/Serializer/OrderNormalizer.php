@@ -25,7 +25,7 @@ class OrderNormalizer implements NormalizerInterface, NormalizerAwareInterface
         $this->normalizer = $normalizer;
     }
 
-    public function normalize($object, string $format = null, array $context = []): array
+    public function normalize($object, ?string $format = null, array $context = []): array
     {
         if (!$object instanceof Order) {
             return [];
@@ -136,7 +136,7 @@ class OrderNormalizer implements NormalizerInterface, NormalizerAwareInterface
         return $data;
     }
 
-    public function supportsNormalization($data, string $format = null, array $context = []): bool
+    public function supportsNormalization($data, ?string $format = null, array $context = []): bool
     {
         // Skip if we're already processing this order (prevent recursion)
         if (isset($context[self::CONTEXT_KEY])) {

@@ -16,7 +16,7 @@ class EmbeddedFileNormalizer implements NormalizerInterface
         $this->router = $router;
     }
 
-    public function normalize($object, string $format = null, array $context = []): array
+    public function normalize($object, ?string $format = null, array $context = []): array
     {
 
         if (!$object instanceof EmbeddedFile || !$object->getName()) {
@@ -33,7 +33,7 @@ class EmbeddedFileNormalizer implements NormalizerInterface
         ];
     }
 
-    public function supportsNormalization($data, string $format = null, array $context = []): bool
+    public function supportsNormalization($data, ?string $format = null, array $context = []): bool
     {
         return $data instanceof EmbeddedFile;
     }
