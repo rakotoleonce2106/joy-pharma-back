@@ -30,7 +30,7 @@ readonly class UserService
     }
 
 
-    public function hashPassword(User $user, string $password = null): User
+    public function hashPassword(User $user, ?string $password = null): User
     {
         // If no password provided, use default
         $plainPassword = $password ?? 'JoyPharma2025!';

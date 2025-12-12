@@ -10,7 +10,7 @@ readonly class ToastService
     {
     }
 
-    public function addToast(string $type, string $message, string $description = null, array $options = []): void
+    public function addToast(string $type, string $message, ?string $description = null, array $options = []): void
     {
         $session = $this->requestStack->getCurrentRequest()->getSession();
 

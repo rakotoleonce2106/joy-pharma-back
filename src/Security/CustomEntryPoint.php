@@ -9,7 +9,7 @@ use Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface
 
 class CustomEntryPoint implements AuthenticationEntryPointInterface
 {
-    public function start(Request $request, \Throwable $authException = null): Response
+    public function start(Request $request, ?\Throwable $authException = null): Response
     {
         // Check if this is an API request
         if (str_starts_with($request->getPathInfo(), '/api')) {
