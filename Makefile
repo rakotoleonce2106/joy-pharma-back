@@ -1,5 +1,5 @@
 # Makefile pour Joy Pharma Backend
-.PHONY: help install up down logs shell db-migrate db-create composer-install tests clean
+.PHONY: help install up down logs shell db-migrate db-migration-create db-create composer-install tests clean
 
 .DEFAULT_GOAL := help
 
@@ -17,6 +17,9 @@ require: ## Installe un package Composer (usage: make require package=vendor/pac
 
 db-create: ## Crée la base de données
 	php bin/console doctrine:database:create --if-not-exists
+
+db-migration-create: ## Crée une nouvelle migration (usage: make db-migration-create name=MigrationName)
+	php bin/console doctrine:migrations:generate
 
 db-migrate: ## Execute les migrations
 	php bin/console doctrine:migrations:migrate --no-interaction
