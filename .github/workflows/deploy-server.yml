@@ -306,26 +306,6 @@ jobs:
               exit 1
             fi
             
-            # Sync migration metadata
-            SYNC_OUTPUT=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:sync-metadata-storage --no-interaction 2>&1 || echo "")
-            SYNC_EXIT_CODE=$?
-            if [ $SYNC_EXIT_CODE -ne 0 ] && ! echo "$SYNC_OUTPUT" | grep -qi "already synchronized"; then
-              exit 1
-            fi
-            
-            # Execute migrations
-            MIGRATION_OUTPUT=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:migrate --no-interaction 2>&1)
-            MIGRATION_EXIT_CODE=$?
-            
-            if [ $MIGRATION_EXIT_CODE -ne 0 ]; then
-              # Check if error is acceptable (no migrations, already up to date, etc.)
-              if ! echo "$MIGRATION_OUTPUT" | grep -qiE "no registered migrations|couldn't be reached|already at latest version|nothing to migrate|already synchronized"; then
-                echo "$MIGRATION_OUTPUT"
-                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:list || true
-                exit 1
-              fi
-            fi
-            
             # Generate JWT keys
             docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction || true
             
