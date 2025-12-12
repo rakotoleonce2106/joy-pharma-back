@@ -399,25 +399,39 @@ jobs:
                         echo "→ Synchronizing migration metadata storage..."
                         docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:sync-metadata-storage --no-interaction || true
                         
+                        # Check migration status first to see what we're dealing with
+                        echo "→ Checking migration status..."
+                        MIGRATION_STATUS=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:status --no-interaction 2>&1 || echo "")
+                        
                         # Now execute migrations and capture output
+                        echo "→ Executing migrations..."
                         MIGRATION_OUTPUT=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:migrate --no-interaction 2>&1)
                         MIGRATION_EXIT_CODE=$?
                         
                         if [ $MIGRATION_EXIT_CODE -eq 0 ]; then
                             echo "✓ Migrations executed successfully"
+                            # Show what was executed
+                            if echo "$MIGRATION_OUTPUT" | grep -q "migrated"; then
+                                echo "$MIGRATION_OUTPUT" | grep -E "(migrated|Executing)" || true
+                            fi
                         else
                             # Check if error is just "no registered migrations" which is OK for first deployment
-                            if echo "$MIGRATION_OUTPUT" | grep -q "no registered migrations" || echo "$MIGRATION_OUTPUT" | grep -q "couldn't be reached"; then
-                                echo "→ No migrations registered yet (first deployment or no pending migrations)"
-                                echo "✓ This is normal, migrations will be executed when available"
+                            if echo "$MIGRATION_OUTPUT" | grep -qi "no registered migrations" || \
+                               echo "$MIGRATION_OUTPUT" | grep -qi "couldn't be reached" || \
+                               echo "$MIGRATION_OUTPUT" | grep -qi "already at latest version"; then
+                                echo "→ No migrations to execute (first deployment or already up to date)"
+                                echo "✓ This is normal, database is already synchronized"
                             else
                                 echo "✗ Migrations failed - this is critical!"
                                 echo "→ Error output:"
                                 echo "$MIGRATION_OUTPUT"
-                                echo "→ Checking migration status..."
-                                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:status || true
+                                echo ""
+                                echo "→ Migration status:"
+                                echo "$MIGRATION_STATUS"
+                                echo ""
                                 echo "→ Attempting to list pending migrations..."
                                 docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:list || true
+                                echo ""
                                 echo "✗ Deployment cannot continue without successful migrations"
                                 exit 1
                             fi
