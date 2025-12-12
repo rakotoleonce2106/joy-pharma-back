@@ -395,13 +395,40 @@ jobs:
                         
                         # Run migrations (CRITICAL - must succeed)
                         echo "→ Running database migrations..."
+                        
+                        # Verify PHP container is ready
+                        echo "→ Verifying PHP container is ready..."
+                        if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1; then
+                            echo "✗ PHP container is not ready"
+                            echo "→ Container logs:"
+                            docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php --tail 50
+                            exit 1
+                        fi
+                        echo "✓ PHP container is ready"
+                        
+                        # Verify database connection before migrations
+                        echo "→ Verifying database connection..."
+                        if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console dbal:run-sql "SELECT 1" > /dev/null 2>&1; then
+                            echo "✗ Database connection failed"
+                            echo "→ Please check DATABASE_URL in .env file"
+                            exit 1
+                        fi
+                        echo "✓ Database connection verified"
+                        
                         # First, ensure migration metadata storage is synchronized (creates table if needed)
                         echo "→ Synchronizing migration metadata storage..."
-                        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:sync-metadata-storage --no-interaction || true
+                        SYNC_OUTPUT=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:sync-metadata-storage --no-interaction 2>&1 || echo "")
+                        SYNC_EXIT_CODE=$?
+                        if [ $SYNC_EXIT_CODE -ne 0 ] && ! echo "$SYNC_OUTPUT" | grep -qi "already synchronized"; then
+                            echo "⚠ Warning: Metadata storage sync had issues: $SYNC_OUTPUT"
+                        else
+                            echo "✓ Migration metadata storage synchronized"
+                        fi
                         
                         # Check migration status first to see what we're dealing with
                         echo "→ Checking migration status..."
                         MIGRATION_STATUS=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:status --no-interaction 2>&1 || echo "")
+                        echo "$MIGRATION_STATUS" | head -20 || true
                         
                         # Now execute migrations and capture output
                         echo "→ Executing migrations..."
@@ -418,11 +445,14 @@ jobs:
                             # Check if error is just "no registered migrations" which is OK for first deployment
                             if echo "$MIGRATION_OUTPUT" | grep -qi "no registered migrations" || \
                                echo "$MIGRATION_OUTPUT" | grep -qi "couldn't be reached" || \
-                               echo "$MIGRATION_OUTPUT" | grep -qi "already at latest version"; then
+                               echo "$MIGRATION_OUTPUT" | grep -qi "already at latest version" || \
+                               echo "$MIGRATION_OUTPUT" | grep -qi "nothing to migrate" || \
+                               echo "$MIGRATION_OUTPUT" | grep -qi "already synchronized"; then
                                 echo "→ No migrations to execute (first deployment or already up to date)"
                                 echo "✓ This is normal, database is already synchronized"
                             else
                                 echo "✗ Migrations failed - this is critical!"
+                                echo "→ Exit code: $MIGRATION_EXIT_CODE"
                                 echo "→ Error output:"
                                 echo "$MIGRATION_OUTPUT"
                                 echo ""
@@ -431,6 +461,9 @@ jobs:
                                 echo ""
                                 echo "→ Attempting to list pending migrations..."
                                 docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:list || true
+                                echo ""
+                                echo "→ Checking database connection..."
+                                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console dbal:run-sql "SELECT 1" || true
                                 echo ""
                                 echo "✗ Deployment cannot continue without successful migrations"
                                 exit 1
