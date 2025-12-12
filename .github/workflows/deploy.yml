@@ -34,27 +34,20 @@ jobs:
     steps:
       - name: Generate deployment summary
         run: |
-          echo "# 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Job Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Build and Push | ${{ needs.build-and-push.result == 'success' && '✅ Success' || needs.build-and-push.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy to Server | ${{ needs.deploy.result == 'success' && '✅ Success' || needs.deploy.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          if [ "${{ needs.deploy.result }}" == "success" ]; then
-            echo "### ✅ Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The application has been successfully deployed to the server." >> $GITHUB_STEP_SUMMARY
-            echo "Secrets are injected at runtime via Infisical Docker entrypoint." >> $GITHUB_STEP_SUMMARY
+          BUILD_RESULT="${{ needs.build-and-push.result }}"
+          if [ "$BUILD_RESULT" == "success" ]; then
+            BUILD_STATUS="✅ Success"
+          elif [ "$BUILD_RESULT" == "skipped" ]; then
+            BUILD_STATUS="⏭️ Skipped"
           else
-            echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Please check the job logs for more details." >> $GITHUB_STEP_SUMMARY
+            BUILD_STATUS="❌ Failed"
+          fi
+          
+          DEPLOY_RESULT="${{ needs.deploy.result }}"
+          if [ "$DEPLOY_RESULT" == "success" ]; then
+            DEPLOY_STATUS="✅ Success"
+          elif [ "$DEPLOY_RESULT" == "skipped" ]; then
+            DEPLOY_STATUS="⏭️ Skipped"
+          else
+            DEPLOY_STATUS="❌ Failed"
           fi
