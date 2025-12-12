@@ -55,7 +55,11 @@ docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php 
 # Exécuter les migrations
 echo ""
 echo "→ Exécution des migrations..."
-if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:migrate --no-interaction --all; then
+# Synchronize metadata storage first (creates table if needed)
+echo "→ Synchronisation du stockage des métadonnées..."
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:sync-metadata-storage --no-interaction || true
+
+if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:migrate --no-interaction; then
     echo ""
     echo "============================================"
     echo "✓ Migrations exécutées avec succès!"

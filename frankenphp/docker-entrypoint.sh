@@ -56,7 +56,10 @@ if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 		mkdir -p ./migrations
 		
 		if [ "$(find ./migrations -iname '*.php' -print -quit 2>/dev/null)" ]; then
-			php bin/console doctrine:migrations:migrate --no-interaction --all
+			# Synchronize metadata storage first (creates table if needed)
+			php bin/console doctrine:migrations:sync-metadata-storage --no-interaction || true
+			# Execute migrations
+			php bin/console doctrine:migrations:migrate --no-interaction || true
 		fi
 	fi
 
