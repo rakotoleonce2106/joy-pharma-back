@@ -8,11 +8,9 @@ api_platform:
         jsonld: ['application/ld+json']
         json: ['application/json']
         multipart: [ 'multipart/form-data' ]
-        html: ['text/html']  # Add HTML support
     docs_formats:
         jsonld: ['application/json']
         jsonopenapi: ['application/vnd.openapi+json']
-        html: ['text/html']
     defaults:
         pagination_enabled: true
         pagination_client_enabled: true

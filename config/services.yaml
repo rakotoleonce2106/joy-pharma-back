@@ -60,6 +60,9 @@ services:
     App\Serializer\MultipartDecoder:
         tags: ['serializer.encoder']
     
+    App\Serializer\HtmlEncoder:
+        tags: ['serializer.encoder']
+    
     App\Serializer\EmbeddedFileNormalizer:
         tags: ['serializer.normalizer']
     
