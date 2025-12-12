@@ -52,6 +52,7 @@
 
 	@phpRoute {
 		not path /.well-known/mercure*
+		not path /.well-known/acme-challenge/*
 		not file {path}
 	}
 	rewrite @phpRoute index.php
