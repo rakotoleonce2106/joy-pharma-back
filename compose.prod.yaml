@@ -4,6 +4,7 @@ services:
   php:
     image: ${IMAGES_PREFIX:-}joy-pharma-back:${IMAGE_TAG:-preprod}
     restart: unless-stopped
+    container_name: joy-pharma-back-php
     environment:
       APP_SECRET: ${APP_SECRET}
       MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET}
@@ -21,7 +22,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
-      # HTTP router (HTTPS) - using service name to ensure uniqueness
+      # HTTP router (HTTPS) - using fixed router name to avoid conflicts
       - "traefik.http.routers.joy-pharma-back.rule=Host(`${SERVER_NAME:-localhost}`)"
       - "traefik.http.routers.joy-pharma-back.entrypoints=websecure"
       - "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt"

@@ -267,6 +267,30 @@ jobs:
             echo "→ Stopping existing containers to free ports..."
             docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down 2>/dev/null || true
             
+            # Find and remove containers with conflicting Traefik labels (joy-pharma-back router)
+            echo "→ Cleaning up containers with conflicting Traefik labels..."
+            CONFLICTING_CONTAINERS=$(docker ps -a --format "{{.ID}}\t{{.Names}}" | while read id name; do
+                if docker inspect "$id" --format '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' 2>/dev/null | grep -q "traefik.http.routers.joy-pharma-back"; then
+                    echo "$id"
+                fi
+            done)
+            
+            if [ -n "$CONFLICTING_CONTAINERS" ]; then
+                echo "→ Found containers with conflicting Traefik labels:"
+                echo "$CONFLICTING_CONTAINERS" | while read id; do
+                    if [ -n "$id" ]; then
+                        NAME=$(docker inspect "$id" --format '{{.Name}}' 2>/dev/null || echo "unknown")
+                        echo "  - $NAME ($id)"
+                    fi
+                done
+                echo "→ Stopping and removing conflicting containers..."
+                echo "$CONFLICTING_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
+                echo "$CONFLICTING_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
+                echo "✓ Conflicting containers removed"
+            else
+                echo "✓ No conflicting containers found"
+            fi
+            
             # Also stop any containers that might be using port 80
             echo "→ Checking for containers using port 80..."
             CONTAINERS_ON_80=$(docker ps --filter "publish=80" --format "{{.ID}}" 2>/dev/null || echo "")
@@ -275,9 +299,19 @@ jobs:
                 echo "$CONTAINERS_ON_80" | xargs -r docker stop 2>/dev/null || true
             fi
             
-            # Check for any containers with name containing joypharma
+            # Remove container with fixed name if it exists (to avoid name conflicts)
+            echo "→ Checking for container with fixed name (joy-pharma-back-php)..."
+            if docker ps -a --filter "name=^joy-pharma-back-php$" --format "{{.ID}}" | grep -q .; then
+                echo "→ Removing existing container with fixed name..."
+                docker stop joy-pharma-back-php 2>/dev/null || true
+                docker rm joy-pharma-back-php 2>/dev/null || true
+                echo "✓ Fixed name container removed"
+            fi
+            
+            # Check for any containers with name containing joypharma or joy-pharma-back
             echo "→ Checking for any remaining joypharma containers..."
             REMAINING_CONTAINERS=$(docker ps -a --filter "name=joypharma" --format "{{.ID}}" 2>/dev/null || echo "")
+            REMAINING_CONTAINERS="$REMAINING_CONTAINERS $(docker ps -a --filter "name=joy-pharma-back" --format "{{.ID}}" 2>/dev/null || echo "")"
             if [ -n "$REMAINING_CONTAINERS" ]; then
                 echo "→ Stopping remaining containers..."
                 echo "$REMAINING_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
