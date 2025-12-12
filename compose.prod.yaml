@@ -21,15 +21,17 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
-      # HTTP router (HTTPS)
+      # HTTP router (HTTPS) - using service name to ensure uniqueness
       - "traefik.http.routers.joy-pharma-back.rule=Host(`${SERVER_NAME:-localhost}`)"
       - "traefik.http.routers.joy-pharma-back.entrypoints=websecure"
       - "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt"
       - "traefik.http.routers.joy-pharma-back.tls=true"
+      - "traefik.http.routers.joy-pharma-back.priority=10"
       # HTTP to HTTPS redirect
       - "traefik.http.routers.joy-pharma-back-redirect.rule=Host(`${SERVER_NAME:-localhost}`)"
       - "traefik.http.routers.joy-pharma-back-redirect.entrypoints=web"
       - "traefik.http.routers.joy-pharma-back-redirect.middlewares=redirect-to-https"
+      - "traefik.http.routers.joy-pharma-back-redirect.priority=10"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
       # Service configuration
