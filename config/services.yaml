@@ -89,8 +89,6 @@ services:
             - true
         calls:
             - setFormatter: ['@monolog.formatter.json']
-        arguments:
-            $projectDir: '%kernel.project_dir%'
 
     App\Service\ProductService:
         arguments:
