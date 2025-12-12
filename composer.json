@@ -41,6 +41,7 @@
         "symfony/string": "7.2.*",
         "symfony/translation": "7.2.*",
         "symfony/validator": "7.2.*",
+        "symfony/var-exporter": "7.2.*",
         "symfony/yaml": "7.2.*",
         "twig/twig": "^3.0",
         "vich/uploader-bundle": "^2.6.1"
@@ -76,7 +77,8 @@
     },
     "scripts": {
         "auto-scripts": {
-            "cache:clear": "symfony-cmd"
+            "cache:clear": "symfony-cmd",
+            "assets:install %PUBLIC_DIR%": "symfony-cmd"
         },
         "auto-scripts-dev": {
             "cache:clear": "symfony-cmd",
