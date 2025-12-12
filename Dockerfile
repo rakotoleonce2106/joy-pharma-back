@@ -86,11 +86,11 @@ COPY --link composer.* symfony.* ./
 RUN set -eux; \
 	composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress
 
-# copy sources
+# copy sources (including migrations directory)
 COPY --link --exclude=frankenphp/ . ./
 
 RUN set -eux; \
-	mkdir -p var/cache var/log; \
+	mkdir -p var/cache var/log migrations; \
 	composer dump-autoload --classmap-authoritative --no-dev; \
 	composer dump-env prod --empty || true; \
 	DATABASE_URL="postgresql://app:!ChangeMe!@database:5432/app?serverVersion=15&charset=utf8" \
