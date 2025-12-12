@@ -17,14 +17,21 @@ class DoctrineDeprecationFilterHandler extends StreamHandler
         if (
             $record->channel === 'deprecation' &&
             $record->level->value <= 200 && // INFO level
-            isset($record->context['exception']['message']) &&
-            (
-                str_contains($record->context['exception']['message'], 'Proxy\\Autoloader') ||
-                str_contains($record->context['exception']['message'], 'native lazy objects')
-            )
+            isset($record->context['exception'])
         ) {
-            // Ignorer ce message
-            return false;
+            // Gérer le cas où exception est un objet ou un tableau
+            $exception = $record->context['exception'];
+            $message = is_object($exception) 
+                ? ($exception->getMessage() ?? $exception->message ?? '')
+                : ($exception['message'] ?? '');
+            
+            if (
+                str_contains($message, 'Proxy\\Autoloader') ||
+                str_contains($message, 'native lazy objects')
+            ) {
+                // Ignorer ce message
+                return false;
+            }
         }
 
         // Laisser passer tous les autres messages au handler parent
