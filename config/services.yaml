@@ -79,6 +79,16 @@ services:
             - { name: 'serializer.normalizer', priority: 64 }
     
     App\Service\DownlaodFileService:
+        
+    # Handler Monolog personnalisé pour filtrer les avertissements de dépréciation Doctrine non critiques
+    monolog.handler.doctrine_deprecation_filter:
+        class: App\Service\DoctrineDeprecationFilterHandler
+        arguments:
+            - 'php://stderr'
+            - !php/const Monolog\Level::Debug
+            - true
+        calls:
+            - setFormatter: ['@monolog.formatter.json']
         arguments:
             $projectDir: '%kernel.project_dir%'
 
