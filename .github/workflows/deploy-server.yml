@@ -20,6 +20,7 @@ jobs:
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,308 +46,314 @@ jobs:
           timeout: 60s
           command_timeout: 15m
           script: |
-            set -e
-            cd joypharma
+            set -euo pipefail
+            cd joypharma || exit 1
             
-            # Login to Docker Hub
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            # ============================================
+            # 1. Docker Hub Authentication
+            # ============================================
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || exit 1
 
-            # Determine the image tag to use
+            # ============================================
+            # 2. Image Configuration
+            # ============================================
             IMAGE_TAG="${{ inputs.image-tag }}"
-            if [ -z "$IMAGE_TAG" ]; then
-              IMAGE_TAG="preprod"
-            fi
-            
+            IMAGE_TAG="${IMAGE_TAG:-preprod}"
             export IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
             export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
             
-            # Find Traefik network
-            # Try multiple methods to find Traefik network
+            # ============================================
+            # 3. Traefik Network Detection
+            # ============================================
             TRAEFIK_NETWORK=""
             
-            # Method 1: Check if Traefik container exists and get its network
-            if docker ps -a --format '{{.Names}}' | grep -q "^traefik$"; then
-                TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
+            # Method 1: Check Traefik container and get its network
+            if docker ps -a --format '{{.Names}}' | grep -qE "^traefik$|^traefik-"; then
+              TRAEFIK_CONTAINER=$(docker ps -a --format '{{.Names}}' | grep -E "^traefik$|^traefik-" | head -n1)
+              TRAEFIK_NETWORK=$(docker inspect "$TRAEFIK_CONTAINER" --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1 || echo "")
             fi
             
-            # Method 2: Look for common Traefik network names
+            # Method 2: Check common Traefik network names
             if [ -z "$TRAEFIK_NETWORK" ]; then
-                for NET_NAME in traefik traefik_default traefik_proxy; do
-                    if docker network inspect "$NET_NAME" &>/dev/null; then
-                        TRAEFIK_NETWORK="$NET_NAME"
-                        break
-                    fi
-                done
-            fi
-            
-            # Method 3: Check networks with "traefik" in the name
-            if [ -z "$TRAEFIK_NETWORK" ]; then
-                TRAEFIK_NETWORK=$(docker network ls --format '{{.Name}}' | grep -i traefik | head -n1)
-            fi
-            
-            if [ -z "$TRAEFIK_NETWORK" ]; then
-                NETWORK_NAME="joy-pharma-back_default"
-                if ! docker network inspect $NETWORK_NAME &>/dev/null; then
-                    docker network create $NETWORK_NAME
+              for NET_NAME in traefik traefik_default traefik_proxy traefik_web; do
+                if docker network inspect "$NET_NAME" &>/dev/null 2>&1; then
+                  TRAEFIK_NETWORK="$NET_NAME"
+                  break
                 fi
-                export TRAEFIK_NETWORK=$NETWORK_NAME
-            else
-                export TRAEFIK_NETWORK
+              done
             fi
             
-            # Verify network exists
-            if ! docker network inspect "$TRAEFIK_NETWORK" &>/dev/null; then
-                exit 1
+            # Method 3: Find network by pattern (most common)
+            if [ -z "$TRAEFIK_NETWORK" ]; then
+              TRAEFIK_NETWORK=$(docker network ls --format '{{.Name}}' | grep -iE "^traefik|traefik$" | head -n1 || echo "")
             fi
             
-            # Install Infisical CLI on the server
-            if ! command -v infisical &> /dev/null; then
-                curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo -E bash
-                sudo apt-get update && sudo apt-get install -y infisical
+            # Method 4: Check networks connected to Traefik container
+            if [ -z "$TRAEFIK_NETWORK" ] && [ -n "$TRAEFIK_CONTAINER" ]; then
+              TRAEFIK_NETWORK=$(docker inspect "$TRAEFIK_CONTAINER" --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | grep -v "^bridge$" | head -n1 || echo "")
             fi
             
-            # Generate .env file using Infisical
-            INFISICAL_TOKEN=$(infisical login --method=universal-auth --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" --domain="${{ secrets.INFISICAL_DOMAIN }}" --silent --plain)
+            # Fallback: Create default network if Traefik not found
+            if [ -z "$TRAEFIK_NETWORK" ]; then
+              NETWORK_NAME="joy-pharma-back_default"
+              if ! docker network inspect "$NETWORK_NAME" &>/dev/null 2>&1; then
+                docker network create "$NETWORK_NAME" || exit 1
+              fi
+              TRAEFIK_NETWORK="$NETWORK_NAME"
+            fi
+            
+            # Verify network exists and is accessible
+            if ! docker network inspect "$TRAEFIK_NETWORK" &>/dev/null 2>&1; then
+              exit 1
+            fi
+            
+            export TRAEFIK_NETWORK
+            
+            # ============================================
+            # 4. Infisical CLI Installation
+            # ============================================
+            if ! command -v infisical &>/dev/null; then
+              curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo -E bash || exit 1
+              sudo apt-get update && sudo apt-get install -y infisical || exit 1
+            fi
+            
+            # ============================================
+            # 5. Generate .env from Infisical
+            # ============================================
+            INFISICAL_TOKEN=$(infisical login \
+              --method=universal-auth \
+              --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" \
+              --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" \
+              --domain="${{ secrets.INFISICAL_DOMAIN }}" \
+              --silent \
+              --plain) || exit 1
             
             if [ -z "$INFISICAL_TOKEN" ]; then
-                exit 1
+              exit 1
             fi
             
-            # Export environment variables to .env file
-            infisical export --token=$INFISICAL_TOKEN --domain="${{ secrets.INFISICAL_DOMAIN }}" --projectId="${{ secrets.INFISICAL_PROJECTID }}" --env=prod --format=dotenv > .env
+            # Export secrets from Infisical
+            infisical export \
+              --token="$INFISICAL_TOKEN" \
+              --domain="${{ secrets.INFISICAL_DOMAIN }}" \
+              --projectId="${{ secrets.INFISICAL_PROJECTID }}" \
+              --env=prod \
+              --format=dotenv > .env || exit 1
             
             if [ ! -s .env ]; then
-                exit 1
+              exit 1
             fi
             
-            # Add Docker-specific variables to .env
-            echo "" >> .env
-            echo "# Docker Configuration" >> .env
-            echo "INFISICAL_TOKEN=$INFISICAL_TOKEN" >> .env
-            echo "INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECTID }}" >> .env
-            echo "IMAGES_PREFIX=${{ secrets.DOCKERHUB_USERNAME }}/" >> .env
-            echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
-            echo "TRAEFIK_NETWORK=$TRAEFIK_NETWORK" >> .env
+            # ============================================
+            # 6. Add Docker and Deployment Variables
+            # ============================================
+            {
+              echo ""
+              echo "# Docker Configuration"
+              echo "INFISICAL_TOKEN=$INFISICAL_TOKEN"
+              echo "INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECTID }}"
+              echo "IMAGES_PREFIX=${{ secrets.DOCKERHUB_USERNAME }}/"
+              echo "IMAGE_TAG=${IMAGE_TAG}"
+              echo "TRAEFIK_NETWORK=$TRAEFIK_NETWORK"
+            } >> .env
             
-            # Ensure critical Symfony/FrankenPHP variables are set
+            # Ensure critical variables are set
             if ! grep -q "^APP_ENV=" .env; then
-                echo "APP_ENV=prod" >> .env
+              echo "APP_ENV=prod" >> .env
             fi
             
             if ! grep -q "^SERVER_NAME=" .env; then
-                echo "SERVER_NAME=${{ secrets.SERVER_NAME }}" >> .env
+              echo "SERVER_NAME=${{ secrets.SERVER_NAME }}" >> .env
             fi
             
-            # Export variables for docker compose commands (as backup)
+            # Export for docker compose
             export INFISICAL_TOKEN
             export INFISICAL_PROJECT_ID="${{ secrets.INFISICAL_PROJECTID }}"
             export IMAGE_NAME
             export TRAEFIK_NETWORK
             
-            if [ ! -f .env ]; then
-                exit 1
+            # ============================================
+            # 7. Verify Configuration Files
+            # ============================================
+            if [ ! -f compose.yaml ] || [ ! -f compose.prod.yaml ]; then
+              exit 1
             fi
             
-            # Verify compose files are present and correct
-            if [ ! -f compose.yaml ]; then
-                exit 1
-            fi
-            if [ ! -f compose.prod.yaml ]; then
-                exit 1
-            fi
-            
-            # Backup current container for rollback
+            # ============================================
+            # 8. Backup Current Deployment
+            # ============================================
+            CURRENT_CONTAINER=""
             if [ -f compose.yaml ] && [ -f .env ]; then
-                CURRENT_CONTAINER=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -q php 2>/dev/null || echo "")
-            else
-                CURRENT_CONTAINER=""
+              CURRENT_CONTAINER=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -q php 2>/dev/null || echo "")
             fi
             
-            # Pull new images with retry logic
+            # ============================================
+            # 9. Pull Docker Images with Retry
+            # ============================================
             MAX_RETRIES=3
             RETRY_COUNT=0
-            until docker compose -f compose.yaml -f compose.prod.yaml --env-file .env pull || [ $RETRY_COUNT -eq $MAX_RETRIES ]; do
-                RETRY_COUNT=$((RETRY_COUNT+1))
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env pull; then
+                break
+              fi
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
                 sleep 5
+              fi
             done
             
             if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-                exit 1
+              exit 1
             fi
             
-            # Stop existing containers to free ports (especially port 80)
+            # ============================================
+            # 10. Cleanup Old Containers
+            # ============================================
+            # Stop existing containers
             docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down 2>/dev/null || true
             
-            # Find and remove containers with conflicting Traefik labels (joy-pharma-back router)
-            CONFLICTING_CONTAINERS=$(docker ps -a --format "{{.ID}}\t{{.Names}}" | while read id name; do
-                if docker inspect "$id" --format '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' 2>/dev/null | grep -q "traefik.http.routers.joy-pharma-back"; then
-                    echo "$id"
-                fi
-            done)
+            # Remove containers with conflicting Traefik labels
+            CONFLICTING_CONTAINERS=$(docker ps -a --format "{{.ID}}\t{{.Names}}" | while read -r id name; do
+              if docker inspect "$id" --format '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' 2>/dev/null | grep -q "traefik.http.routers.joy-pharma-back"; then
+                echo "$id"
+              fi
+            done || echo "")
             
             if [ -n "$CONFLICTING_CONTAINERS" ]; then
-                echo "$CONFLICTING_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
-                echo "$CONFLICTING_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
+              echo "$CONFLICTING_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
+              echo "$CONFLICTING_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
             fi
             
-            # Also stop any containers that might be using port 80
+            # Stop containers using port 80
             CONTAINERS_ON_80=$(docker ps --filter "publish=80" --format "{{.ID}}" 2>/dev/null || echo "")
             if [ -n "$CONTAINERS_ON_80" ]; then
-                echo "$CONTAINERS_ON_80" | xargs -r docker stop 2>/dev/null || true
+              echo "$CONTAINERS_ON_80" | xargs -r docker stop 2>/dev/null || true
             fi
             
-            # Remove container with fixed name if it exists (to avoid name conflicts)
+            # Remove fixed name container
             if docker ps -a --filter "name=^joy-pharma-back-php$" --format "{{.ID}}" | grep -q .; then
-                docker stop joy-pharma-back-php 2>/dev/null || true
-                docker rm joy-pharma-back-php 2>/dev/null || true
+              docker stop joy-pharma-back-php 2>/dev/null || true
+              docker rm joy-pharma-back-php 2>/dev/null || true
             fi
             
-            # Check for any containers with name containing joypharma or joy-pharma-back
-            REMAINING_CONTAINERS=$(docker ps -a --filter "name=joypharma" --format "{{.ID}}" 2>/dev/null || echo "")
-            REMAINING_CONTAINERS="$REMAINING_CONTAINERS $(docker ps -a --filter "name=joy-pharma-back" --format "{{.ID}}" 2>/dev/null || echo "")"
-            if [ -n "$REMAINING_CONTAINERS" ]; then
-                echo "$REMAINING_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
-                echo "$REMAINING_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
-            fi
-            
-            # Wait a moment for ports to be released
+            # Wait for ports to be released
             sleep 3
             
-            # Verify port 80 is free
-            if command -v lsof >/dev/null 2>&1; then
-                PORT_80_USERS=$(lsof -i :80 2>/dev/null | wc -l || echo "0")
-                if [ "$PORT_80_USERS" -gt "0" ]; then
-                    lsof -i :80 2>/dev/null || true
-                    docker ps --filter "publish=80" --format "{{.ID}}" | xargs -r docker stop 2>/dev/null || true
-                    docker ps --filter "publish=80" --format "{{.ID}}" | xargs -r docker rm 2>/dev/null || true
-                    sleep 2
-                fi
+            # ============================================
+            # 11. Deploy New Version
+            # ============================================
+            if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d; then
+              docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -a
+              docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs
+              exit 1
             fi
             
-            # Deploy new version
-            if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d; then
-                # Wait for services to stabilize
-                sleep 10
-                
-                # Check all services
-                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps
-                
-                # Get container IDs
-                PHP_CONTAINER=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -q php 2>/dev/null || echo "")
-                DB_CONTAINER=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -q database 2>/dev/null || echo "")
-                
-                if [ -z "$PHP_CONTAINER" ]; then
-                    docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php
-                    exit 1
-                fi
-                
-                # Check PHP container status
-                sleep 5
-                CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' $PHP_CONTAINER 2>/dev/null || echo "unknown")
-                RESTART_COUNT=$(docker inspect --format='{{.RestartCount}}' $PHP_CONTAINER 2>/dev/null || echo "0")
-                
-                if [ "$CONTAINER_STATUS" = "running" ] && [ "$RESTART_COUNT" = "0" ]; then
-                    # Wait for database to be ready
-                    MAX_DB_WAIT=30
-                    DB_WAIT=0
-                    until docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T database pg_isready -U app 2>/dev/null || [ $DB_WAIT -eq $MAX_DB_WAIT ]; do
-                        DB_WAIT=$((DB_WAIT+1))
-                        sleep 2
-                    done
-                    
-                    if [ $DB_WAIT -ne $MAX_DB_WAIT ]; then
-                        # Generate JWT keys with real secrets from Infisical
-                        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction || true
-                        
-                        # Run migrations (CRITICAL - must succeed)
-                        
-                        # Verify PHP container is ready
-                        if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1; then
-                            docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php --tail 50
-                            exit 1
-                        fi
-                        
-                        # Verify database connection before migrations
-                        if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console dbal:run-sql "SELECT 1" > /dev/null 2>&1; then
-                            exit 1
-                        fi
-                        
-                        # First, ensure migration metadata storage is synchronized (creates table if needed)
-                        SYNC_OUTPUT=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:sync-metadata-storage --no-interaction 2>&1 || echo "")
-                        SYNC_EXIT_CODE=$?
-                        if [ $SYNC_EXIT_CODE -ne 0 ] && ! echo "$SYNC_OUTPUT" | grep -qi "already synchronized"; then
-                            true
-                        fi
-                        
-                        # Check migration status first to see what we're dealing with
-                        MIGRATION_STATUS=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:status --no-interaction 2>&1 || echo "")
-                        echo "$MIGRATION_STATUS" | head -20 || true
-                        
-                        # Now execute migrations and capture output
-                        MIGRATION_OUTPUT=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:migrate --no-interaction 2>&1)
-                        MIGRATION_EXIT_CODE=$?
-                        
-                        if [ $MIGRATION_EXIT_CODE -eq 0 ]; then
-                            # Show what was executed
-                            if echo "$MIGRATION_OUTPUT" | grep -q "migrated"; then
-                                echo "$MIGRATION_OUTPUT" | grep -E "(migrated|Executing)" || true
-                            fi
-                        else
-                            # Check if error is just "no registered migrations" which is OK for first deployment
-                            if echo "$MIGRATION_OUTPUT" | grep -qi "no registered migrations" || \
-                               echo "$MIGRATION_OUTPUT" | grep -qi "couldn't be reached" || \
-                               echo "$MIGRATION_OUTPUT" | grep -qi "already at latest version" || \
-                               echo "$MIGRATION_OUTPUT" | grep -qi "nothing to migrate" || \
-                               echo "$MIGRATION_OUTPUT" | grep -qi "already synchronized"; then
-                                true
-                            else
-                                echo "$MIGRATION_OUTPUT"
-                                echo "$MIGRATION_STATUS"
-                                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:list || true
-                                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console dbal:run-sql "SELECT 1" || true
-                                exit 1
-                            fi
-                        fi
-                        
-                        # Clear cache
-                        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console cache:clear --no-warmup || true
-                        
-                        # Warmup cache
-                        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console cache:warmup || true
-                    fi
-                    
-                    # Test application health
-                    sleep 3
-                    docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1 || true
-                    
-                    # Clean up old images
-                    docker image prune -f
-                    
-                    # Show final status
-                    docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps
-                else
-                    docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php --tail 100
-                    EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' $PHP_CONTAINER 2>/dev/null || echo "unknown")
-                    if [ -n "$CURRENT_CONTAINER" ] && docker ps -a --format '{{.ID}}' | grep -q "$CURRENT_CONTAINER"; then
-                        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down
-                        docker start $CURRENT_CONTAINER
-                    else
-                        docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down
-                    fi
-                    exit 1
-                fi
-            else
-                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -a
-                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs
-                
-                # Check if port 80 is the issue
-                if command -v lsof >/dev/null 2>&1; then
-                    lsof -i :80 2>/dev/null || true
-                fi
-                docker ps --filter "publish=80" || true
-                
-                docker ps -a --filter "name=joypharma" --format "{{.ID}}" | xargs -r docker stop 2>/dev/null || true
-                docker ps -a --filter "name=joypharma" --format "{{.ID}}" | xargs -r docker rm 2>/dev/null || true
-                
-                exit 1
+            # Wait for services to start
+            sleep 10
+            
+            # ============================================
+            # 12. Verify Container Status
+            # ============================================
+            PHP_CONTAINER=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps -q php 2>/dev/null || echo "")
+            
+            if [ -z "$PHP_CONTAINER" ]; then
+              docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php
+              exit 1
             fi
+            
+            # Check container health
+            sleep 5
+            CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' "$PHP_CONTAINER" 2>/dev/null || echo "unknown")
+            RESTART_COUNT=$(docker inspect --format='{{.RestartCount}}' "$PHP_CONTAINER" 2>/dev/null || echo "0")
+            
+            if [ "$CONTAINER_STATUS" != "running" ] || [ "$RESTART_COUNT" != "0" ]; then
+              docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php --tail 100
+              # Attempt rollback
+              if [ -n "$CURRENT_CONTAINER" ] && docker ps -a --format '{{.ID}}' | grep -q "$CURRENT_CONTAINER"; then
+                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down
+                docker start "$CURRENT_CONTAINER"
+              else
+                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down
+              fi
+              exit 1
+            fi
+            
+            # ============================================
+            # 13. Database Health Check
+            # ============================================
+            MAX_DB_WAIT=30
+            DB_WAIT=0
+            until docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T database pg_isready -U app 2>/dev/null || [ $DB_WAIT -eq $MAX_DB_WAIT ]; do
+              DB_WAIT=$((DB_WAIT + 1))
+              sleep 2
+            done
+            
+            if [ $DB_WAIT -eq $MAX_DB_WAIT ]; then
+              exit 1
+            fi
+            
+            # ============================================
+            # 14. Application Setup
+            # ============================================
+            # Verify PHP container is ready
+            if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1; then
+              docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php --tail 50
+              exit 1
+            fi
+            
+            # Verify database connection
+            if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console dbal:run-sql "SELECT 1" > /dev/null 2>&1; then
+              exit 1
+            fi
+            
+            # Sync migration metadata
+            SYNC_OUTPUT=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:sync-metadata-storage --no-interaction 2>&1 || echo "")
+            SYNC_EXIT_CODE=$?
+            if [ $SYNC_EXIT_CODE -ne 0 ] && ! echo "$SYNC_OUTPUT" | grep -qi "already synchronized"; then
+              exit 1
+            fi
+            
+            # Execute migrations
+            MIGRATION_OUTPUT=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:migrate --no-interaction 2>&1)
+            MIGRATION_EXIT_CODE=$?
+            
+            if [ $MIGRATION_EXIT_CODE -ne 0 ]; then
+              # Check if error is acceptable (no migrations, already up to date, etc.)
+              if ! echo "$MIGRATION_OUTPUT" | grep -qiE "no registered migrations|couldn't be reached|already at latest version|nothing to migrate|already synchronized"; then
+                echo "$MIGRATION_OUTPUT"
+                docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console doctrine:migrations:list || true
+                exit 1
+              fi
+            fi
+            
+            # Generate JWT keys
+            docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction || true
+            
+            # Clear and warmup cache
+            docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console cache:clear --no-warmup || true
+            docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php bin/console cache:warmup || true
+            
+            # ============================================
+            # 15. Final Health Check
+            # ============================================
+            sleep 3
+            if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1; then
+              exit 1
+            fi
+            
+            # Verify Traefik labels are applied
+            TRAEFIK_LABELS=$(docker inspect "$PHP_CONTAINER" --format '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' 2>/dev/null | grep -c "traefik" || echo "0")
+            if [ "$TRAEFIK_LABELS" -eq "0" ]; then
+              exit 1
+            fi
+            
+            # Verify container is on Traefik network
+            if ! docker inspect "$PHP_CONTAINER" --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | grep -q "$TRAEFIK_NETWORK"; then
+              exit 1
+            fi
+            
+            # Cleanup old images
+            docker image prune -f || true
+            
+            # Show final status
+            docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps
