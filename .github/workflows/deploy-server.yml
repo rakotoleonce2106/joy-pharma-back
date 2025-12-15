@@ -21,9 +21,29 @@ jobs:
     name: Deploy to Server
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Préparer le répertoire de déploiement
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          timeout: 60s
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            DEPLOY_PATH="${DEPLOY_PATH/#\~/$HOME}"
+            if [ -z "$DEPLOY_PATH" ]; then
+              exit 1
+            fi
+            mkdir -p "$DEPLOY_PATH/joypharma"
 
       - name: Copy Docker configuration to server
         uses: appleboy/scp-action@v0.1.7
@@ -33,7 +53,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           source: "compose.yaml,compose.prod.yaml,frankenphp,scripts"
-          target: "joypharma/"
+          target: "${{ secrets.DEPLOY_PATH }}/joypharma/"
           overwrite: true
 
       - name: Deploy via SSH
@@ -47,7 +67,12 @@ jobs:
           command_timeout: 15m
           script: |
             set -euo pipefail
-            cd joypharma || exit 1
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            DEPLOY_PATH="${DEPLOY_PATH/#\~/$HOME}"
+            if [ -z "$DEPLOY_PATH" ]; then
+              exit 1
+            fi
+            cd "$DEPLOY_PATH/joypharma" || exit 1
             
             # ============================================
             # 1. Docker Hub Authentication
