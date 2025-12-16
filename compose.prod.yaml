@@ -5,6 +5,9 @@ services:
     image: ${IMAGES_PREFIX:-}joy-pharma-back:${IMAGE_TAG:-preprod}
     restart: unless-stopped
     container_name: joy-pharma-back-php
+    volumes:
+      # Monter le fichier .env dans le conteneur
+      - ./.env:/app/.env:ro
     environment:
       APP_SECRET: ${APP_SECRET}
       JWT_PASSPHRASE: ${JWT_PASSPHRASE}
