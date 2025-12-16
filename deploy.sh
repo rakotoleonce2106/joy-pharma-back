@@ -1,11 +1,11 @@
 #!/bin/bash
-# /home/ubuntu/joy-pharma-back/deploy.sh
+# ~/joy-pharma-back/deploy.sh
 
 set -e
 
 echo "🚀 Déploiement joy-pharma-back..."
 
-cd /home/ubuntu/joy-pharma-back
+cd ~/joy-pharma-back
 
 # Vérifier que les réseaux externes existent
 echo "→ Vérification des réseaux externes..."

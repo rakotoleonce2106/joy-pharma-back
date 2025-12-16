@@ -26,7 +26,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd /home/ubuntu/joy-pharma-back
+            # Créer le répertoire s'il n'existe pas
+            mkdir -p ~/joy-pharma-back
+            cd ~/joy-pharma-back
             
             # Installer Infisical CLI si nécessaire
             if ! command -v infisical &>/dev/null; then
