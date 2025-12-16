@@ -9,6 +9,7 @@ services:
       # Monter le fichier .env dans le conteneur
       - ./.env:/app/.env:ro
     environment:
+      SERVER_NAME: ${SERVER_NAME}
       APP_SECRET: ${APP_SECRET}
       JWT_PASSPHRASE: ${JWT_PASSPHRASE}
       DATABASE_URL: ${DATABASE_URL}

@@ -7,12 +7,13 @@ services:
       - "80"
     labels:
       - traefik.enable=true
-      - traefik.http.routers.joy-back.rule=Host(`preprod.joy-pharma.com`) || Host(`api.joy-pharma.com`)
+      - traefik.http.routers.joy-back.rule=Host(`${SERVER_NAME:-preprod.joy-pharma.com}`)
       - traefik.http.routers.joy-back.entrypoints=websecure
       - traefik.http.routers.joy-back.tls=true
       - traefik.http.routers.joy-back.tls.certresolver=letsencrypt
       - traefik.http.services.joy-back.loadbalancer.server.port=80
     environment:
+      SERVER_NAME: ${SERVER_NAME:-preprod.joy-pharma.com}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@shared-postgres:5432/${POSTGRES_DB}?serverVersion=16&charset=utf8
       APP_ENV: ${APP_ENV:-prod}
       APP_SECRET: ${APP_SECRET}
