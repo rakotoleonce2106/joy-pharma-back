@@ -1,7 +1,8 @@
 #!/bin/bash
 # ~/joy-pharma-back/deploy.sh
 
-set -e
+# Ne pas arrêter le script sur les erreurs, on les gère manuellement
+set +e
 
 echo "🚀 Déploiement joy-pharma-back..."
 
@@ -34,30 +35,69 @@ fi
 
 # Pull la nouvelle image
 echo "→ Pull de l'image Docker..."
-docker compose -f compose.yaml -f compose.prod.yaml --env-file .env pull
+if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env pull; then
+  echo "❌ Échec du pull de l'image Docker"
+  exit 1
+fi
 
 # Redémarrer le service
 echo "→ Démarrage du service..."
-docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d --force-recreate
+if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d --force-recreate; then
+  echo "❌ Échec du démarrage du service"
+  exit 1
+fi
 
-# Attendre que le conteneur soit prêt
+# Attendre que le conteneur soit prêt et stable
 echo "→ Attente du démarrage du conteneur..."
 sleep 5
 
-MAX_WAIT=30
+MAX_WAIT=60
 WAIT_COUNT=0
-until docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1 || [ $WAIT_COUNT -eq $MAX_WAIT ]; do
+CONTAINER_STABLE=0
+
+# Attendre que le conteneur soit en état "running" et stable
+while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+  CONTAINER_STATUS=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps php --format "{{.Status}}" 2>/dev/null || echo "")
+  
+  if [[ "$CONTAINER_STATUS" == *"Up"* ]] && [[ "$CONTAINER_STATUS" != *"Restarting"* ]]; then
+    # Conteneur est en cours d'exécution, vérifier s'il répond
+    if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1; then
+      CONTAINER_STABLE=$((CONTAINER_STABLE + 1))
+      if [ $CONTAINER_STABLE -ge 3 ]; then
+        echo "✓ Conteneur PHP prêt et stable"
+        break
+      fi
+    fi
+  elif [[ "$CONTAINER_STATUS" == *"Restarting"* ]]; then
+    echo "⚠ Conteneur en cours de redémarrage... ($WAIT_COUNT/$MAX_WAIT)"
+    CONTAINER_STABLE=0
+  else
+    echo "⏳ Attente du conteneur PHP... ($WAIT_COUNT/$MAX_WAIT)"
+    CONTAINER_STABLE=0
+  fi
+  
   WAIT_COUNT=$((WAIT_COUNT + 1))
-  echo "⏳ Attente du conteneur PHP... ($WAIT_COUNT/$MAX_WAIT)"
   sleep 2
 done
 
-if [ $WAIT_COUNT -eq $MAX_WAIT ]; then
-  echo "❌ Le conteneur PHP n'est pas prêt après $MAX_WAIT tentatives"
-  docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs php
+if [ $WAIT_COUNT -eq $MAX_WAIT ] || [ $CONTAINER_STABLE -lt 3 ]; then
+  echo "❌ Le conteneur PHP n'est pas stable après $MAX_WAIT tentatives"
+  echo ""
+  echo "📋 État du conteneur:"
+  docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps php
+  echo ""
+  echo "📋 Derniers logs du conteneur:"
+  docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs --tail=50 php
   exit 1
 fi
-echo "✓ Conteneur PHP prêt"
+
+# Vérifier que le conteneur est toujours en cours d'exécution avant de continuer
+CONTAINER_STATUS=$(docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps php --format "{{.Status}}" 2>/dev/null || echo "")
+if [[ "$CONTAINER_STATUS" == *"Restarting"* ]] || [[ "$CONTAINER_STATUS" != *"Up"* ]]; then
+  echo "❌ Le conteneur PHP n'est pas stable, arrêt du déploiement"
+  docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs --tail=50 php
+  exit 1
+fi
 
 # Vérifier la connexion à la base de données
 echo "→ Vérification de la connexion à la base de données..."
@@ -69,7 +109,7 @@ fi
 
 # Exécuter les migrations Symfony
 echo "→ Exécution des migrations..."
-if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php bin/console doctrine:migrations:migrate --no-interaction; then
+if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php bin/console doctrine:migrations:migrate --no-interaction 2>&1; then
   echo "✓ Migrations exécutées avec succès"
 else
   echo "⚠ Échec des migrations (peut être normal si déjà à jour)"
@@ -77,8 +117,11 @@ fi
 
 # Nettoyer le cache
 echo "→ Nettoyage du cache..."
-docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php bin/console cache:clear
-echo "✓ Cache nettoyé"
+if docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php bin/console cache:clear 2>&1; then
+  echo "✓ Cache nettoyé"
+else
+  echo "⚠ Échec du nettoyage du cache (peut être normal)"
+fi
 
 echo "✅ Déploiement terminé!"
 
