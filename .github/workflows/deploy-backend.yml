@@ -68,8 +68,18 @@ jobs:
               echo "TAG=preprod"
             } >> .env
             
-            # Exporter TAG pour docker compose
+            # Exporter les variables pour docker compose
             export TAG=preprod
+            export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+            
+            # Vérifier que les variables critiques sont présentes
+            if ! grep -q "^POSTGRES_USER=" .env || ! grep -q "^POSTGRES_PASSWORD=" .env || ! grep -q "^POSTGRES_DB=" .env; then
+              echo "⚠ Attention: Variables POSTGRES_* manquantes dans .env"
+            fi
+            
+            if ! grep -q "^APP_SECRET=" .env; then
+              echo "⚠ Attention: APP_SECRET manquant dans .env"
+            fi
             
             # Exécuter le script de déploiement
             bash deploy.sh
