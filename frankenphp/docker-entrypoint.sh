@@ -61,6 +61,15 @@ if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 			# Execute migrations
 			php bin/console doctrine:migrations:migrate --no-interaction || true
 		fi
+
+		# Generate JWT keys if they don't exist
+		if [ ! -f ./config/jwt/private.pem ] || [ ! -f ./config/jwt/public.pem ]; then
+			echo 'Generating JWT keys...'
+			mkdir -p ./config/jwt
+			php bin/console lexik:jwt:generate-keypair --overwrite --no-interaction || {
+				echo 'Warning: Failed to generate JWT keys. Make sure JWT_PASSPHRASE is set.'
+			}
+		fi
 	fi
 
 	echo 'PHP app ready!'
