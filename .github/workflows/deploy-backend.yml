@@ -1,0 +1,76 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main, preprod]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build and push Docker image
+        run: |
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:preprod .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:preprod
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/joy-pharma-back
+            
+            # Installer Infisical CLI si nécessaire
+            if ! command -v infisical &>/dev/null; then
+              curl -1sLf 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | sudo -E bash
+              sudo apt-get update && sudo apt-get install -y infisical
+            fi
+            
+            # Générer le token Infisical
+            INFISICAL_TOKEN=$(infisical login \
+              --method=universal-auth \
+              --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" \
+              --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" \
+              --domain="${{ secrets.INFISICAL_DOMAIN }}" \
+              --silent \
+              --plain)
+            
+            if [ -z "$INFISICAL_TOKEN" ]; then
+              echo "❌ Échec de la génération du token Infisical"
+              exit 1
+            fi
+            
+            # Exporter les variables d'environnement depuis Infisical vers .env
+            infisical export \
+              --token="$INFISICAL_TOKEN" \
+              --domain="${{ secrets.INFISICAL_DOMAIN }}" \
+              --projectId="${{ secrets.INFISICAL_PROJECTID }}" \
+              --env=prod \
+              --format=dotenv > .env
+            
+            if [ ! -s .env ]; then
+              echo "❌ Échec de la génération du fichier .env ou fichier vide"
+              exit 1
+            fi
+            
+            # Ajouter les variables Docker
+            {
+              echo ""
+              echo "# Docker Configuration"
+              echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}"
+              echo "TAG=preprod"
+            } >> .env
+            
+            # Exporter TAG pour docker compose
+            export TAG=preprod
+            
+            # Exécuter le script de déploiement
+            bash deploy.sh
+
