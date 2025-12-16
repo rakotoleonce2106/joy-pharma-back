@@ -2,7 +2,7 @@ name: Deploy Backend
 
 on:
   push:
-    branches: [main, preprod]
+    branches: [main]
 
 jobs:
   deploy:
@@ -14,8 +14,8 @@ jobs:
       - name: Build and push Docker image
         run: |
           echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:preprod .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:preprod
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:main .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:main
 
       - name: Prepare server directory
         uses: appleboy/ssh-action@master
@@ -78,11 +78,11 @@ jobs:
               echo ""
               echo "# Docker Configuration"
               echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}"
-              echo "TAG=preprod"
+              echo "TAG=main"
             } >> .env
             
             # Exporter les variables pour docker compose
-            export TAG=preprod
+            export TAG=main
             export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
             
             # Vérifier que les variables critiques sont présentes
