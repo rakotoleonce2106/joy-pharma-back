@@ -34,13 +34,7 @@ jobs:
             fi
             
             # Générer le token Infisical
-            INFISICAL_TOKEN=$(infisical login \
-              --method=universal-auth \
-              --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" \
-              --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" \
-              --domain="${{ secrets.INFISICAL_DOMAIN }}" \
-              --silent \
-              --plain)
+            INFISICAL_TOKEN=$(infisical login --method=universal-auth --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" --domain="${{ secrets.INFISICAL_DOMAIN }}" --silent --plain)
             
             if [ -z "$INFISICAL_TOKEN" ]; then
               echo "❌ Échec de la génération du token Infisical"
