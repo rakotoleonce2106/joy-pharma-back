@@ -9,7 +9,9 @@ services:
       # Monter le fichier .env dans le conteneur
       - ./.env:/app/.env:ro
     environment:
-      SERVER_NAME: ${SERVER_NAME}
+      # Utiliser :80 pour forcer HTTP dans Caddy (Traefik gère déjà le TLS)
+      # Le nom de domaine réel est utilisé par Traefik via les labels
+      SERVER_NAME: :80
       APP_SECRET: ${APP_SECRET}
       JWT_PASSPHRASE: ${JWT_PASSPHRASE}
       DATABASE_URL: ${DATABASE_URL}
