@@ -20,4 +20,11 @@ services:
     # Port mappings - Traefik is already configured on the server
     ports: []
     networks:
-      - default
+      - traefik_network
+      - database_network
+
+networks:
+  traefik_network:
+    external: true
+  database_network:
+    external: true

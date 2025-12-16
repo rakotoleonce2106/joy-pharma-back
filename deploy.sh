@@ -20,6 +20,12 @@ if ! docker network ls | grep -q "database_network"; then
 fi
 echo "✓ Réseaux externes vérifiés"
 
+# Supprimer le réseau default s'il existe (pour éviter les conflits)
+if docker network ls | grep -q "joy-pharma-back_default"; then
+  echo "→ Suppression de l'ancien réseau default..."
+  docker network rm joy-pharma-back_default 2>/dev/null || true
+fi
+
 # Vérifier que le fichier .env existe
 if [ ! -f ".env" ]; then
   echo "❌ Le fichier .env n'existe pas"
