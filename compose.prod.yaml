@@ -14,36 +14,7 @@ services:
       # Infisical configuration
       INFISICAL_TOKEN: ${INFISICAL_TOKEN:-}
       INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID:-}
-    # Remove port mappings - Traefik handles routing
+    # Port mappings - Traefik is already configured on the server
     ports: []
-    # Connect to Traefik network
     networks:
       - default
-      - traefik
-    # Traefik labels for routing
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik}"
-      # HTTP router (HTTPS) - using fixed router name to avoid conflicts
-      - "traefik.http.routers.joy-pharma-back.rule=Host(`${SERVER_NAME:-localhost}`)"
-      - "traefik.http.routers.joy-pharma-back.entrypoints=websecure"
-      - "traefik.http.routers.joy-pharma-back.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.joy-pharma-back.tls=true"
-      - "traefik.http.routers.joy-pharma-back.priority=10"
-      - "traefik.http.routers.joy-pharma-back.service=joy-pharma-back"
-      # HTTP to HTTPS redirect
-      - "traefik.http.routers.joy-pharma-back-redirect.rule=Host(`${SERVER_NAME:-localhost}`)"
-      - "traefik.http.routers.joy-pharma-back-redirect.entrypoints=web"
-      - "traefik.http.routers.joy-pharma-back-redirect.middlewares=redirect-to-https"
-      - "traefik.http.routers.joy-pharma-back-redirect.priority=10"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
-      # Service configuration
-      - "traefik.http.services.joy-pharma-back.loadbalancer.server.port=80"
-      - "traefik.http.services.joy-pharma-back.loadbalancer.healthcheck.path=/"
-      - "traefik.http.services.joy-pharma-back.loadbalancer.healthcheck.interval=10s"
-
-networks:
-  traefik:
-    external: true
-    name: ${TRAEFIK_NETWORK:-traefik}

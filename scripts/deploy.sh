@@ -18,58 +18,7 @@ echo "→ Using image: $IMAGE_NAME"
 echo "→ Image prefix: $IMAGES_PREFIX"
 echo "→ Image tag: $IMAGE_TAG"
 
-# Find Traefik network
-echo "→ Detecting Traefik network..."
-# Try multiple methods to find Traefik network
-TRAEFIK_NETWORK=""
-
-# Method 1: Check if Traefik container exists and get its network
-if docker ps -a --format '{{.Names}}' | grep -q "^traefik$"; then
-    TRAEFIK_NETWORK=$(docker inspect traefik --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1)
-    echo "→ Found Traefik container, network: ${TRAEFIK_NETWORK:-none}"
-fi
-
-# Method 2: Look for common Traefik network names
-if [ -z "$TRAEFIK_NETWORK" ]; then
-    for NET_NAME in traefik traefik_default traefik_proxy; do
-        if docker network inspect "$NET_NAME" &>/dev/null; then
-            TRAEFIK_NETWORK="$NET_NAME"
-            echo "→ Found Traefik network by name: $TRAEFIK_NETWORK"
-            break
-        fi
-    done
-fi
-
-# Method 3: Check networks with "traefik" in the name
-if [ -z "$TRAEFIK_NETWORK" ]; then
-    TRAEFIK_NETWORK=$(docker network ls --format '{{.Name}}' | grep -i traefik | head -n1)
-    if [ -n "$TRAEFIK_NETWORK" ]; then
-        echo "→ Found Traefik network by pattern: $TRAEFIK_NETWORK"
-    fi
-fi
-
-if [ -z "$TRAEFIK_NETWORK" ]; then
-    echo "⚠ Warning: Could not find Traefik network."
-    echo "⚠ Traefik should be running on the server for proper routing."
-    echo "⚠ Falling back to default network."
-    NETWORK_NAME="joy-pharma-back_default"
-    if ! docker network inspect $NETWORK_NAME &>/dev/null; then
-        docker network create $NETWORK_NAME
-        echo "✓ Created default network: $NETWORK_NAME"
-    else
-        echo "✓ Default network already exists: $NETWORK_NAME"
-    fi
-    export TRAEFIK_NETWORK=$NETWORK_NAME
-else
-    echo "✓ Using Traefik network: $TRAEFIK_NETWORK"
-    export TRAEFIK_NETWORK
-fi
-
-# Verify network exists
-if ! docker network inspect "$TRAEFIK_NETWORK" &>/dev/null; then
-    echo "✗ Network $TRAEFIK_NETWORK does not exist!"
-    exit 1
-fi
+# Traefik is already configured on the server, no network detection needed
 
 # Install Infisical CLI on the server
 echo "→ Installing Infisical CLI on server..."
@@ -107,7 +56,6 @@ echo "INFISICAL_TOKEN=$INFISICAL_TOKEN" >> .env
 echo "INFISICAL_PROJECT_ID=$INFISICAL_PROJECTID" >> .env
 echo "IMAGES_PREFIX=${DOCKERHUB_USERNAME}/" >> .env
 echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
-echo "TRAEFIK_NETWORK=$TRAEFIK_NETWORK" >> .env
 
 # Ensure critical Symfony/FrankenPHP variables are set
 if ! grep -q "^APP_ENV=" .env; then
@@ -131,13 +79,11 @@ fi
 export INFISICAL_TOKEN
 export INFISICAL_PROJECT_ID="$INFISICAL_PROJECTID"
 export IMAGE_NAME
-export TRAEFIK_NETWORK
 
 echo "✓ .env file generated successfully"
 echo "→ Verifying .env file contents..."
 echo "INFISICAL_TOKEN found: $(grep -c '^INFISICAL_TOKEN=' .env || echo '0')"
 echo "INFISICAL_PROJECT_ID found: $(grep -c '^INFISICAL_PROJECT_ID=' .env || echo '0')"
-echo "TRAEFIK_NETWORK found: $(grep -c '^TRAEFIK_NETWORK=' .env || echo '0')"
 echo "IMAGES_PREFIX found: $(grep -c '^IMAGES_PREFIX=' .env || echo '0')"
 echo "IMAGE_TAG found: $(grep -c '^IMAGE_TAG=' .env || echo '0')"
 echo "JWT_PASSPHRASE found: $(grep -c '^JWT_PASSPHRASE=' .env || echo '0')"
@@ -217,29 +163,6 @@ echo "✓ Images pulled successfully"
 echo "→ Stopping existing containers to free ports..."
 docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down 2>/dev/null || true
 
-# Find and remove containers with conflicting Traefik labels (joy-pharma-back router)
-echo "→ Cleaning up containers with conflicting Traefik labels..."
-CONFLICTING_CONTAINERS=$(docker ps -a --format "{{.ID}}\t{{.Names}}" | while read id name; do
-    if docker inspect "$id" --format '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' 2>/dev/null | grep -q "traefik.http.routers.joy-pharma-back"; then
-        echo "$id"
-    fi
-done)
-
-if [ -n "$CONFLICTING_CONTAINERS" ]; then
-    echo "→ Found containers with conflicting Traefik labels:"
-    echo "$CONFLICTING_CONTAINERS" | while read id; do
-        if [ -n "$id" ]; then
-            NAME=$(docker inspect "$id" --format '{{.Name}}' 2>/dev/null || echo "unknown")
-            echo "  - $NAME ($id)"
-        fi
-    done
-    echo "→ Stopping and removing conflicting containers..."
-    echo "$CONFLICTING_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
-    echo "$CONFLICTING_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
-    echo "✓ Conflicting containers removed"
-else
-    echo "✓ No conflicting containers found"
-fi
 
 # Also stop any containers that might be using port 80
 echo "→ Checking for containers using port 80..."

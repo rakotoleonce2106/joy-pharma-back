@@ -87,52 +87,7 @@ jobs:
             export IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:${IMAGE_TAG}"
             export IMAGES_PREFIX="${{ secrets.DOCKERHUB_USERNAME }}/"
             
-            # ============================================
-            # 3. Traefik Network Detection
-            # ============================================
-            TRAEFIK_NETWORK=""
-            
-            # Method 1: Check Traefik container and get its network
-            if docker ps -a --format '{{.Names}}' | grep -qE "^traefik$|^traefik-"; then
-              TRAEFIK_CONTAINER=$(docker ps -a --format '{{.Names}}' | grep -E "^traefik$|^traefik-" | head -n1)
-              TRAEFIK_NETWORK=$(docker inspect "$TRAEFIK_CONTAINER" --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | head -n1 || echo "")
-            fi
-            
-            # Method 2: Check common Traefik network names
-            if [ -z "$TRAEFIK_NETWORK" ]; then
-              for NET_NAME in traefik traefik_default traefik_proxy traefik_web; do
-                if docker network inspect "$NET_NAME" &>/dev/null 2>&1; then
-                  TRAEFIK_NETWORK="$NET_NAME"
-                  break
-                fi
-              done
-            fi
-            
-            # Method 3: Find network by pattern (most common)
-            if [ -z "$TRAEFIK_NETWORK" ]; then
-              TRAEFIK_NETWORK=$(docker network ls --format '{{.Name}}' | grep -iE "^traefik|traefik$" | head -n1 || echo "")
-            fi
-            
-            # Method 4: Check networks connected to Traefik container
-            if [ -z "$TRAEFIK_NETWORK" ] && [ -n "$TRAEFIK_CONTAINER" ]; then
-              TRAEFIK_NETWORK=$(docker inspect "$TRAEFIK_CONTAINER" --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | grep -v "^bridge$" | head -n1 || echo "")
-            fi
-            
-            # Fallback: Create default network if Traefik not found
-            if [ -z "$TRAEFIK_NETWORK" ]; then
-              NETWORK_NAME="joy-pharma-back_default"
-              if ! docker network inspect "$NETWORK_NAME" &>/dev/null 2>&1; then
-                docker network create "$NETWORK_NAME" || exit 1
-              fi
-              TRAEFIK_NETWORK="$NETWORK_NAME"
-            fi
-            
-            # Verify network exists and is accessible
-            if ! docker network inspect "$TRAEFIK_NETWORK" &>/dev/null 2>&1; then
-              exit 1
-            fi
-            
-            export TRAEFIK_NETWORK
+            # Traefik is already configured on the server, no network detection needed
             
             # ============================================
             # 4. Infisical CLI Installation
@@ -179,7 +134,6 @@ jobs:
               echo "INFISICAL_PROJECT_ID=${{ secrets.INFISICAL_PROJECTID }}"
               echo "IMAGES_PREFIX=${{ secrets.DOCKERHUB_USERNAME }}/"
               echo "IMAGE_TAG=${IMAGE_TAG}"
-              echo "TRAEFIK_NETWORK=$TRAEFIK_NETWORK"
             } >> .env
             
             # Ensure critical variables are set
@@ -195,7 +149,6 @@ jobs:
             export INFISICAL_TOKEN
             export INFISICAL_PROJECT_ID="${{ secrets.INFISICAL_PROJECTID }}"
             export IMAGE_NAME
-            export TRAEFIK_NETWORK
             
             # ============================================
             # 7. Verify Configuration Files
@@ -236,18 +189,6 @@ jobs:
             # ============================================
             # Stop existing containers
             docker compose -f compose.yaml -f compose.prod.yaml --env-file .env down 2>/dev/null || true
-            
-            # Remove containers with conflicting Traefik labels
-            CONFLICTING_CONTAINERS=$(docker ps -a --format "{{.ID}}\t{{.Names}}" | while read -r id name; do
-              if docker inspect "$id" --format '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' 2>/dev/null | grep -q "traefik.http.routers.joy-pharma-back"; then
-                echo "$id"
-              fi
-            done || echo "")
-            
-            if [ -n "$CONFLICTING_CONTAINERS" ]; then
-              echo "$CONFLICTING_CONTAINERS" | xargs -r docker stop 2>/dev/null || true
-              echo "$CONFLICTING_CONTAINERS" | xargs -r docker rm 2>/dev/null || true
-            fi
             
             # Stop containers using port 80
             CONTAINERS_ON_80=$(docker ps --filter "publish=80" --format "{{.ID}}" 2>/dev/null || echo "")
@@ -343,17 +284,6 @@ jobs:
             # ============================================
             sleep 3
             if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env exec -T php php -v > /dev/null 2>&1; then
-              exit 1
-            fi
-            
-            # Verify Traefik labels are applied
-            TRAEFIK_LABELS=$(docker inspect "$PHP_CONTAINER" --format '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' 2>/dev/null | grep -c "traefik" || echo "0")
-            if [ "$TRAEFIK_LABELS" -eq "0" ]; then
-              exit 1
-            fi
-            
-            # Verify container is on Traefik network
-            if ! docker inspect "$PHP_CONTAINER" --format '{{range $net, $conf := .NetworkSettings.Networks}}{{$net}}{{end}}' 2>/dev/null | grep -q "$TRAEFIK_NETWORK"; then
               exit 1
             fi
             
