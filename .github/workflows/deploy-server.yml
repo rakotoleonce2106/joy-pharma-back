@@ -56,6 +56,10 @@ jobs:
           target: "${{ secrets.DEPLOY_PATH }}/joypharma/"
           overwrite: true
 
+      - name: Mask image-tag input
+        run: |
+          echo "::add-mask::${{ inputs.image-tag }}"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:

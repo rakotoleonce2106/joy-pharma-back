@@ -50,6 +50,10 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=preprod,enable={{is_default_branch}}
 
+      - name: Mask image-tag output
+        run: |
+          echo "::add-mask::${{ steps.meta.outputs.tags }}"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
