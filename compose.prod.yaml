@@ -2,7 +2,7 @@
 # Production environment override
 services:
   php:
-    image: ${IMAGES_PREFIX:-}joy-pharma-back:${IMAGE_TAG:-preprod}
+    image: ${DOCKERHUB_USERNAME:-joyleonce}/joy-pharma-back:${TAG:-preprod}
     restart: unless-stopped
     container_name: joy-pharma-back-php
     volumes:

@@ -94,6 +94,10 @@ jobs:
               echo "⚠ Attention: APP_SECRET manquant dans .env"
             fi
             
+            # Authentifier Docker Hub
+            echo "→ Authentification Docker Hub..."
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            
             # Rendre deploy.sh exécutable
             chmod +x deploy.sh
             
