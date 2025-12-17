@@ -5,6 +5,14 @@ services:
     restart: always
     expose:
       - "80"
+    
+    # 📁 VOLUMES - Images et uploads persistants
+    # Ces dossiers sont HORS du projet et ne sont JAMAIS supprimés lors des déploiements
+    volumes:
+      - /joy-pharma-data/images:/app/public/images:rw
+      - /joy-pharma-data/media:/app/public/media:rw
+      - /joy-pharma-data/uploads:/app/public/uploads:rw
+    
     labels:
       - traefik.enable=true
       - traefik.http.routers.joy-back.rule=Host(`${SERVER_NAME:-preprod.joy-pharma.com}`)

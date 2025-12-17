@@ -24,6 +24,9 @@
 .github/
 docs/
 public/bundles/
+public/images/
+public/media/
+public/uploads/
 tests/
 var/
 vendor/
