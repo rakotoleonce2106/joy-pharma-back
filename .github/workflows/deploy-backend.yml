@@ -3,22 +3,81 @@ name: Deploy Backend
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Docker image tag to deploy (leave empty for auto-generated)"
+        required: false
+        type: string
 
 jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.generate_tag.outputs.image_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate version tag with timestamp
+        id: generate_tag
+        run: |
+          # Format: v1.YYYYMMDD.HHmmss (ex: v1.20241217.143025)
+          TIMESTAMP=$(date -u +"%Y%m%d.%H%M%S")
+          VERSION="v1.${TIMESTAMP}"
+          
+          # Créer les tags
+          IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back"
+          TAGS="${IMAGE_NAME}:${VERSION},${IMAGE_NAME}:latest"
+          
+          echo "image_tag=${VERSION}" >> $GITHUB_OUTPUT
+          echo "docker_tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "📦 Version générée: ${VERSION}"
+          echo "🏷️  Tags Docker: ${TAGS}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.generate_tag.outputs.docker_tags }}
+          cache-from: type=gha,scope=build-backend
+          cache-to: type=gha,mode=max,scope=build-backend
+          platforms: linux/amd64
+
   deploy:
+    name: Deploy to Server
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Build and push Docker image
+      - name: Determine image tag
+        id: tag
         run: |
-          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:main .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/joy-pharma-back:main
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+            echo "📌 Using manual tag: ${TAG}"
+          else
+            TAG="${{ needs.build-and-push.outputs.image-tag }}"
+            echo "🤖 Using auto-generated tag: ${TAG}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "🏷️  Final tag: ${TAG}"
 
       - name: Prepare server directory
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
@@ -26,9 +85,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             mkdir -p ~/joy-pharma-back
+            echo "🏷️  Image tag to deploy: ${{ steps.tag.outputs.tag }}" > ~/joy-pharma-back/deployment_info.txt
+            echo "📅 Deployment time: $(date)" >> ~/joy-pharma-back/deployment_info.txt
 
       - name: Copy files to server
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
@@ -36,24 +97,36 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "deploy.sh,compose.yaml,compose.prod.yaml"
           target: "~/joy-pharma-back"
+          overwrite: true
 
       - name: Deploy to server
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.tag }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
+          INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+          INFISICAL_DOMAIN: ${{ secrets.INFISICAL_DOMAIN }}
+          INFISICAL_PROJECTID: ${{ secrets.INFISICAL_PROJECTID }}
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: IMAGE_TAG,DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,INFISICAL_CLIENT_ID,INFISICAL_CLIENT_SECRET,INFISICAL_DOMAIN,INFISICAL_PROJECTID
           script: |
             set -e
             cd ~/joy-pharma-back
+            
+            echo "🚀 Déploiement du backend avec le tag: ${IMAGE_TAG}"
             
             # Installer ou mettre à jour Infisical CLI
             curl -1sLf 'https://artifacts-cli.infisical.com/setup.deb.sh' | sudo -E bash
             sudo apt-get update && sudo apt-get install -y infisical
             
             # Générer le token Infisical
-            INFISICAL_TOKEN=$(infisical login --method=universal-auth --client-id="${{ secrets.INFISICAL_CLIENT_ID }}" --client-secret="${{ secrets.INFISICAL_CLIENT_SECRET }}" --domain="${{ secrets.INFISICAL_DOMAIN }}" --silent --plain)
+            INFISICAL_TOKEN=$(infisical login --method=universal-auth --client-id="${INFISICAL_CLIENT_ID}" --client-secret="${INFISICAL_CLIENT_SECRET}" --domain="${INFISICAL_DOMAIN}" --silent --plain)
             
             if [ -z "$INFISICAL_TOKEN" ]; then
               echo "❌ Échec de la génération du token Infisical"
@@ -63,8 +136,8 @@ jobs:
             # Exporter les variables d'environnement depuis Infisical vers .env
             infisical export \
               --token="$INFISICAL_TOKEN" \
-              --domain="${{ secrets.INFISICAL_DOMAIN }}" \
-              --projectId="${{ secrets.INFISICAL_PROJECTID }}" \
+              --domain="${INFISICAL_DOMAIN}" \
+              --projectId="${INFISICAL_PROJECTID}" \
               --env=prod \
               --format=dotenv > .env
             
@@ -73,17 +146,17 @@ jobs:
               exit 1
             fi
             
-            # Ajouter les variables Docker
+            # Ajouter les variables Docker avec le tag généré
             {
               echo ""
               echo "# Docker Configuration"
-              echo "DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}"
-              echo "TAG=main"
+              echo "DOCKERHUB_USERNAME=${DOCKERHUB_USERNAME}"
+              echo "TAG=${IMAGE_TAG}"
             } >> .env
             
             # Exporter les variables pour docker compose
-            export TAG=main
-            export DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+            export TAG="${IMAGE_TAG}"
+            export DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME}"
             
             # Vérifier que les variables critiques sont présentes
             if ! grep -q "^POSTGRES_USER=" .env || ! grep -q "^POSTGRES_PASSWORD=" .env || ! grep -q "^POSTGRES_DB=" .env; then
@@ -96,11 +169,39 @@ jobs:
             
             # Authentifier Docker Hub
             echo "→ Authentification Docker Hub..."
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            echo "${DOCKERHUB_TOKEN}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
             
             # Rendre deploy.sh exécutable
             chmod +x deploy.sh
             
             # Exécuter le script de déploiement
+            echo "→ Exécution du script de déploiement..."
             bash deploy.sh
+            
+            echo "✅ Déploiement terminé avec succès!"
+            echo "📦 Image déployée: ${DOCKERHUB_USERNAME}/joy-pharma-back:${IMAGE_TAG}"
 
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/joy-pharma-back
+            
+            echo "🔍 Vérification du déploiement..."
+            
+            # Vérifier que les containers sont en cours d'exécution
+            docker compose ps
+            
+            # Afficher les images déployées
+            echo ""
+            echo "📦 Images actuellement déployées:"
+            docker compose images
+            
+            # Afficher les derniers logs
+            echo ""
+            echo "📋 Derniers logs (20 lignes):"
+            docker compose logs --tail=20

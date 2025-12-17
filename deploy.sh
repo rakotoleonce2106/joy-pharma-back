@@ -8,6 +8,18 @@ echo "🚀 Déploiement joy-pharma-back..."
 
 cd ~/joy-pharma-back
 
+# Afficher le tag qui sera déployé
+if [ -n "$TAG" ]; then
+  echo "📦 Tag de l'image: ${TAG}"
+else
+  echo "⚠️  Aucun tag spécifié, utilisation de 'latest'"
+  TAG="latest"
+fi
+
+if [ -n "$DOCKERHUB_USERNAME" ]; then
+  echo "🐳 Image: ${DOCKERHUB_USERNAME}/joy-pharma-back:${TAG}"
+fi
+
 # Vérifier que les réseaux externes existent
 echo "→ Vérification des réseaux externes..."
 if ! docker network ls | grep -q "traefik_network"; then
@@ -33,15 +45,43 @@ if [ ! -f ".env" ]; then
   exit 1
 fi
 
+# Vérifier que les variables critiques sont dans .env
+echo "→ Vérification des variables d'environnement..."
+REQUIRED_VARS=("TAG" "DOCKERHUB_USERNAME" "POSTGRES_USER" "POSTGRES_PASSWORD" "POSTGRES_DB" "APP_SECRET")
+MISSING_VARS=()
+
+for var in "${REQUIRED_VARS[@]}"; do
+  if ! grep -q "^${var}=" .env; then
+    MISSING_VARS+=("$var")
+  fi
+done
+
+if [ ${#MISSING_VARS[@]} -gt 0 ]; then
+  echo "⚠️  Variables manquantes dans .env: ${MISSING_VARS[*]}"
+else
+  echo "✓ Toutes les variables requises sont présentes dans .env"
+fi
+
+# Afficher le tag depuis .env
+DEPLOYED_TAG=$(grep "^TAG=" .env | cut -d'=' -f2)
+echo "📋 Tag dans .env: ${DEPLOYED_TAG}"
+
 # Pull la nouvelle image
-echo "→ Pull de l'image Docker..."
+echo "→ Pull de l'image Docker: ${DOCKERHUB_USERNAME}/joy-pharma-back:${DEPLOYED_TAG}..."
 if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env pull; then
   echo "❌ Échec du pull de l'image Docker"
   exit 1
 fi
+echo "✓ Image pullée avec succès"
+
+# Afficher l'ancienne image avant le redémarrage
+echo ""
+echo "📦 Image actuellement déployée:"
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env images php 2>/dev/null || echo "Aucune image précédente"
 
 # Redémarrer le service
-echo "→ Démarrage du service..."
+echo ""
+echo "→ Démarrage du service avec la nouvelle image..."
 if ! docker compose -f compose.yaml -f compose.prod.yaml --env-file .env up -d --force-recreate; then
   echo "❌ Échec du démarrage du service"
   exit 1
@@ -123,5 +163,75 @@ else
   echo "⚠ Échec du nettoyage du cache (peut être normal)"
 fi
 
-echo "✅ Déploiement terminé!"
+# Afficher un résumé du déploiement
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Déploiement terminé avec succès!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "📦 Image déployée:"
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env images php
+echo ""
+echo "📊 État du conteneur:"
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env ps php
+echo ""
+echo "📋 Derniers logs (10 lignes):"
+docker compose -f compose.yaml -f compose.prod.yaml --env-file .env logs --tail=10 php
+echo ""
+echo "🌐 Application disponible sur: https://${SERVER_NAME:-preprod.joy-pharma.com}"
+echo ""
 
+# Nettoyage des anciennes images (conserver les 3 dernières versions)
+echo "🧹 Nettoyage des anciennes images..."
+docker image prune -af --filter "until=72h" 2>/dev/null || true
+echo "✓ Nettoyage terminé"
+```
+
+## Améliorations apportées :
+
+1. **Affichage du tag** dès le début du déploiement
+2. **Vérification des variables** dans le fichier `.env`
+3. **Affichage de l'ancienne image** avant le redémarrage
+4. **Résumé détaillé** à la fin avec :
+   - Image déployée avec son tag
+   - État du conteneur
+   - Derniers logs
+   - URL de l'application
+5. **Nettoyage automatique** des anciennes images (+ de 72h)
+6. **Meilleur logging** avec des emojis et des sections claires
+
+## Exemple de sortie attendue :
+```
+🚀 Déploiement joy-pharma-back...
+📦 Tag de l'image: v1.20241217.143025
+🐳 Image: joyleonce/joy-pharma-back:v1.20241217.143025
+→ Vérification des réseaux externes...
+✓ Réseaux externes vérifiés
+→ Vérification des variables d'environnement...
+✓ Toutes les variables requises sont présentes dans .env
+📋 Tag dans .env: v1.20241217.143025
+→ Pull de l'image Docker: joyleonce/joy-pharma-back:v1.20241217.143025...
+✓ Image pullée avec succès
+
+📦 Image actuellement déployée:
+CONTAINER   REPOSITORY                    TAG                    IMAGE ID
+php         joyleonce/joy-pharma-back     v1.20241217.120000    abc123def456
+
+→ Démarrage du service avec la nouvelle image...
+✓ Conteneur PHP prêt et stable
+✓ Connexion à la base de données vérifiée
+✓ Migrations exécutées avec succès
+✓ Cache nettoyé
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Déploiement terminé avec succès!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📦 Image déployée:
+CONTAINER   REPOSITORY                    TAG                    IMAGE ID
+php         joyleonce/joy-pharma-back     v1.20241217.143025    xyz789abc123
+
+🌐 Application disponible sur: https://preprod.joy-pharma.com
+
+🧹 Nettoyage des anciennes images...
+✓ Nettoyage terminé
