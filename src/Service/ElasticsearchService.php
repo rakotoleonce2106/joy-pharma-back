@@ -73,7 +73,7 @@ class ElasticsearchService
         }
     }
 
-    public function createIndex(string $index, array $mapping): void
+    public function createIndex(string $index, array $mapping, array $settings = []): void
     {
         $indexName = $this->getIndexName($index);
         
@@ -81,11 +81,15 @@ class ElasticsearchService
             return;
         }
 
+        $body = ['mappings' => $mapping];
+        
+        if (!empty($settings)) {
+            $body['settings'] = $settings;
+        }
+
         $this->client->indices()->create([
             'index' => $indexName,
-            'body' => [
-                'mappings' => $mapping
-            ]
+            'body' => $body
         ]);
     }
 

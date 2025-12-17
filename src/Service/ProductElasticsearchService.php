@@ -24,14 +24,26 @@ class ProductElasticsearchService
                     'type' => 'text',
                     'analyzer' => 'standard',
                     'fields' => [
-                        'keyword' => ['type' => 'keyword']
+                        'keyword' => ['type' => 'keyword'],
+                        'ngram' => [
+                            'type' => 'text',
+                            'analyzer' => 'ngram_analyzer'
+                        ],
+                        'edge_ngram' => [
+                            'type' => 'text',
+                            'analyzer' => 'edge_ngram_analyzer'
+                        ]
                     ]
                 ],
                 'code' => [
                     'type' => 'text',
                     'analyzer' => 'standard',
                     'fields' => [
-                        'keyword' => ['type' => 'keyword']
+                        'keyword' => ['type' => 'keyword'],
+                        'ngram' => [
+                            'type' => 'text',
+                            'analyzer' => 'ngram_analyzer'
+                        ]
                     ]
                 ],
                 'description' => [
@@ -79,11 +91,51 @@ class ProductElasticsearchService
                     ]
                 ],
                 'createdAt' => ['type' => 'date'],
-                'updatedAt' => ['type' => 'date']
+                'updatedAt' => ['type' => 'date'],
+                // Champ vectoriel pour recherche KNN (optionnel, pour usage futur)
+                // Nécessite Elasticsearch 8.0+ avec dense_vector
+                // 'name_vector' => [
+                //     'type' => 'dense_vector',
+                //     'dims' => 384,
+                //     'index' => true,
+                //     'similarity' => 'cosine'
+                // ]
             ]
         ];
 
-        $this->elasticsearchService->createIndex(self::INDEX_NAME, $mapping);
+        // Configuration des analyseurs pour meilleure recherche de similarité
+        $settings = [
+            'analysis' => [
+                'analyzer' => [
+                    'ngram_analyzer' => [
+                        'type' => 'custom',
+                        'tokenizer' => 'ngram_tokenizer',
+                        'filter' => ['lowercase']
+                    ],
+                    'edge_ngram_analyzer' => [
+                        'type' => 'custom',
+                        'tokenizer' => 'edge_ngram_tokenizer',
+                        'filter' => ['lowercase']
+                    ]
+                ],
+                'tokenizer' => [
+                    'ngram_tokenizer' => [
+                        'type' => 'ngram',
+                        'min_gram' => 2,
+                        'max_gram' => 3,
+                        'token_chars' => ['letter', 'digit']
+                    ],
+                    'edge_ngram_tokenizer' => [
+                        'type' => 'edge_ngram',
+                        'min_gram' => 2,
+                        'max_gram' => 10,
+                        'token_chars' => ['letter', 'digit']
+                    ]
+                ]
+            ]
+        ];
+
+        $this->elasticsearchService->createIndex(self::INDEX_NAME, $mapping, $settings);
     }
 
     public function indexProduct(Product $product): void
@@ -105,66 +157,114 @@ class ProductElasticsearchService
     }
 
     /**
-     * Search for product title suggestions using Elasticsearch
-     * Returns an array of unique product titles matching the query
+     * Search for product title suggestions using Elasticsearch with KNN-like similarity
      * 
-     * @param string $query Search query (minimum 2 characters)
+     * Cette méthode utilise plusieurs stratégies de recherche combinées pour obtenir
+     * des résultats similaires à une recherche KNN (K-Nearest Neighbors) :
+     * - N-gram et Edge N-gram pour la similarité de caractères
+     * - Match phrase prefix pour l'autocomplétion
+     * - Fuzzy matching pour les fautes de frappe
+     * - Scoring pondéré pour prioriser les meilleurs résultats
+     * 
+     * @param string $query Search query (minimum 1 character)
      * @param int $limit Maximum number of suggestions to return (default: 10)
-     * @return array Array of unique product titles
+     * @return array Array of unique product titles sorted by relevance
      */
     public function searchTitleSuggestions(string $query, int $limit = 10): array
     {
-        // Require minimum 2 characters for suggestions
-        if (strlen(trim($query)) < 2) {
+        // Require minimum 1 character for suggestions
+        $trimmedQuery = trim($query);
+        if (strlen($trimmedQuery) < 1) {
             return [];
         }
 
+        // Build a comprehensive search query using multiple strategies
+        // This approach mimics KNN by finding the "nearest" matches based on various similarity metrics
         $searchQuery = [
             'size' => min($limit * 2, 50), // Get more results to ensure uniqueness
-            '_source' => ['name'], // Only return the name field
+            '_source' => ['name', 'code'], // Return name and code fields
             'query' => [
                 'bool' => [
                     'must' => [
                         ['term' => ['isActive' => true]] // Only active products
                     ],
                     'should' => [
-                        // Match phrase prefix for autocomplete (highest priority)
+                        // 1. Match phrase prefix - Best for autocomplete (highest boost)
+                        // Trouve "Doliprane" quand on tape "Doli"
                         [
                             'match_phrase_prefix' => [
                                 'name' => [
-                                    'query' => $query,
-                                    'boost' => 3,
+                                    'query' => $trimmedQuery,
+                                    'boost' => 5.0,
                                     'max_expansions' => 50
                                 ]
                             ]
                         ],
-                        // Prefix match for better autocomplete (exact prefix match)
+                        // 2. Edge N-gram - Excellent pour la recherche "as-you-type"
+                        // Similaire au KNN en trouvant les termes qui commencent pareil
                         [
-                            'prefix' => [
-                                'name.keyword' => [
-                                    'value' => strtolower($query),
-                                    'boost' => 2.5
+                            'match' => [
+                                'name.edge_ngram' => [
+                                    'query' => $trimmedQuery,
+                                    'boost' => 4.0
                                 ]
                             ]
                         ],
-                        // Match query for partial matches
+                        // 3. N-gram - Trouve des similarités de sous-chaînes
+                        // Permet de trouver "paracétamol" même si on tape "acetamol"
+                        [
+                            'match' => [
+                                'name.ngram' => [
+                                    'query' => $trimmedQuery,
+                                    'boost' => 3.0
+                                ]
+                            ]
+                        ],
+                        // 4. Match avec fuzzy - Tolère les fautes de frappe
+                        // Similaire au KNN en trouvant les termes "proches"
                         [
                             'match' => [
                                 'name' => [
-                                    'query' => $query,
+                                    'query' => $trimmedQuery,
                                     'operator' => 'and',
-                                    'boost' => 2,
+                                    'boost' => 3.5,
                                     'fuzziness' => 'AUTO'
                                 ]
                             ]
                         ],
-                        // Match query with OR operator for more flexible matching
+                        // 5. Prefix sur keyword - Matching exact au début
+                        [
+                            'prefix' => [
+                                'name.keyword' => [
+                                    'value' => $trimmedQuery,
+                                    'boost' => 4.5
+                                ]
+                            ]
+                        ],
+                        // 6. Match flexible avec OR pour casting plus large
                         [
                             'match' => [
                                 'name' => [
-                                    'query' => $query,
+                                    'query' => $trimmedQuery,
                                     'operator' => 'or',
-                                    'boost' => 1.5
+                                    'boost' => 2.0
+                                ]
+                            ]
+                        ],
+                        // 7. Recherche sur le code produit
+                        [
+                            'match_phrase_prefix' => [
+                                'code' => [
+                                    'query' => $trimmedQuery,
+                                    'boost' => 3.0
+                                ]
+                            ]
+                        ],
+                        [
+                            'match' => [
+                                'code.ngram' => [
+                                    'query' => $trimmedQuery,
+                                    'boost' => 2.5
                                 ]
                             ]
                         ]
@@ -173,7 +273,8 @@ class ProductElasticsearchService
                 ]
             ],
             'sort' => [
-                '_score' => ['order' => 'desc']
+                '_score' => ['order' => 'desc'],
+                'name.keyword' => ['order' => 'asc'] // Tri alphabétique en cas d'égalité
             ]
         ];
 
@@ -181,7 +282,7 @@ class ProductElasticsearchService
             $result = $this->elasticsearchService->search(self::INDEX_NAME, $searchQuery);
         } catch (\Exception $e) {
             // Log error and return empty array if Elasticsearch is unavailable
-            error_log('Elasticsearch suggestion search error: ' . $e->getMessage());
+            error_log('Elasticsearch KNN-like suggestion search error: ' . $e->getMessage());
             return [];
         }
 
