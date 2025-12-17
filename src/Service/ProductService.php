@@ -79,7 +79,9 @@ readonly class  ProductService
             foreach ($productData['images'] as $elt) {
                 $imageUrl = $this->extractImageUrl($elt);
                 if ($imageUrl) {
-                    $mediaObject = $this->createMediaObjectFromUrl($imageUrl);
+                    // Par défaut, ne pas copier les images - juste les référencer (false)
+                    // Changez en true si vous voulez copier les images dans /media/
+                    $mediaObject = $this->createMediaObjectFromUrl($imageUrl, false);
                     if ($mediaObject) {
                         $product->addImage($mediaObject);
                     }
@@ -376,191 +378,265 @@ readonly class  ProductService
 
     /**
      * Create a MediaObject from an image URL
+     * 
+     * @param bool $copyFile If true, copy the file to VichUpload directory. If false, just reference it.
      */
-    private function createMediaObjectFromUrl(string $imageUrl): ?MediaObject
+    private function createMediaObjectFromUrl(string $imageUrl, bool $copyFile = false): ?MediaObject
     {
         // Check if it's an IRI to an existing MediaObject
         if (preg_match('#/media_objects/(\d+)#', $imageUrl, $matches)) {
             return $this->getMediaObjectFromIri($imageUrl);
         }
         
-        // Check if it's already a local path
-        $localPath = null;
-        $originalFileName = null; // Store the original filename found in products directory
-        $mediaDir = $this->projectDir . '/public/media';
-        
         // Extract the filename from the URL (works for both URLs and paths)
         $parsedPath = parse_url($imageUrl, PHP_URL_PATH);
         $fileName = basename($parsedPath);
         
-        // First, check if file exists in media directory
-        if (file_exists($mediaDir . '/' . $fileName)) {
-            $localPath = $mediaDir . '/' . $fileName;
-            $originalFileName = $fileName;
-        } elseif (file_exists($this->projectDir . '/public' . $parsedPath)) {
-            // Try the exact path from the URL
-            $localPath = $this->projectDir . '/public' . $parsedPath;
-            $originalFileName = basename($parsedPath);
-        } elseif (file_exists($this->projectDir . $parsedPath)) {
-            // Try absolute path from project root
-            $localPath = $this->projectDir . $parsedPath;
-            $originalFileName = basename($parsedPath);
+        // Check if image exists in products directories
+        $localPath = $this->findExistingImageInPublic($imageUrl);
+        
+        // If found in /public and copyFile is false, create a reference MediaObject
+        if ($localPath && !$copyFile) {
+            // Log pour debug
+            error_log(sprintf('[ProductService] Image trouvée localement: %s -> %s (référence)', $fileName, $localPath));
+            return $this->createMediaObjectReference($localPath);
         }
         
-        // Check if image exists in products directories before downloading
-        if (!$localPath) {
-            $productsDir = $this->projectDir . '/public/images/products';
-            $productDir = $this->projectDir . '/public/images/product';
-            
-            // Try to find the file in products directories
-            // First try exact match with the filename from URL
-            $possiblePaths = [
-                $productsDir . '/' . $fileName,
-                $productDir . '/' . $fileName,
-            ];
-            
-            // Also try with different extensions if the original doesn't match
-            $baseName = pathinfo($fileName, PATHINFO_FILENAME);
-            $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-            foreach ($extensions as $ext) {
-                $possiblePaths[] = $productsDir . '/' . $baseName . '.' . $ext;
-                $possiblePaths[] = $productDir . '/' . $baseName . '.' . $ext;
+        // Otherwise, proceed with the original copy/download logic
+        if ($localPath) {
+            error_log(sprintf('[ProductService] Image trouvée localement: %s -> copie dans /media/', $fileName));
+        } elseif (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+            error_log(sprintf('[ProductService] Image externe: %s -> téléchargement', $imageUrl));
+        } else {
+            error_log(sprintf('[ProductService] Image introuvable: %s', $imageUrl));
+        }
+        
+        return $this->createMediaObjectWithCopy($imageUrl, $localPath);
+    }
+
+    /**
+     * Find an existing image in the /public directory
+     * Supports both local paths and external URLs with filename matching
+     */
+    private function findExistingImageInPublic(string $imageUrl): ?string
+    {
+        $parsedPath = parse_url($imageUrl, PHP_URL_PATH);
+        $fileName = basename($parsedPath);
+        
+        // Directories to check
+        $mediaDir = $this->projectDir . '/public/media';
+        $productsDir = $this->projectDir . '/public/images/products';
+        $productDir = $this->projectDir . '/public/images/product';
+        
+        // First priority: exact filename match in products directories
+        $possiblePaths = [
+            $productsDir . '/' . $fileName,
+            $productDir . '/' . $fileName,
+            $mediaDir . '/' . $fileName,
+        ];
+        
+        foreach ($possiblePaths as $possiblePath) {
+            if (file_exists($possiblePath) && is_readable($possiblePath)) {
+                return $possiblePath;
+            }
+        }
+        
+        // Second: try full path resolution for local paths
+        if (!filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+            if (file_exists($this->projectDir . '/public' . $parsedPath)) {
+                return $this->projectDir . '/public' . $parsedPath;
             }
             
-            // Try to find the file in the possible paths
-            $foundPath = null;
-            foreach ($possiblePaths as $possiblePath) {
-                if (file_exists($possiblePath) && is_readable($possiblePath)) {
-                    $foundPath = $possiblePath;
-                    break;
+            if (file_exists($this->projectDir . $parsedPath)) {
+                return $this->projectDir . $parsedPath;
+            }
+        }
+        
+        // Third: try with different extensions
+        $baseName = pathinfo($fileName, PATHINFO_FILENAME);
+        $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+        
+        foreach ([$productsDir, $productDir, $mediaDir] as $dir) {
+            foreach ($extensions as $ext) {
+                $testPath = $dir . '/' . $baseName . '.' . $ext;
+                if (file_exists($testPath) && is_readable($testPath)) {
+                    return $testPath;
                 }
             }
-            
-            // If not found, try case-insensitive search (only if needed)
-            if (!$foundPath && !empty($baseName)) {
-                foreach ([$productsDir, $productDir] as $dir) {
-                    if (is_dir($dir)) {
-                        $files = scandir($dir);
-                        if ($files !== false) {
-                            foreach ($files as $file) {
-                                if ($file === '.' || $file === '..') {
-                                    continue;
-                                }
-                                // Case-insensitive comparison of base name
-                                $fileBaseName = pathinfo($file, PATHINFO_FILENAME);
-                                if (strcasecmp($baseName, $fileBaseName) === 0) {
-                                    $testPath = $dir . '/' . $file;
-                                    if (file_exists($testPath) && is_readable($testPath)) {
-                                        $foundPath = $testPath;
-                                        break 2; // Break both loops
-                                    }
-                                }
-                            }
+        }
+        
+        // Fourth: case-insensitive filename search (slower but comprehensive)
+        if (!empty($baseName)) {
+            foreach ([$productsDir, $productDir, $mediaDir] as $dir) {
+                if (!is_dir($dir)) {
+                    continue;
+                }
+                
+                $files = @scandir($dir);
+                if ($files === false) {
+                    continue;
+                }
+                
+                foreach ($files as $file) {
+                    if ($file === '.' || $file === '..') {
+                        continue;
+                    }
+                    
+                    // Case-insensitive comparison of the full filename
+                    if (strcasecmp($fileName, $file) === 0) {
+                        $testPath = $dir . '/' . $file;
+                        if (file_exists($testPath) && is_readable($testPath)) {
+                            return $testPath;
+                        }
+                    }
+                    
+                    // Case-insensitive comparison of base name only
+                    $fileBaseName = pathinfo($file, PATHINFO_FILENAME);
+                    if (strcasecmp($baseName, $fileBaseName) === 0) {
+                        $testPath = $dir . '/' . $file;
+                        if (file_exists($testPath) && is_readable($testPath)) {
+                            return $testPath;
                         }
                     }
                 }
             }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Create a MediaObject that references an existing file without copying it
+     */
+    private function createMediaObjectReference(string $absolutePath): MediaObject
+    {
+        // Convert absolute path to relative URL path (starting with /)
+        $publicDir = $this->projectDir . '/public';
+        $relativePath = str_replace($publicDir, '', $absolutePath);
+        $relativePath = '/' . ltrim($relativePath, '/');
+        
+        $mediaObject = new MediaObject();
+        $mediaObject->setFilePath($relativePath);
+        $mediaObject->setIsExternalReference(true);
+        
+        $this->manager->persist($mediaObject);
+        $this->manager->flush();
+        
+        return $mediaObject;
+    }
+
+    /**
+     * Create a MediaObject by copying/downloading the file (original behavior)
+     */
+    private function createMediaObjectWithCopy(string $imageUrl, ?string $existingLocalPath = null): ?MediaObject
+    {
+        try {
+            $localPath = $existingLocalPath;
+            $originalFileName = null;
             
-            // If file found, copy it to temporary location for Vich to process
-            if ($foundPath) {
+            // If file found locally, copy it to temporary location for Vich to process
+            if ($localPath) {
                 $tempDir = sys_get_temp_dir() . '/product_images';
                 if (!file_exists($tempDir)) {
                     if (!mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
-                        throw new \RuntimeException('Failed to create temporary directory');
+                        error_log('[ProductService] Failed to create temporary directory');
+                        return null;
                     }
                 }
                 
-                $extension = pathinfo($foundPath, PATHINFO_EXTENSION) ?: 'jpg';
+                $extension = pathinfo($localPath, PATHINFO_EXTENSION) ?: 'jpg';
                 $tempFileName = uniqid('', true) . '.' . $extension;
                 $tempPath = $tempDir . '/' . $tempFileName;
                 
-                // Copy the file instead of downloading
-                if (!copy($foundPath, $tempPath)) {
-                    throw new \RuntimeException('Failed to copy image from: ' . $foundPath);
+                if (!copy($localPath, $tempPath)) {
+                    error_log('[ProductService] Failed to copy image from: ' . $localPath);
+                    return null;
                 }
                 
                 $localPath = $tempPath;
-                // Use the actual filename found in products directory
-                $originalFileName = basename($foundPath);
+                $originalFileName = basename($existingLocalPath);
             }
-        }
-        
-        // If it's a URL (external) and file not found locally, download it to a temporary location
-        if (!$localPath && filter_var($imageUrl, FILTER_VALIDATE_URL)) {
-            // Create temporary directory if needed
-            $tempDir = sys_get_temp_dir() . '/product_images';
-            if (!file_exists($tempDir)) {
-                if (!mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
-                    throw new \RuntimeException('Failed to create temporary directory');
+            
+            // If it's a URL (external) and file not found locally, download it
+            $parsedPath = parse_url($imageUrl, PHP_URL_PATH);
+            if (!$localPath && filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                $tempDir = sys_get_temp_dir() . '/product_images';
+                if (!file_exists($tempDir)) {
+                    if (!mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
+                        error_log('[ProductService] Failed to create temporary directory');
+                        return null;
+                    }
+                }
+                
+                $extension = pathinfo($parsedPath, PATHINFO_EXTENSION) ?: 'jpg';
+                $fileName = uniqid('', true) . '.' . $extension;
+                $tempPath = $tempDir . '/' . $fileName;
+                
+                $context = stream_context_create([
+                    'http' => [
+                        'timeout' => 30,
+                        'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'follow_location' => true,
+                        'max_redirects' => 5
+                    ],
+                    'ssl' => [
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                    ]
+                ]);
+                
+                $content = @file_get_contents($imageUrl, false, $context);
+                if ($content === false) {
+                    error_log('[ProductService] Failed to download image from: ' . $imageUrl);
+                    return null;
+                }
+                
+                if (empty($content) || strlen($content) < 100) {
+                    error_log('[ProductService] Downloaded image is too small or empty: ' . $imageUrl);
+                    return null;
+                }
+                
+                if (file_put_contents($tempPath, $content) === false) {
+                    error_log('[ProductService] Failed to save image to: ' . $tempPath);
+                    return null;
+                }
+                
+                if (!is_readable($tempPath)) {
+                    error_log('[ProductService] Created file is not readable: ' . $tempPath);
+                    return null;
+                }
+                
+                $localPath = $tempPath;
+            } elseif (!$localPath) {
+                $possiblePath = $this->projectDir . '/public' . $parsedPath;
+                if (file_exists($possiblePath)) {
+                    $localPath = $possiblePath;
+                } else {
+                    return null;
                 }
             }
             
-            // Generate unique filename
-            $extension = pathinfo($parsedPath, PATHINFO_EXTENSION) ?: 'jpg';
-            $fileName = uniqid('', true) . '.' . $extension;
-            $tempPath = $tempDir . '/' . $fileName;
+            // Create a MediaObject and set the file
+            $mediaObject = new MediaObject();
             
-            // Download the image with better error handling
-            $context = stream_context_create([
-                'http' => [
-                    'timeout' => 30,
-                    'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'follow_location' => true,
-                    'max_redirects' => 5
-                ]
-            ]);
+            $originalName = $originalFileName ?? basename($imageUrl);
+            $mimeType = mime_content_type($localPath) ?: 'image/jpeg';
             
-            $content = @file_get_contents($imageUrl, false, $context);
-            if ($content === false) {
-                throw new \RuntimeException('Failed to download image from: ' . $imageUrl);
-            }
+            $uploadedFile = new UploadedFile(
+                $localPath,
+                $originalName,
+                $mimeType,
+                null,
+                true // test mode - allows using existing files
+            );
             
-            // Verify that we got actual image content
-            if (empty($content) || strlen($content) < 100) {
-                throw new \RuntimeException('Downloaded image is too small or empty: ' . $imageUrl);
-            }
+            $mediaObject->setFile($uploadedFile);
+            $this->createMediaObject($mediaObject);
             
-            if (file_put_contents($tempPath, $content) === false) {
-                throw new \RuntimeException('Failed to save image to: ' . $tempPath);
-            }
-            
-            // Verify the file was created and is readable
-            if (!is_readable($tempPath)) {
-                throw new \RuntimeException('Created file is not readable: ' . $tempPath);
-            }
-            
-            $localPath = $tempPath;
-        } elseif (!$localPath) {
-            // If it's a relative path, try to resolve it
-            $possiblePath = $this->projectDir . '/public' . $parsedPath;
-            if (file_exists($possiblePath)) {
-                $localPath = $possiblePath;
-            } else {
-                // If file doesn't exist, return null instead of throwing
-                return null;
-            }
+            return $mediaObject;
+        } catch (\Exception $e) {
+            error_log('[ProductService] Error processing image ' . $imageUrl . ': ' . $e->getMessage());
+            return null;
         }
-        
-        // Create a MediaObject and set the file
-        $mediaObject = new MediaObject();
-        
-        // Create an UploadedFile simulated from the downloaded/copied file
-        // Use the original filename found in products directory, or fallback to URL basename
-        $originalName = $originalFileName ?? basename($imageUrl);
-        $mimeType = mime_content_type($localPath) ?: 'image/jpeg';
-        
-        // Create a simulated UploadedFile from the local file
-        $uploadedFile = new UploadedFile(
-            $localPath,
-            $originalName,
-            $mimeType,
-            null,
-            true // test mode - allows using existing files
-        );
-        
-        $mediaObject->setFile($uploadedFile);
-        $this->createMediaObject($mediaObject);
-        
-        return $mediaObject;
     }
 }

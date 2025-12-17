@@ -46,6 +46,11 @@ class MediaObject
         }
         
         if ($this->filePath) {
+            // Si c'est une référence externe, retourner le chemin tel quel
+            if ($this->isExternalReference) {
+                return $this->filePath;
+            }
+            // Sinon, préfixer avec /media/ (comportement VichUpload normal)
             return '/media/' . $this->filePath;
         }
         
@@ -64,6 +69,12 @@ class MediaObject
     #[ORM\Column(nullable: true)]
     public ?string $filePath = null;
 
+    /**
+     * Indicates if this is a reference to an existing file (not managed by VichUploader)
+     */
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isExternalReference = false;
+
     public function getFilePath(): ?string
     {
         return $this->filePath;
@@ -72,6 +83,16 @@ class MediaObject
     public function setFilePath(?string $filePath): void
     {
         $this->filePath = $filePath;
+    }
+
+    public function isExternalReference(): bool
+    {
+        return $this->isExternalReference;
+    }
+
+    public function setIsExternalReference(bool $isExternalReference): void
+    {
+        $this->isExternalReference = $isExternalReference;
     }
 
     public function getFile(): ?File
