@@ -7,10 +7,12 @@ nelmio_cors:
         expose_headers: ['Link']
         max_age: 3600
         allow_credentials: true
+        forced_allow_origin_value: ~ # Force CORS headers even on errors
     paths:
         '^/api':
-            allow_origin: ['http://localhost:3000', 'https://back-preprod.joy-pharma.com', 'https://www.joy-pharma.com', 'https://joy-pharma.com', '^https?://(.*\.)?joy-pharma\.com$']
+            allow_origin: ['http://localhost:3000', 'https://back-preprod.joy-pharma.com', 'https://www.joy-pharma.com', 'https://joy-pharma.com', 'https://admin.joy-pharma.com', '^https?://(.*\.)?joy-pharma\.com$']
             allow_headers: ['*']
             allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
             max_age: 3600
             allow_credentials: true
+            forced_allow_origin_value: ~ # Force CORS headers even on errors
