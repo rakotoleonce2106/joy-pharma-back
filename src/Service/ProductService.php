@@ -526,51 +526,43 @@ readonly class  ProductService
     }
 
     /**
-     * Create a MediaObject by copying/downloading the file (original behavior)
+     * Create a MediaObject by copying/downloading the file to /images/products/
+     * Preserve the original filename
      */
     private function createMediaObjectWithCopy(string $imageUrl, ?string $existingLocalPath = null): ?MediaObject
     {
         try {
-            $localPath = $existingLocalPath;
-            $originalFileName = null;
+            $parsedPath = parse_url($imageUrl, PHP_URL_PATH);
+            $originalFileName = basename($parsedPath);
             
-            // If file found locally, copy it to temporary location for Vich to process
-            if ($localPath) {
-                $tempDir = sys_get_temp_dir() . '/product_images';
-                if (!file_exists($tempDir)) {
-                    if (!mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
-                        error_log('[ProductService] Failed to create temporary directory');
-                        return null;
-                    }
-                }
-                
-                $extension = pathinfo($localPath, PATHINFO_EXTENSION) ?: 'jpg';
-                $tempFileName = uniqid('', true) . '.' . $extension;
-                $tempPath = $tempDir . '/' . $tempFileName;
-                
-                if (!copy($localPath, $tempPath)) {
-                    error_log('[ProductService] Failed to copy image from: ' . $localPath);
+            // Destination directory for product images
+            $productsDir = $this->projectDir . '/public/images/products';
+            if (!file_exists($productsDir)) {
+                if (!mkdir($productsDir, 0755, true) && !is_dir($productsDir)) {
+                    error_log('[ProductService] Failed to create products directory');
                     return null;
                 }
-                
-                $localPath = $tempPath;
-                $originalFileName = basename($existingLocalPath);
             }
             
-            // If it's a URL (external) and file not found locally, download it
-            $parsedPath = parse_url($imageUrl, PHP_URL_PATH);
-            if (!$localPath && filter_var($imageUrl, FILTER_VALIDATE_URL)) {
-                $tempDir = sys_get_temp_dir() . '/product_images';
-                if (!file_exists($tempDir)) {
-                    if (!mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
-                        error_log('[ProductService] Failed to create temporary directory');
-                        return null;
-                    }
-                }
-                
-                $extension = pathinfo($parsedPath, PATHINFO_EXTENSION) ?: 'jpg';
-                $fileName = uniqid('', true) . '.' . $extension;
-                $tempPath = $tempDir . '/' . $fileName;
+            // Destination path with original filename
+            $destinationPath = $productsDir . '/' . $originalFileName;
+            
+            // If file already exists at destination, just create reference
+            if (file_exists($destinationPath)) {
+                error_log(sprintf('[ProductService] File already exists at destination: %s (référence)', $originalFileName));
+                return $this->createMediaObjectReference($destinationPath);
+            }
+            
+            $sourceFilePath = null;
+            
+            // If file found locally, use it directly
+            if ($existingLocalPath && file_exists($existingLocalPath)) {
+                $sourceFilePath = $existingLocalPath;
+                error_log(sprintf('[ProductService] Copying local file: %s -> %s', $existingLocalPath, $destinationPath));
+            }
+            // If it's a URL, download it
+            elseif (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                error_log(sprintf('[ProductService] Downloading image: %s', $imageUrl));
                 
                 $context = stream_context_create([
                     'http' => [
@@ -596,44 +588,31 @@ readonly class  ProductService
                     return null;
                 }
                 
-                if (file_put_contents($tempPath, $content) === false) {
-                    error_log('[ProductService] Failed to save image to: ' . $tempPath);
+                // Write directly to destination
+                if (file_put_contents($destinationPath, $content) === false) {
+                    error_log('[ProductService] Failed to save image to: ' . $destinationPath);
                     return null;
                 }
                 
-                if (!is_readable($tempPath)) {
-                    error_log('[ProductService] Created file is not readable: ' . $tempPath);
-                    return null;
-                }
-                
-                $localPath = $tempPath;
-            } elseif (!$localPath) {
-                $possiblePath = $this->projectDir . '/public' . $parsedPath;
-                if (file_exists($possiblePath)) {
-                    $localPath = $possiblePath;
-                } else {
-                    return null;
-                }
+                error_log(sprintf('[ProductService] Image downloaded and saved: %s', $originalFileName));
+                return $this->createMediaObjectReference($destinationPath);
+            } else {
+                error_log('[ProductService] Invalid image URL: ' . $imageUrl);
+                return null;
             }
             
-            // Create a MediaObject and set the file
-            $mediaObject = new MediaObject();
+            // Copy the local file to destination
+            if ($sourceFilePath) {
+                if (!copy($sourceFilePath, $destinationPath)) {
+                    error_log('[ProductService] Failed to copy image to: ' . $destinationPath);
+                    return null;
+                }
+                
+                error_log(sprintf('[ProductService] Image copied successfully: %s', $originalFileName));
+                return $this->createMediaObjectReference($destinationPath);
+            }
             
-            $originalName = $originalFileName ?? basename($imageUrl);
-            $mimeType = mime_content_type($localPath) ?: 'image/jpeg';
-            
-            $uploadedFile = new UploadedFile(
-                $localPath,
-                $originalName,
-                $mimeType,
-                null,
-                true // test mode - allows using existing files
-            );
-            
-            $mediaObject->setFile($uploadedFile);
-            $this->createMediaObject($mediaObject);
-            
-            return $mediaObject;
+            return null;
         } catch (\Exception $e) {
             error_log('[ProductService] Error processing image ' . $imageUrl . ': ' . $e->getMessage());
             return null;

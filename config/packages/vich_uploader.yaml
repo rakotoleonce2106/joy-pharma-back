@@ -8,3 +8,13 @@ vich_uploader:
             inject_on_load: false
             delete_on_update: true
             delete_on_remove: true
+        
+        # Mapping spécifique pour les images de produits (JSON upload)
+        # Conserve le nom original et stocke dans /images/products/
+        product_images:
+            uri_prefix: /images/products
+            upload_destination: '%kernel.project_dir%/public/images/products'
+            namer: App\Service\OriginalFileNamer
+            inject_on_load: false
+            delete_on_update: false
+            delete_on_remove: false
