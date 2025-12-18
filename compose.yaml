@@ -7,11 +7,11 @@ services:
       - "80"
     
     # 📁 VOLUMES - Images et uploads persistants
-    # Ces dossiers sont HORS du projet et ne sont JAMAIS supprimés lors des déploiements
+    # Stockés dans ./data/ (dossier du projet, ignoré par Git)
     volumes:
-      - /joy-pharma-data/images:/app/public/images:rw
-      - /joy-pharma-data/media:/app/public/media:rw
-      - /joy-pharma-data/uploads:/app/public/uploads:rw
+      - ./data/images:/app/public/images:rw
+      - ./data/media:/app/public/media:rw
+      - ./data/uploads:/app/public/uploads:rw
     
     labels:
       - traefik.enable=true
