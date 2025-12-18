@@ -15,6 +15,7 @@
 ###> symfony/asset-mapper ###
 /public/assets/
 /public/icons/
+/public/images/
 /public/uploads/
 /public/media/
 /assets/vendor/
@@ -44,3 +45,7 @@
 ###> Docker ###
 /docker-compose.override.yml
 ###< Docker ###
+
+###> Data persistante (images, uploads) ###
+/data/
+###< Data persistante ###
