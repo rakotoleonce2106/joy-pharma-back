@@ -395,20 +395,39 @@ readonly class  ProductService
         // Check if image exists in products directories
         $localPath = $this->findExistingImageInPublic($imageUrl);
         
-        // If found in /public and copyFile is false, create a reference MediaObject
-        if ($localPath && !$copyFile) {
-            // Log pour debug
-            error_log(sprintf('[ProductService] Image trouvée localement: %s -> %s (référence)', $fileName, $localPath));
-            return $this->createMediaObjectReference($localPath);
+        // If copyFile is false, we should NOT download - only reference existing files
+        if (!$copyFile) {
+            if ($localPath) {
+                // Image found locally, create reference
+                error_log(sprintf('[ProductService] Image trouvée localement: %s -> %s (référence)', $fileName, $localPath));
+                return $this->createMediaObjectReference($localPath);
+            } else {
+                // Image not found locally, but copyFile=false means we don't download
+                // Create reference to expected path in /images/products/
+                $expectedPath = $this->projectDir . '/public/images/products/' . $fileName;
+                error_log(sprintf('[ProductService] Image non trouvée localement: %s, création référence vers chemin attendu: %s', $fileName, $expectedPath));
+                
+                // Create reference to the expected path (even if file doesn't exist yet)
+                // This allows the system to use the file if it's uploaded later
+                $mediaObject = new MediaObject();
+                $mediaObject->setFilePath('/images/products/' . $fileName);
+                $mediaObject->setIsExternalReference(true);
+                
+                $this->manager->persist($mediaObject);
+                $this->manager->flush();
+                
+                return $mediaObject;
+            }
         }
         
-        // Otherwise, proceed with the original copy/download logic
+        // If copyFile is true, proceed with copy/download logic
         if ($localPath) {
-            error_log(sprintf('[ProductService] Image trouvée localement: %s -> copie dans /media/', $fileName));
+            error_log(sprintf('[ProductService] Image trouvée localement: %s -> copie dans /images/products/', $fileName));
         } elseif (filter_var($imageUrl, FILTER_VALIDATE_URL)) {
-            error_log(sprintf('[ProductService] Image externe: %s -> téléchargement', $imageUrl));
+            error_log(sprintf('[ProductService] Image externe: %s -> téléchargement dans /images/products/', $imageUrl));
         } else {
             error_log(sprintf('[ProductService] Image introuvable: %s', $imageUrl));
+            return null;
         }
         
         return $this->createMediaObjectWithCopy($imageUrl, $localPath);
@@ -423,21 +442,33 @@ readonly class  ProductService
         $parsedPath = parse_url($imageUrl, PHP_URL_PATH);
         $fileName = basename($parsedPath);
         
-        // Directories to check
+        // Directories to check (including data directory mentioned by user)
         $mediaDir = $this->projectDir . '/public/media';
         $productsDir = $this->projectDir . '/public/images/products';
         $productDir = $this->projectDir . '/public/images/product';
+        $dataProductsDir = $this->projectDir . '/data/images/products';
+        
+        // Log directories being checked
+        error_log(sprintf('[ProductService] Recherche image: %s dans les dossiers: %s, %s, %s, %s', 
+            $fileName, $productsDir, $productDir, $dataProductsDir, $mediaDir));
         
         // First priority: exact filename match in products directories
         $possiblePaths = [
             $productsDir . '/' . $fileName,
+            $dataProductsDir . '/' . $fileName,
             $productDir . '/' . $fileName,
             $mediaDir . '/' . $fileName,
         ];
         
         foreach ($possiblePaths as $possiblePath) {
             if (file_exists($possiblePath) && is_readable($possiblePath)) {
+                error_log(sprintf('[ProductService] Image trouvée: %s', $possiblePath));
                 return $possiblePath;
+            } else {
+                error_log(sprintf('[ProductService] Image non trouvée: %s (exists: %s, readable: %s)', 
+                    $possiblePath, 
+                    file_exists($possiblePath) ? 'yes' : 'no',
+                    file_exists($possiblePath) && is_readable($possiblePath) ? 'yes' : 'no'));
             }
         }
         
@@ -456,7 +487,7 @@ readonly class  ProductService
         $baseName = pathinfo($fileName, PATHINFO_FILENAME);
         $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
         
-        foreach ([$productsDir, $productDir, $mediaDir] as $dir) {
+        foreach ([$productsDir, $dataProductsDir, $productDir, $mediaDir] as $dir) {
             foreach ($extensions as $ext) {
                 $testPath = $dir . '/' . $baseName . '.' . $ext;
                 if (file_exists($testPath) && is_readable($testPath)) {
@@ -467,7 +498,7 @@ readonly class  ProductService
         
         // Fourth: case-insensitive filename search (slower but comprehensive)
         if (!empty($baseName)) {
-            foreach ([$productsDir, $productDir, $mediaDir] as $dir) {
+            foreach ([$productsDir, $dataProductsDir, $productDir, $mediaDir] as $dir) {
                 if (!is_dir($dir)) {
                     continue;
                 }
