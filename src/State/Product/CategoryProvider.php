@@ -43,8 +43,12 @@ class CategoryProvider implements ProviderInterface
         if (array_key_exists('parent', $filters)) {
             $parentValue = $filters['parent'];
 
-            // Parent null
-            if ($parentValue === false || $parentValue === null || $parentValue === '') {
+            // Normaliser les valeurs vides, null, false, ou la chaîne "null" comme parent null
+            if ($parentValue === false || 
+                $parentValue === null || 
+                $parentValue === '' || 
+                $parentValue === 'null' ||
+                (is_string($parentValue) && strtolower(trim($parentValue)) === 'null')) {
                 return $this->categoryRepository->findBy(['parent' => null]);
             }
 
@@ -54,9 +58,8 @@ class CategoryProvider implements ProviderInterface
             }
 
             // Valeur invalide
-            throw new \InvalidArgumentException('Invalid parent filter value');
+            throw new \InvalidArgumentException('Invalid parent filter value. Use a numeric ID or null.');
         }
-
 
         return $this->categoryRepository->findAll();
     }
