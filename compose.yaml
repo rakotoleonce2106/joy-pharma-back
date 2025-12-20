@@ -26,6 +26,15 @@ services:
       APP_ENV: ${APP_ENV:-prod}
       APP_SECRET: ${APP_SECRET}
       JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+      # Configuration mémoire pour FrankenPHP
+      GOMEMLIMIT: 12000000000
+      PHP_MEMORY_LIMIT: 512M
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+        reservations:
+          memory: 2G
     networks:
       - traefik_network
       - database_network

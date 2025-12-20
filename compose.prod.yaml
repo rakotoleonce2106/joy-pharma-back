@@ -18,6 +18,15 @@ services:
       # Infisical configuration
       INFISICAL_TOKEN: ${INFISICAL_TOKEN:-}
       INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID:-}
+      # Configuration mémoire pour FrankenPHP
+      GOMEMLIMIT: 12000000000
+      PHP_MEMORY_LIMIT: 512M
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+        reservations:
+          memory: 2G
     # Port mappings - Traefik is already configured on the server
     ports: []
     networks:
