@@ -20,7 +20,6 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - 🔐 Configuration JWT sécurisée
 - 📊 Support PostgreSQL 16
 - ⚡ HTTP/2 et HTTP/3 natifs
-- 🔄 Hub Mercure pour temps réel
 - 🐛 Configuration XDebug pour développement
 - 📝 Guides de démarrage rapide et déploiement
 - 🤖 CI/CD avec GitHub Actions

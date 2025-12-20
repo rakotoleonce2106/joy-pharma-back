@@ -55,7 +55,6 @@ make start
 | **Serveur**       | FrankenPHP + Caddy             | Latest   |
 | **Base de données** | PostgreSQL                   | 16       |
 | **Recherche**     | Elasticsearch                  | 8.11     |
-| **Temps réel**    | Mercure                        | Intégré  |
 | **Authentication**| JWT (Lexik)                    | 3.1      |
 
 ### Services Docker
@@ -83,7 +82,6 @@ services:
 - 💨 Early Hints pour l'optimisation
 - 🗜️ Compression Zstandard/Brotli/Gzip
 - 📦 OPcache optimisé
-- 🔄 Mercure pour le temps réel
 
 ### Sécurité
 - 🔒 HTTPS automatique (Let's Encrypt)
@@ -175,9 +173,6 @@ JWT_PUBLIC_KEY=%kernel.project_dir%/config/jwt/public.pem
 
 # Elasticsearch
 ELASTICSEARCH_URL=http://elasticsearch:9200
-
-# Mercure
-CADDY_MERCURE_JWT_SECRET=VotreSecretMercure
 ```
 
 ### Générer les Clés JWT
@@ -249,7 +244,6 @@ APP_ENV=prod
 APP_SECRET=un_secret_vraiment_long_et_unique
 DATABASE_URL=postgresql://user:pass@host:5432/dbname
 SERVER_NAME=api.votre-domaine.com
-MERCURE_JWT_SECRET=secret_prod_unique
 ```
 
 ### Exécution des Migrations sur le Serveur
