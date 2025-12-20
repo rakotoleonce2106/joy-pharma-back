@@ -7,6 +7,8 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Dto\Admin\CategoryInput;
 use App\Entity\Category;
 use App\Entity\MediaObject;
+use App\Entity\CategoryImage;
+use App\Entity\CategoryIcon;
 use App\Repository\CategoryRepository;
 use App\Service\CategoryService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -130,14 +132,15 @@ class CategoryProcessor implements ProcessorInterface
                 // Update existing image
                 $existingImage = $category->getImage();
                 $existingImage->setFile($imageFile);
+                $existingImage->setMapping('category_images');
                 // Ensure MediaObject is managed
                 if (!$this->entityManager->contains($existingImage)) {
                     $this->entityManager->persist($existingImage);
                 }
                 $needsFlush = true;
             } else {
-                // Create new MediaObject for image
-                $imageMediaObject = new MediaObject();
+                // Create new CategoryImage for image
+                $imageMediaObject = new CategoryImage();
                 $imageMediaObject->setFile($imageFile);
                 $this->entityManager->persist($imageMediaObject);
                 $category->setImage($imageMediaObject);
@@ -151,14 +154,15 @@ class CategoryProcessor implements ProcessorInterface
                 // Update existing icon
                 $existingSvg = $category->getSvg();
                 $existingSvg->setFile($iconFile);
+                $existingSvg->setMapping('category_icons');
                 // Ensure MediaObject is managed
                 if (!$this->entityManager->contains($existingSvg)) {
                     $this->entityManager->persist($existingSvg);
                 }
                 $needsFlush = true;
             } else {
-                // Create new MediaObject for icon
-                $iconMediaObject = new MediaObject();
+                // Create new CategoryIcon for icon
+                $iconMediaObject = new CategoryIcon();
                 $iconMediaObject->setFile($iconFile);
                 $this->entityManager->persist($iconMediaObject);
                 $category->setSvg($iconMediaObject);

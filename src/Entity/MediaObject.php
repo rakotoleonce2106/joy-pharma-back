@@ -50,8 +50,16 @@ class MediaObject
             if ($this->isExternalReference) {
                 return $this->filePath;
             }
-            // Sinon, préfixer avec /media/ (comportement VichUpload normal)
-            return '/media/' . $this->filePath;
+            
+            // Construire l'URL en fonction du mapping
+            $prefix = match($this->mapping) {
+                'category_images' => '/data/images/categories/',
+                'category_icons' => '/data/icons/categories/',
+                'product_images' => '/images/products/',
+                default => '/media/',
+            };
+            
+            return $prefix . $this->filePath;
         }
         
         return null;
@@ -68,6 +76,12 @@ class MediaObject
 
     #[ORM\Column(nullable: true)]
     public ?string $filePath = null;
+
+    /**
+     * VichUploader mapping name (media_object, category_images, category_icons, product_images)
+     */
+    #[ORM\Column(length: 50, nullable: true, options: ['default' => 'media_object'])]
+    private ?string $mapping = 'media_object';
 
     /**
      * Indicates if this is a reference to an existing file (not managed by VichUploader)
@@ -106,6 +120,16 @@ class MediaObject
         if ($file) {
             $this->updatedAt = new \DateTimeImmutable();
         }
+    }
+
+    public function getMapping(): ?string
+    {
+        return $this->mapping;
+    }
+
+    public function setMapping(?string $mapping): void
+    {
+        $this->mapping = $mapping;
     }
 }
 

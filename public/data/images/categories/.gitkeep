@@ -1,0 +1,6 @@
+# Images des catégories
+
+Ce répertoire contient les images des catégories uploadées via l'API admin.
+
+Les fichiers sont gérés par VichUploader avec le mapping `category_images`.
+
