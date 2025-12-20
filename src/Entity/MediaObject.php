@@ -52,7 +52,8 @@ class MediaObject
             }
             
             // Construire l'URL en fonction du mapping
-            $prefix = match($this->mapping) {
+            $mapping = $this->mapping ?? 'media_object';
+            $prefix = match($mapping) {
                 'category_images' => '/images/categories/',
                 'category_icons' => '/icons/categories/',
                 'product_images' => '/images/products/',
