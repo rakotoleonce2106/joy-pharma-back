@@ -12,6 +12,12 @@ Bienvenue dans la documentation du backend Joy Pharma ! Ce répertoire contient 
 | [**CORS Configuration**](./CORS_CONFIGURATION.md) | Documentation détaillée sur la configuration CORS | ⭐⭐⭐ |
 | [**CORS Quick Start**](./CORS_QUICK_START.md) | Guide rapide pour résoudre les problèmes CORS | ⭐ |
 
+### 👤 Utilisateurs & API
+
+| Document | Description | Niveau |
+|----------|-------------|--------|
+| [**Update User**](./UPDATE_USER.md) | Documentation complète pour la mise à jour d'utilisateur | ⭐⭐⭐ |
+
 ### 🚀 Démarrage rapide
 
 #### Authentification JWT
