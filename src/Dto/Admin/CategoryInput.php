@@ -8,7 +8,10 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class CategoryInput
 {
-    #[Assert\NotBlank]
+    /**
+     * Category name - required for create, optional for update
+     */
+    #[Assert\NotBlank(groups: ['create'])]
     public ?string $name = null;
 
     public ?string $description = null;

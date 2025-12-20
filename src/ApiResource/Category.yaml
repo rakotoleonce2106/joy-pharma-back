@@ -70,6 +70,8 @@ App\Entity\Category:
             uriTemplate: '/admin/categories'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\CategoryInput
+            validationContext:
+                groups: ['create']
             inputFormats:
                 multipart: ['multipart/form-data']
             processor: App\State\Admin\CategoryProcessor
@@ -113,6 +115,8 @@ App\Entity\Category:
             uriTemplate: '/admin/categories/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\CategoryInput
+            validationContext:
+                groups: ['update']
             inputFormats:
                 multipart: ['multipart/form-data']
             processor: App\State\Admin\CategoryProcessor
@@ -120,18 +124,16 @@ App\Entity\Category:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Update category (Admin)'
-                description: 'Update category information including parent relationship, image and icon'
+                description: 'Update category information including parent relationship, image and icon. Name is optional - if not provided, existing name will be kept.'
                 requestBody:
                     content:
                         multipart/form-data:
                             schema:
                                 type: object
-                                required:
-                                    - name
                                 properties:
                                     name:
                                         type: string
-                                        description: 'Category name (required)'
+                                        description: 'Category name (optional - existing name will be kept if not provided)'
                                     description:
                                         type: string
                                         description: 'Category description'

@@ -64,9 +64,27 @@ class CategoryProcessor implements ProcessorInterface
         }
 
         // Update category properties
-        $category->setName($data->name);
-        $category->setDescription($data->description);
-        $category->setColor($data->color);
+        // For update: only update name if provided, otherwise keep existing name
+        if ($isUpdate) {
+            if ($data->name !== null && $data->name !== '') {
+                $category->setName($data->name);
+            }
+            // Only update description if provided
+            if ($data->description !== null) {
+                $category->setDescription($data->description);
+            }
+            // Only update color if provided
+            if ($data->color !== null) {
+                $category->setColor($data->color);
+            }
+        } else {
+            // For create: all fields are set (name is required via validation)
+            $category->setName($data->name);
+            $category->setDescription($data->description);
+            $category->setColor($data->color);
+        }
+        
+        // Parent can be updated in both cases
         $category->setParent($parent);
 
         // Handle image file upload
