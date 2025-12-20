@@ -87,17 +87,26 @@ class CategoryProcessor implements ProcessorInterface
         // Parent can be updated in both cases
         $category->setParent($parent);
 
+        $needsFlush = false;
+
         // Handle image file upload
         if ($data->image) {
             if ($category->getImage()) {
                 // Update existing image
-                $category->getImage()->setFile($data->image);
+                $existingImage = $category->getImage();
+                $existingImage->setFile($data->image);
+                // Ensure MediaObject is managed
+                if (!$this->entityManager->contains($existingImage)) {
+                    $this->entityManager->persist($existingImage);
+                }
+                $needsFlush = true;
             } else {
                 // Create new MediaObject for image
                 $imageMediaObject = new MediaObject();
                 $imageMediaObject->setFile($data->image);
                 $this->entityManager->persist($imageMediaObject);
                 $category->setImage($imageMediaObject);
+                $needsFlush = true;
             }
         }
 
@@ -105,14 +114,26 @@ class CategoryProcessor implements ProcessorInterface
         if ($data->icon) {
             if ($category->getSvg()) {
                 // Update existing icon
-                $category->getSvg()->setFile($data->icon);
+                $existingSvg = $category->getSvg();
+                $existingSvg->setFile($data->icon);
+                // Ensure MediaObject is managed
+                if (!$this->entityManager->contains($existingSvg)) {
+                    $this->entityManager->persist($existingSvg);
+                }
+                $needsFlush = true;
             } else {
                 // Create new MediaObject for icon
                 $iconMediaObject = new MediaObject();
                 $iconMediaObject->setFile($data->icon);
                 $this->entityManager->persist($iconMediaObject);
                 $category->setSvg($iconMediaObject);
+                $needsFlush = true;
             }
+        }
+
+        // Flush MediaObjects if any were created/updated so VichUploader can process the uploads
+        if ($needsFlush) {
+            $this->entityManager->flush();
         }
 
         // Use appropriate method based on whether category already exists
