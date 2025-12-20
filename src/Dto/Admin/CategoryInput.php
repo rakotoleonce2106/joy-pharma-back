@@ -25,14 +25,14 @@ class CategoryInput
 
     /**
      * Image file for the category (multipart/form-data)
+     * Field name in form: "image"
      */
-    #[Ignore]
     public ?UploadedFile $image = null;
 
     /**
      * Icon/SVG file for the category (multipart/form-data)
+     * Field name in form: "icon"
      */
-    #[Ignore]
     public ?UploadedFile $icon = null;
 }
 

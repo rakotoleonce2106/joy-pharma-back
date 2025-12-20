@@ -10,6 +10,8 @@ use App\Entity\MediaObject;
 use App\Repository\CategoryRepository;
 use App\Service\CategoryService;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -18,7 +20,8 @@ class CategoryProcessor implements ProcessorInterface
     public function __construct(
         private readonly CategoryService $categoryService,
         private readonly CategoryRepository $categoryRepository,
-        private readonly EntityManagerInterface $entityManager
+        private readonly EntityManagerInterface $entityManager,
+        private readonly RequestStack $requestStack
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Category
@@ -88,13 +91,34 @@ class CategoryProcessor implements ProcessorInterface
         $category->setParent($parent);
 
         $needsFlush = false;
+        $request = $this->requestStack->getCurrentRequest();
+
+        // Get files directly from request (more reliable than DTO for multipart)
+        $imageFile = null;
+        $iconFile = null;
+        
+        if ($request) {
+            // Try multiple possible field names
+            $imageFile = $request->files->get('image') 
+                      ?? $request->files->get('imageFile')
+                      ?? $data->image;
+            
+            $iconFile = $request->files->get('icon')
+                     ?? $request->files->get('iconFile')
+                     ?? $request->files->get('svg')
+                     ?? $data->icon;
+        } else {
+            // Fallback to DTO if no request
+            $imageFile = $data->image;
+            $iconFile = $data->icon;
+        }
 
         // Handle image file upload
-        if ($data->image) {
+        if ($imageFile instanceof UploadedFile) {
             if ($category->getImage()) {
                 // Update existing image
                 $existingImage = $category->getImage();
-                $existingImage->setFile($data->image);
+                $existingImage->setFile($imageFile);
                 // Ensure MediaObject is managed
                 if (!$this->entityManager->contains($existingImage)) {
                     $this->entityManager->persist($existingImage);
@@ -103,7 +127,7 @@ class CategoryProcessor implements ProcessorInterface
             } else {
                 // Create new MediaObject for image
                 $imageMediaObject = new MediaObject();
-                $imageMediaObject->setFile($data->image);
+                $imageMediaObject->setFile($imageFile);
                 $this->entityManager->persist($imageMediaObject);
                 $category->setImage($imageMediaObject);
                 $needsFlush = true;
@@ -111,11 +135,11 @@ class CategoryProcessor implements ProcessorInterface
         }
 
         // Handle icon/SVG file upload
-        if ($data->icon) {
+        if ($iconFile instanceof UploadedFile) {
             if ($category->getSvg()) {
                 // Update existing icon
                 $existingSvg = $category->getSvg();
-                $existingSvg->setFile($data->icon);
+                $existingSvg->setFile($iconFile);
                 // Ensure MediaObject is managed
                 if (!$this->entityManager->contains($existingSvg)) {
                     $this->entityManager->persist($existingSvg);
@@ -124,7 +148,7 @@ class CategoryProcessor implements ProcessorInterface
             } else {
                 // Create new MediaObject for icon
                 $iconMediaObject = new MediaObject();
-                $iconMediaObject->setFile($data->icon);
+                $iconMediaObject->setFile($iconFile);
                 $this->entityManager->persist($iconMediaObject);
                 $category->setSvg($iconMediaObject);
                 $needsFlush = true;
