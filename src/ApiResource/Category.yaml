@@ -70,24 +70,86 @@ App\Entity\Category:
             uriTemplate: '/admin/categories'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\CategoryInput
+            inputFormats:
+                multipart: ['multipart/form-data']
             processor: App\State\Admin\CategoryProcessor
             normalizationContext:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Create new category (Admin)'
-                description: 'Create a new category with optional parent category'
+                description: 'Create a new category with optional parent category, image and icon. If category with same name and parent exists, it will be returned/updated instead of creating a duplicate.'
+                requestBody:
+                    content:
+                        multipart/form-data:
+                            schema:
+                                type: object
+                                required:
+                                    - name
+                                properties:
+                                    name:
+                                        type: string
+                                        description: 'Category name (required)'
+                                    description:
+                                        type: string
+                                        description: 'Category description'
+                                    parent:
+                                        type: integer
+                                        nullable: true
+                                        description: 'Parent category ID (null for root categories)'
+                                    color:
+                                        type: string
+                                        description: 'Category color (hex code)'
+                                    image:
+                                        type: string
+                                        format: binary
+                                        description: 'Category image file (JPEG, PNG, GIF, WebP)'
+                                    icon:
+                                        type: string
+                                        format: binary
+                                        description: 'Category icon/SVG file'
 
         admin_update_category:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/categories/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\CategoryInput
+            inputFormats:
+                multipart: ['multipart/form-data']
             processor: App\State\Admin\CategoryProcessor
             normalizationContext:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Update category (Admin)'
-                description: 'Update category information including parent relationship'
+                description: 'Update category information including parent relationship, image and icon'
+                requestBody:
+                    content:
+                        multipart/form-data:
+                            schema:
+                                type: object
+                                required:
+                                    - name
+                                properties:
+                                    name:
+                                        type: string
+                                        description: 'Category name (required)'
+                                    description:
+                                        type: string
+                                        description: 'Category description'
+                                    parent:
+                                        type: integer
+                                        nullable: true
+                                        description: 'Parent category ID (null for root categories)'
+                                    color:
+                                        type: string
+                                        description: 'Category color (hex code)'
+                                    image:
+                                        type: string
+                                        format: binary
+                                        description: 'Category image file (JPEG, PNG, GIF, WebP)'
+                                    icon:
+                                        type: string
+                                        format: binary
+                                        description: 'Category icon/SVG file'
 
         admin_delete_category:
             class: ApiPlatform\Metadata\Delete
