@@ -31,10 +31,14 @@ class CategoryProcessor implements ProcessorInterface
         
         // Handle parent category first (needed for existence check)
         $parent = null;
-        if ($data->parent) {
-            $parent = $this->categoryRepository->find($data->parent);
-            if (!$parent) {
-                throw new BadRequestHttpException('Parent category not found');
+        // Handle parent: can be null, empty string, or integer
+        if ($data->parent !== null && $data->parent !== '' && $data->parent !== 'null') {
+            $parentId = is_numeric($data->parent) ? (int)$data->parent : null;
+            if ($parentId) {
+                $parent = $this->categoryRepository->find($parentId);
+                if (!$parent) {
+                    throw new BadRequestHttpException('Parent category not found');
+                }
             }
         }
 

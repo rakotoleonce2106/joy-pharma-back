@@ -13,7 +13,10 @@ class CategoryInput
 
     public ?string $description = null;
 
-    public ?int $parent = null;
+    /**
+     * Parent category ID (can be integer, null, empty string, or "null" string)
+     */
+    public int|string|null $parent = null;
 
     public ?string $color = null;
 

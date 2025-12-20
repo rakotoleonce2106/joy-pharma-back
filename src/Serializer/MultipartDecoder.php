@@ -22,10 +22,28 @@ final class MultipartDecoder implements DecoderInterface
             return null;
         }
 
-        return array_map(static function (string $element) {
-            // Multipart form values will be encoded in JSON.
-            return json_decode($element, true, flags: \JSON_THROW_ON_ERROR);
-        }, $request->request->all()) + $request->files->all();
+        $decoded = [];
+        
+        // Process form data values
+        foreach ($request->request->all() as $key => $value) {
+            // Try to decode as JSON first (for complex values)
+            if (is_string($value) && !empty($value)) {
+                $decodedValue = json_decode($value, true);
+                // If JSON decode succeeded and result is different from original, use decoded value
+                if (json_last_error() === JSON_ERROR_NONE && $decodedValue !== null) {
+                    $decoded[$key] = $decodedValue;
+                } else {
+                    // If not JSON or decode failed, use value as-is
+                    $decoded[$key] = $value;
+                }
+            } else {
+                // For non-string values or empty strings, use as-is
+                $decoded[$key] = $value;
+            }
+        }
+        
+        // Add files
+        return $decoded + $request->files->all();
     }
 
     public function supportsDecoding(string $format): bool
