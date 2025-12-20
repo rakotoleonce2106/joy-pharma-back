@@ -91,7 +91,7 @@ fi
 echo "→ Attente du démarrage du conteneur..."
 sleep 5
 
-MAX_WAIT=60
+MAX_WAIT=10
 WAIT_COUNT=0
 CONTAINER_STABLE=0
 
