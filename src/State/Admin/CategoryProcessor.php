@@ -93,6 +93,12 @@ class CategoryProcessor implements ProcessorInterface
         $needsFlush = false;
         $request = $this->requestStack->getCurrentRequest();
 
+        // Debug: Log what's in the request
+        if ($request) {
+            error_log('[CategoryProcessor] Request files: ' . json_encode(array_keys($request->files->all())));
+            error_log('[CategoryProcessor] Request data: ' . json_encode(array_keys($request->request->all())));
+        }
+
         // Get files directly from request (more reliable than DTO for multipart)
         // This works for both POST and PUT operations
         $imageFile = null;
@@ -103,22 +109,34 @@ class CategoryProcessor implements ProcessorInterface
             // Try multiple possible field names for compatibility
             if ($request->files->has('image')) {
                 $imageFile = $request->files->get('image');
+                error_log('[CategoryProcessor] Found image file via "image" field');
             } elseif ($request->files->has('imageFile')) {
                 $imageFile = $request->files->get('imageFile');
+                error_log('[CategoryProcessor] Found image file via "imageFile" field');
             } elseif ($data->image instanceof UploadedFile) {
                 $imageFile = $data->image;
+                error_log('[CategoryProcessor] Found image file via DTO');
+            } else {
+                error_log('[CategoryProcessor] No image file found');
             }
             
             if ($request->files->has('icon')) {
                 $iconFile = $request->files->get('icon');
+                error_log('[CategoryProcessor] Found icon file via "icon" field');
             } elseif ($request->files->has('iconFile')) {
                 $iconFile = $request->files->get('iconFile');
+                error_log('[CategoryProcessor] Found icon file via "iconFile" field');
             } elseif ($request->files->has('svg')) {
                 $iconFile = $request->files->get('svg');
+                error_log('[CategoryProcessor] Found icon file via "svg" field');
             } elseif ($data->icon instanceof UploadedFile) {
                 $iconFile = $data->icon;
+                error_log('[CategoryProcessor] Found icon file via DTO');
+            } else {
+                error_log('[CategoryProcessor] No icon file found');
             }
         } else {
+            error_log('[CategoryProcessor] No request object available');
             // Fallback to DTO if no request (shouldn't happen in normal flow)
             $imageFile = $data->image instanceof UploadedFile ? $data->image : null;
             $iconFile = $data->icon instanceof UploadedFile ? $data->icon : null;
@@ -126,16 +144,20 @@ class CategoryProcessor implements ProcessorInterface
 
         // Handle image file upload
         if ($imageFile instanceof UploadedFile) {
+            error_log('[CategoryProcessor] Processing image file: ' . $imageFile->getClientOriginalName());
             if ($category->getImage()) {
+                error_log('[CategoryProcessor] Updating existing image MediaObject');
                 // Update existing image
                 $existingImage = $category->getImage();
                 $existingImage->setFile($imageFile);
                 // Ensure MediaObject is managed
                 if (!$this->entityManager->contains($existingImage)) {
                     $this->entityManager->persist($existingImage);
+                    error_log('[CategoryProcessor] Persisted existing image MediaObject');
                 }
                 $needsFlush = true;
             } else {
+                error_log('[CategoryProcessor] Creating new image MediaObject');
                 // Create new MediaObject for image
                 $imageMediaObject = new MediaObject();
                 $imageMediaObject->setFile($imageFile);
@@ -143,20 +165,26 @@ class CategoryProcessor implements ProcessorInterface
                 $category->setImage($imageMediaObject);
                 $needsFlush = true;
             }
+        } else {
+            error_log('[CategoryProcessor] Image file is not an UploadedFile instance: ' . gettype($imageFile));
         }
 
         // Handle icon/SVG file upload
         if ($iconFile instanceof UploadedFile) {
+            error_log('[CategoryProcessor] Processing icon file: ' . $iconFile->getClientOriginalName());
             if ($category->getSvg()) {
+                error_log('[CategoryProcessor] Updating existing icon MediaObject');
                 // Update existing icon
                 $existingSvg = $category->getSvg();
                 $existingSvg->setFile($iconFile);
                 // Ensure MediaObject is managed
                 if (!$this->entityManager->contains($existingSvg)) {
                     $this->entityManager->persist($existingSvg);
+                    error_log('[CategoryProcessor] Persisted existing icon MediaObject');
                 }
                 $needsFlush = true;
             } else {
+                error_log('[CategoryProcessor] Creating new icon MediaObject');
                 // Create new MediaObject for icon
                 $iconMediaObject = new MediaObject();
                 $iconMediaObject->setFile($iconFile);
@@ -164,11 +192,17 @@ class CategoryProcessor implements ProcessorInterface
                 $category->setSvg($iconMediaObject);
                 $needsFlush = true;
             }
+        } else {
+            error_log('[CategoryProcessor] Icon file is not an UploadedFile instance: ' . gettype($iconFile));
         }
 
         // Flush MediaObjects if any were created/updated so VichUploader can process the uploads
         if ($needsFlush) {
+            error_log('[CategoryProcessor] Flushing MediaObjects for VichUploader to process');
             $this->entityManager->flush();
+            error_log('[CategoryProcessor] MediaObjects flushed successfully');
+        } else {
+            error_log('[CategoryProcessor] No files to flush');
         }
 
         // Use appropriate method based on whether category already exists
