@@ -11,8 +11,8 @@ vich_uploader:
         
         # Mapping pour les images de catégories
         category_images:
-            uri_prefix: /data/images/categories
-            upload_destination: '%kernel.project_dir%/public/data/images/categories'
+            uri_prefix: /images/categories
+            upload_destination: '%kernel.project_dir%/public/images/categories'
             namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
             inject_on_load: false
             delete_on_update: true
@@ -20,8 +20,8 @@ vich_uploader:
         
         # Mapping pour les icons/SVG de catégories
         category_icons:
-            uri_prefix: /data/icons/categories
-            upload_destination: '%kernel.project_dir%/public/data/icons/categories'
+            uri_prefix: /icons/categories
+            upload_destination: '%kernel.project_dir%/public/icons/categories'
             namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
             inject_on_load: false
             delete_on_update: true

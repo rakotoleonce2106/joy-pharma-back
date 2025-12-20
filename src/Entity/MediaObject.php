@@ -53,8 +53,8 @@ class MediaObject
             
             // Construire l'URL en fonction du mapping
             $prefix = match($this->mapping) {
-                'category_images' => '/data/images/categories/',
-                'category_icons' => '/data/icons/categories/',
+                'category_images' => '/images/categories/',
+                'category_icons' => '/icons/categories/',
                 'product_images' => '/images/products/',
                 default => '/media/',
             };

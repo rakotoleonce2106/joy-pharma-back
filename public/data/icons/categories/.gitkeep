@@ -1,6 +1,0 @@
-# Icons des catégories
-
-Ce répertoire contient les icons/SVG des catégories uploadés via l'API admin.
-
-Les fichiers sont gérés par VichUploader avec le mapping `category_icons`.
-
