@@ -7,8 +7,6 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Dto\Admin\CategoryInput;
 use App\Entity\Category;
 use App\Entity\MediaObject;
-use App\Entity\CategoryImage;
-use App\Entity\CategoryIcon;
 use App\Repository\CategoryRepository;
 use App\Service\CategoryService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -139,9 +137,10 @@ class CategoryProcessor implements ProcessorInterface
                 }
                 $needsFlush = true;
             } else {
-                // Create new CategoryImage for image
-                $imageMediaObject = new CategoryImage();
+                // Create new MediaObject for image with category_images mapping
+                $imageMediaObject = new MediaObject();
                 $imageMediaObject->setFile($imageFile);
+                $imageMediaObject->setMapping('category_images');
                 $this->entityManager->persist($imageMediaObject);
                 $category->setImage($imageMediaObject);
                 $needsFlush = true;
@@ -161,9 +160,10 @@ class CategoryProcessor implements ProcessorInterface
                 }
                 $needsFlush = true;
             } else {
-                // Create new CategoryIcon for icon
-                $iconMediaObject = new CategoryIcon();
+                // Create new MediaObject for icon with category_icons mapping
+                $iconMediaObject = new MediaObject();
                 $iconMediaObject->setFile($iconFile);
+                $iconMediaObject->setMapping('category_icons');
                 $this->entityManager->persist($iconMediaObject);
                 $category->setSvg($iconMediaObject);
                 $needsFlush = true;
