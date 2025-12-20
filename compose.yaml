@@ -1,46 +1,57 @@
 services:
   php:
-    image: ${DOCKERHUB_USERNAME:-joyleonce}/joy-pharma-back:${TAG:-latest}
+    build:
+      context: .
+      target: frankenphp_dev
     container_name: joy-pharma-back-php
-    restart: always
-    expose:
-      - "80"
-    
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8000}:80"
     # 📁 VOLUMES - Images et uploads persistants
     # Stockés dans ./data/ (dossier du projet, ignoré par Git)
     volumes:
       - ./data/images:/app/public/images:rw
       - ./data/media:/app/public/media:rw
       - ./data/uploads:/app/public/uploads:rw
-    
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.joy-back.rule=Host(`${SERVER_NAME:-preprod.joy-pharma.com}`)
-      - traefik.http.routers.joy-back.entrypoints=websecure
-      - traefik.http.routers.joy-back.tls=true
-      - traefik.http.routers.joy-back.tls.certresolver=letsencrypt
-      - traefik.http.services.joy-back.loadbalancer.server.port=80
     environment:
-      SERVER_NAME: ${SERVER_NAME:-preprod.joy-pharma.com}
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@shared-postgres:5432/${POSTGRES_DB}?serverVersion=16&charset=utf8
-      APP_ENV: ${APP_ENV:-prod}
-      APP_SECRET: ${APP_SECRET}
-      JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+      SERVER_NAME: ${SERVER_NAME:-localhost}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-app}?serverVersion=16&charset=utf8
+      APP_ENV: ${APP_ENV:-dev}
+      APP_SECRET: ${APP_SECRET:-ChangeMeInProduction}
+      JWT_PASSPHRASE: ${JWT_PASSPHRASE:-ChangeMeInProduction}
       # Configuration mémoire pour FrankenPHP
-      GOMEMLIMIT: 12000000000
-      PHP_MEMORY_LIMIT: 512M
-    deploy:
-      resources:
-        limits:
-          memory: 12G
-        reservations:
-          memory: 2G
+      GOMEMLIMIT: ${GOMEMLIMIT:-12000000000}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-512M}
+    depends_on:
+      database:
+        condition: service_healthy
     networks:
-      - traefik_network
-      - database_network
+      - app_network
+
+  database:
+    image: postgres:16-alpine
+    container_name: joy-pharma-back-database
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
 
 networks:
-  traefik_network:
-    external: true
-  database_network:
-    external: true
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

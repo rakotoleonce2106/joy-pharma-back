@@ -1,0 +1,50 @@
+{
+	skip_install_trust
+
+	{$CADDY_GLOBAL_OPTIONS}
+
+	frankenphp {
+		{$FRANKENPHP_CONFIG}
+
+		# Mode worker désactivé temporairement pour éviter les segmentation faults
+		# Si vous souhaitez le réactiver, décommentez le bloc ci-dessous
+		# worker {
+		# 	file ./public/index.php
+		# 	env APP_RUNTIME Runtime\FrankenPhpSymfony\Runtime
+		# 	{$FRANKENPHP_WORKER_CONFIG}
+		# }
+	}
+}
+
+{$CADDY_EXTRA_CONFIG}
+
+# Configuration pour le développement local - HTTP uniquement (pas de TLS)
+{$SERVER_NAME:localhost}:80 {
+	log {
+		{$CADDY_SERVER_LOG_OPTIONS}
+	}
+
+	root /app/public
+	encode zstd br gzip
+
+	vulcain
+
+	{$CADDY_SERVER_EXTRA_DIRECTIVES}
+
+	# Disable Topics tracking if not enabled explicitly: https://github.com/jkarlin/topics
+	header ?Permissions-Policy "browsing-topics=()"
+
+	@phpRoute {
+		not path /.well-known/acme-challenge/*
+		not file {path}
+	}
+	rewrite @phpRoute index.php
+
+	@frontController path index.php
+	php @frontController
+
+	file_server {
+		hide *.php
+	}
+}
+
