@@ -6,24 +6,64 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\MediaObject;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 final class MediaObjectProcessor implements ProcessorInterface
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager
+        private readonly EntityManagerInterface $entityManager,
+        private readonly RequestStack $requestStack
     ) {
     }
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): MediaObject
     {
-        if ($data->getFile()) {
-            $this->entityManager->persist($data);
-            $this->entityManager->flush();
-            $data->setContentUrl('/media/' . $data->getFilePath());
+        $request = $this->requestStack->getCurrentRequest();
+        
+        // Get file from request (multipart/form-data) or from data object
+        $file = null;
+        if ($request) {
+            // Try multiple possible field names for compatibility
+            if ($request->files->has('file')) {
+                $file = $request->files->get('file');
+            } elseif ($request->files->has('fileFile')) {
+                $file = $request->files->get('fileFile');
+            } elseif ($data->getFile() instanceof UploadedFile) {
+                $file = $data->getFile();
+            }
         } else {
-            // If no file, just persist the entity
-            $this->entityManager->persist($data);
-            $this->entityManager->flush();
+            // Fallback to data object if no request
+            $file = $data->getFile() instanceof UploadedFile ? $data->getFile() : null;
+        }
+
+        // Handle file upload
+        if ($file instanceof UploadedFile && $file->isValid()) {
+            $data->setFile($file);
+            
+            // Set mapping if provided in request
+            if ($request && $request->request->has('mapping')) {
+                $mapping = $request->request->get('mapping');
+                if (in_array($mapping, ['media_object', 'category_images', 'category_icons', 'product_images'], true)) {
+                    $data->setMapping($mapping);
+                }
+            }
+        }
+
+        // Persist and flush to trigger VichUploader
+        $this->entityManager->persist($data);
+        $this->entityManager->flush();
+
+        // Set content URL after file is uploaded
+        if ($data->getFilePath()) {
+            $mapping = $data->getMapping() ?? 'media_object';
+            $prefix = match($mapping) {
+                'category_images' => '/images/categories/',
+                'category_icons' => '/icons/categories/',
+                'product_images' => '/images/products/',
+                default => '/media/',
+            };
+            $data->setContentUrl($prefix . $data->getFilePath());
         }
 
         return $data;
