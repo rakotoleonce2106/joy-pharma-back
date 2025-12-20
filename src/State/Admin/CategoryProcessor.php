@@ -94,23 +94,34 @@ class CategoryProcessor implements ProcessorInterface
         $request = $this->requestStack->getCurrentRequest();
 
         // Get files directly from request (more reliable than DTO for multipart)
+        // This works for both POST and PUT operations
         $imageFile = null;
         $iconFile = null;
         
         if ($request) {
-            // Try multiple possible field names
-            $imageFile = $request->files->get('image') 
-                      ?? $request->files->get('imageFile')
-                      ?? $data->image;
+            // Get files from request->files (works for both POST and PUT)
+            // Try multiple possible field names for compatibility
+            if ($request->files->has('image')) {
+                $imageFile = $request->files->get('image');
+            } elseif ($request->files->has('imageFile')) {
+                $imageFile = $request->files->get('imageFile');
+            } elseif ($data->image instanceof UploadedFile) {
+                $imageFile = $data->image;
+            }
             
-            $iconFile = $request->files->get('icon')
-                     ?? $request->files->get('iconFile')
-                     ?? $request->files->get('svg')
-                     ?? $data->icon;
+            if ($request->files->has('icon')) {
+                $iconFile = $request->files->get('icon');
+            } elseif ($request->files->has('iconFile')) {
+                $iconFile = $request->files->get('iconFile');
+            } elseif ($request->files->has('svg')) {
+                $iconFile = $request->files->get('svg');
+            } elseif ($data->icon instanceof UploadedFile) {
+                $iconFile = $data->icon;
+            }
         } else {
-            // Fallback to DTO if no request
-            $imageFile = $data->image;
-            $iconFile = $data->icon;
+            // Fallback to DTO if no request (shouldn't happen in normal flow)
+            $imageFile = $data->image instanceof UploadedFile ? $data->image : null;
+            $iconFile = $data->icon instanceof UploadedFile ? $data->icon : null;
         }
 
         // Handle image file upload
