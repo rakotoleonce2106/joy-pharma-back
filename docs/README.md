@@ -8,7 +8,7 @@ Bienvenue dans la documentation du backend Joy Pharma ! Ce répertoire contient 
 
 | Document | Description | Niveau |
 |----------|-------------|--------|
-| [**Refresh Token**](./REFRESH_TOKEN.md) | Guide complet sur l'authentification JWT et les refresh tokens | ⭐⭐⭐ |
+| [**Refresh Token**](./REFRESH_TOKEN.md) | Guide complet sur .l'authentification JWT et les refresh tokens | ⭐⭐⭐ |
 | [**CORS Configuration**](./CORS_CONFIGURATION.md) | Documentation détaillée sur la configuration CORS | ⭐⭐⭐ |
 | [**CORS Quick Start**](./CORS_QUICK_START.md) | Guide rapide pour résoudre les problèmes CORS | ⭐ |
 
