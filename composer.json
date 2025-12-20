@@ -11,6 +11,8 @@
         "ext-iconv": "*",
         "api-platform/doctrine-orm": "^4.1.28",
         "api-platform/symfony": "^4.1.28",
+        "api-platform/serializer": "^4.1.28",
+        "api-platform/metadata": "^4.1.28",
         "dahromy/mvola-bundle": "^1.1",
         "doctrine/annotations": "^2.0.2",
         "doctrine/dbal": "^3.10.4",
