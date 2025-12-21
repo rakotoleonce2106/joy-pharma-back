@@ -27,6 +27,7 @@ use Vich\UploaderBundle\Mapping\Attribute as Vich;
         new Post(
             uriTemplate: '/media_objects',
             inputFormats: ['multipart' => ['multipart/form-data']],
+            outputFormats: ['jsonld' => ['application/ld+json'], 'json' => ['application/json']],
             processor: MediaObjectProcessor::class,
             openapiContext: [
                 'summary' => 'Upload a file (POST only)',
