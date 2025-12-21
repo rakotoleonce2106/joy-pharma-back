@@ -8,7 +8,6 @@ use App\Dto\Admin\CategoryInput;
 use App\Entity\Category;
 use App\Entity\MediaObject;
 use App\Repository\CategoryRepository;
-use App\Repository\MediaObjectRepository;
 use App\Service\CategoryService;
 use App\Service\MediaObjectService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,8 +20,7 @@ class CategoryProcessor implements ProcessorInterface
         private readonly CategoryService $categoryService,
         private readonly CategoryRepository $categoryRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly MediaObjectService $mediaObjectService,
-        private readonly MediaObjectRepository $mediaObjectRepository
+        private readonly MediaObjectService $mediaObjectService
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Category
@@ -98,24 +96,19 @@ class CategoryProcessor implements ProcessorInterface
             // Store previous image ID for deletion if it exists and is different
             $previousImageId = $category->getImage()?->getId();
             
-            // Reload MediaObject from database to ensure it's properly managed by Doctrine
-            $imageId = $data->image->getId();
-            if ($imageId) {
-                $image = $this->mediaObjectRepository->find($imageId);
-                if ($image) {
-                    $image->setMapping('category_images');
-                    $category->setImage($image);
-                    $needsFlush = true;
-                }
-            } else {
-                // New MediaObject (shouldn't happen with IRI deserialization, but handle it)
-                $data->image->setMapping('category_images');
-                $category->setImage($data->image);
-                $needsFlush = true;
+            // Ensure MediaObject is managed by Doctrine (merge if needed)
+            $image = $data->image;
+            if ($image->getId() && !$this->entityManager->contains($image)) {
+                $image = $this->entityManager->merge($image);
             }
             
+            // Use the MediaObject as-is (mapping should already be set during upload)
+            // Just associate it with the category
+            $category->setImage($image);
+            $needsFlush = true;
+            
             // Delete previous image if it was replaced
-            if ($previousImageId && $previousImageId !== $category->getImage()?->getId()) {
+            if ($previousImageId && $previousImageId !== $image->getId()) {
                 $this->mediaObjectService->deleteMediaObjectsByIds([$previousImageId]);
             }
         }
@@ -125,24 +118,19 @@ class CategoryProcessor implements ProcessorInterface
             // Store previous icon ID for deletion if it exists and is different
             $previousIconId = $category->getSvg()?->getId();
             
-            // Reload MediaObject from database to ensure it's properly managed by Doctrine
-            $iconId = $data->icon->getId();
-            if ($iconId) {
-                $icon = $this->mediaObjectRepository->find($iconId);
-                if ($icon) {
-                    $icon->setMapping('category_icons');
-                    $category->setSvg($icon);
-                    $needsFlush = true;
-                }
-            } else {
-                // New MediaObject (shouldn't happen with IRI deserialization, but handle it)
-                $data->icon->setMapping('category_icons');
-                $category->setSvg($data->icon);
-                $needsFlush = true;
+            // Ensure MediaObject is managed by Doctrine (merge if needed)
+            $icon = $data->icon;
+            if ($icon->getId() && !$this->entityManager->contains($icon)) {
+                $icon = $this->entityManager->merge($icon);
             }
             
+            // Use the MediaObject as-is (mapping should already be set during upload)
+            // Just associate it with the category
+            $category->setSvg($icon);
+            $needsFlush = true;
+            
             // Delete previous icon if it was replaced
-            if ($previousIconId && $previousIconId !== $category->getSvg()?->getId()) {
+            if ($previousIconId && $previousIconId !== $icon->getId()) {
                 $this->mediaObjectService->deleteMediaObjectsByIds([$previousIconId]);
             }
         }
