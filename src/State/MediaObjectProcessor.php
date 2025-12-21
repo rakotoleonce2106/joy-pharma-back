@@ -9,13 +9,17 @@ use App\Repository\MediaObjectRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Vich\UploaderBundle\Handler\UploadHandler;
+use Vich\UploaderBundle\Mapping\PropertyMappingFactory;
 
 final class MediaObjectProcessor implements ProcessorInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly RequestStack $requestStack,
-        private readonly MediaObjectRepository $mediaObjectRepository
+        private readonly MediaObjectRepository $mediaObjectRepository,
+        private readonly UploadHandler $uploadHandler,
+        private readonly PropertyMappingFactory $propertyMappingFactory
     ) {
     }
 
@@ -62,12 +66,11 @@ final class MediaObjectProcessor implements ProcessorInterface
 
         // Handle file upload
         if ($file instanceof UploadedFile && $file->isValid()) {
-            $data->setFile($file);
-            
             // Set mapping if provided in request
+            $mapping = 'media_object'; // Default mapping
             if ($request && $request->request->has('mapping')) {
-                $mapping = $request->request->get('mapping');
-                if (in_array($mapping, [
+                $requestMapping = $request->request->get('mapping');
+                if (in_array($requestMapping, [
                     'media_object',
                     'category_images',
                     'category_icons',
@@ -77,14 +80,34 @@ final class MediaObjectProcessor implements ProcessorInterface
                     'user_images',
                     'store_images'
                 ], true)) {
-                    $data->setMapping($mapping);
+                    $mapping = $requestMapping;
                 }
             }
+            
+            // Set the mapping in the entity
+            $data->setMapping($mapping);
+            
+            // Set the file
+            $data->setFile($file);
+            
+            // Persist first to get the entity ID
+            $this->entityManager->persist($data);
+            $this->entityManager->flush();
+            
+            // Upload the file using the correct mapping
+            // Create a property mapping with the dynamic mapping name
+            $propertyMapping = $this->propertyMappingFactory->fromField($data, 'file', $mapping);
+            if ($propertyMapping) {
+                $this->uploadHandler->upload($data, $propertyMapping);
+            }
+            
+            // Flush again to save the filePath
+            $this->entityManager->flush();
+        } else {
+            // No file upload, just persist
+            $this->entityManager->persist($data);
+            $this->entityManager->flush();
         }
-
-        // Persist and flush to trigger VichUploader
-        $this->entityManager->persist($data);
-        $this->entityManager->flush();
 
         // Set content URL after file is uploaded
         if ($data->getFilePath()) {

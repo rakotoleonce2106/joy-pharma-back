@@ -36,3 +36,39 @@ vich_uploader:
             inject_on_load: false
             delete_on_update: false
             delete_on_remove: false
+        
+        # Mapping pour les images de marques
+        brand_images:
+            uri_prefix: /images/brands
+            upload_destination: '%kernel.project_dir%/public/images/brands'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+            inject_on_load: false
+            delete_on_update: true
+            delete_on_remove: true
+        
+        # Mapping pour les images de fabricants
+        manufacturer_images:
+            uri_prefix: /images/manufacturers
+            upload_destination: '%kernel.project_dir%/public/images/manufacturers'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+            inject_on_load: false
+            delete_on_update: true
+            delete_on_remove: true
+        
+        # Mapping pour les images d'utilisateurs
+        user_images:
+            uri_prefix: /images/users
+            upload_destination: '%kernel.project_dir%/public/images/users'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+            inject_on_load: false
+            delete_on_update: true
+            delete_on_remove: true
+        
+        # Mapping pour les images de magasins
+        store_images:
+            uri_prefix: /images/stores
+            upload_destination: '%kernel.project_dir%/public/images/stores'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+            inject_on_load: false
+            delete_on_update: true
+            delete_on_remove: true
