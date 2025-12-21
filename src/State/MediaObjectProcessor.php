@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Vich\UploaderBundle\Handler\UploadHandler;
 use Vich\UploaderBundle\Mapping\PropertyMappingFactory;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 final class MediaObjectProcessor implements ProcessorInterface
 {
@@ -19,7 +20,8 @@ final class MediaObjectProcessor implements ProcessorInterface
         private readonly RequestStack $requestStack,
         private readonly MediaObjectRepository $mediaObjectRepository,
         private readonly UploadHandler $uploadHandler,
-        private readonly PropertyMappingFactory $propertyMappingFactory
+        private readonly PropertyMappingFactory $propertyMappingFactory,
+        private readonly ParameterBagInterface $parameterBag
     ) {
     }
 
@@ -95,10 +97,46 @@ final class MediaObjectProcessor implements ProcessorInterface
             $this->entityManager->flush();
             
             // Upload the file using the correct mapping
-            // Create a property mapping with the dynamic mapping name
-            $propertyMapping = $this->propertyMappingFactory->fromField($data, 'file', $mapping);
+            // Get the base property mapping from the 'file' field (uses 'media_object' mapping from attribute)
+            $propertyMapping = $this->propertyMappingFactory->fromField($data, 'file');
+            
             if ($propertyMapping) {
+                // Upload with default mapping first
                 $this->uploadHandler->upload($data, $propertyMapping);
+                
+                // If mapping is different from 'media_object', move the file to the correct directory
+                if ($mapping !== 'media_object' && $data->getFilePath()) {
+                    $kernelProjectDir = $this->parameterBag->get('kernel.project_dir');
+                    
+                    // Get source and destination directories from vich_uploader configuration
+                    $sourceDir = $kernelProjectDir . '/public/media';
+                    $destinationDirs = [
+                        'category_images' => $kernelProjectDir . '/public/images/categories',
+                        'category_icons' => $kernelProjectDir . '/public/icons/categories',
+                        'product_images' => $kernelProjectDir . '/public/images/products',
+                        'brand_images' => $kernelProjectDir . '/public/images/brands',
+                        'manufacturer_images' => $kernelProjectDir . '/public/images/manufacturers',
+                        'user_images' => $kernelProjectDir . '/public/images/users',
+                        'store_images' => $kernelProjectDir . '/public/images/stores',
+                    ];
+                    
+                    $destinationDir = $destinationDirs[$mapping] ?? null;
+                    
+                    if ($destinationDir && is_dir($sourceDir) && file_exists($sourceDir . '/' . $data->getFilePath())) {
+                        // Ensure destination directory exists
+                        if (!is_dir($destinationDir)) {
+                            mkdir($destinationDir, 0755, true);
+                        }
+                        
+                        // Move the file
+                        $sourceFile = $sourceDir . '/' . $data->getFilePath();
+                        $destinationFile = $destinationDir . '/' . $data->getFilePath();
+                        
+                        if (file_exists($sourceFile)) {
+                            rename($sourceFile, $destinationFile);
+                        }
+                    }
+                }
             }
             
             // Flush again to save the filePath
