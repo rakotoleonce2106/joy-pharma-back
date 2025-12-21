@@ -6,9 +6,11 @@ namespace App\State\User;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Delivery;
+use App\Entity\MediaObject;
 use App\Entity\User;
 use App\Exception\ValidationFailedException;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -74,7 +76,12 @@ class UserUpdateProcessor implements ProcessorInterface
         }
 
         // Handle multipart form data
-        $this->processFormData($user, $request);
+        $needsFlush = $this->processFormData($user, $request);
+
+        // Flush MediaObjects if any were created/updated so VichUploader can process the uploads
+        if ($needsFlush) {
+            $this->entityManager->flush();
+        }
 
         // Validate the user with the update validation groups
         $violations = $this->validator->validate($user, null, ['Default', 'user:update']);
@@ -90,8 +97,10 @@ class UserUpdateProcessor implements ProcessorInterface
         return $user;
     }
 
-    private function processFormData(User $user, Request $request): void
+    private function processFormData(User $user, Request $request): bool
     {
+        $needsFlush = false;
+        
         // Handle text fields
         if ($request->request->has('firstName')) {
             $user->setFirstName($request->request->get('firstName'));
@@ -129,12 +138,36 @@ class UserUpdateProcessor implements ProcessorInterface
         }
 
         // Handle file upload for profile image
+        // Try multiple possible field names for compatibility
+        $imageFile = null;
         if ($request->files->has('imageFile')) {
             $imageFile = $request->files->get('imageFile');
-            
-            if ($imageFile && $imageFile->isValid()) {
-                $user->setImageFile($imageFile);
+        } elseif ($request->files->has('image')) {
+            $imageFile = $request->files->get('image');
+        }
+
+        if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
+            if ($user->getImage()) {
+                // Update existing image
+                $existingImage = $user->getImage();
+                $existingImage->setFile($imageFile);
+                $existingImage->setMapping('media_object');
+                // Ensure MediaObject is managed
+                if (!$this->entityManager->contains($existingImage)) {
+                    $this->entityManager->persist($existingImage);
+                }
+                $needsFlush = true;
+            } else {
+                // Create new MediaObject for image
+                $imageMediaObject = new MediaObject();
+                $imageMediaObject->setFile($imageFile);
+                $imageMediaObject->setMapping('media_object');
+                $this->entityManager->persist($imageMediaObject);
+                $user->setImage($imageMediaObject);
+                $needsFlush = true;
             }
         }
+
+        return $needsFlush;
     }
 }

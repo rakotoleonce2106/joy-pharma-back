@@ -5,6 +5,7 @@ namespace App\State\Admin;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\Admin\ProductInput;
+use App\Entity\MediaObject;
 use App\Entity\Product;
 use App\Repository\CategoryRepository;
 use App\Repository\BrandRepository;
@@ -13,6 +14,9 @@ use App\Repository\FormRepository;
 use App\Repository\UnitRepository;
 use App\Repository\ProductRepository;
 use App\Service\ProductService;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -25,7 +29,9 @@ class ProductProcessor implements ProcessorInterface
         private readonly BrandRepository $brandRepository,
         private readonly ManufacturerRepository $manufacturerRepository,
         private readonly FormRepository $formRepository,
-        private readonly UnitRepository $unitRepository
+        private readonly UnitRepository $unitRepository,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly RequestStack $requestStack
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Product
@@ -103,6 +109,51 @@ class ProductProcessor implements ProcessorInterface
             if ($category) {
                 $product->addCategory($category);
             }
+        }
+
+        // Handle image file uploads from multipart request
+        $request = $this->requestStack->getCurrentRequest();
+        $needsFlush = false;
+        
+        if ($request) {
+            // Handle multiple images (Product can have multiple images)
+            // Support both single file and multiple files
+            $imageFiles = [];
+            
+            // Try to get multiple files first
+            if ($request->files->has('images')) {
+                $uploadedFiles = $request->files->get('images');
+                if (is_array($uploadedFiles)) {
+                    $imageFiles = array_filter($uploadedFiles, fn($file) => $file instanceof UploadedFile && $file->isValid());
+                } elseif ($uploadedFiles instanceof UploadedFile && $uploadedFiles->isValid()) {
+                    $imageFiles = [$uploadedFiles];
+                }
+            }
+            
+            // Fallback to single image field
+            if (empty($imageFiles) && $request->files->has('image')) {
+                $imageFile = $request->files->get('image');
+                if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
+                    $imageFiles = [$imageFile];
+                }
+            }
+
+            // Process each image file
+            foreach ($imageFiles as $imageFile) {
+                if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
+                    $imageMediaObject = new MediaObject();
+                    $imageMediaObject->setFile($imageFile);
+                    $imageMediaObject->setMapping('product_images');
+                    $this->entityManager->persist($imageMediaObject);
+                    $product->addImage($imageMediaObject);
+                    $needsFlush = true;
+                }
+            }
+        }
+
+        // Flush MediaObjects if any were created so VichUploader can process the uploads
+        if ($needsFlush) {
+            $this->entityManager->flush();
         }
 
         if ($isUpdate) {

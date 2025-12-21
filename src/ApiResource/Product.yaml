@@ -155,24 +155,81 @@ App\Entity\Product:
             uriTemplate: '/admin/products'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\ProductInput
+            inputFormats:
+                multipart: ['multipart/form-data']
             processor: App\State\Admin\ProductProcessor
             normalizationContext:
                 groups: ['id:read', 'product:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Create new product (Admin)'
-                description: 'Create a new product with all its properties and relations'
+                description: 'Create a new product with all its properties, relations and images'
+                requestBody:
+                    content:
+                        multipart/form-data:
+                            schema:
+                                type: object
+                                required:
+                                    - name
+                                    - code
+                                properties:
+                                    name:
+                                        type: string
+                                        description: 'Product name (required)'
+                                    code:
+                                        type: string
+                                        description: 'Product code (required)'
+                                    description:
+                                        type: string
+                                        description: 'Product description'
+                                    images:
+                                        type: array
+                                        items:
+                                            type: string
+                                            format: binary
+                                        description: 'Product images (multiple files supported)'
+                                    image:
+                                        type: string
+                                        format: binary
+                                        description: 'Single product image (alternative to images array)'
 
         admin_update_product:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\ProductInput
+            inputFormats:
+                multipart: ['multipart/form-data']
             processor: App\State\Admin\ProductProcessor
             normalizationContext:
                 groups: ['id:read', 'product:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Update product (Admin)'
-                description: 'Update product information including categories, prices, and stock'
+                description: 'Update product information including categories, prices, stock and images'
+                requestBody:
+                    content:
+                        multipart/form-data:
+                            schema:
+                                type: object
+                                properties:
+                                    name:
+                                        type: string
+                                        description: 'Product name'
+                                    code:
+                                        type: string
+                                        description: 'Product code'
+                                    description:
+                                        type: string
+                                        description: 'Product description'
+                                    images:
+                                        type: array
+                                        items:
+                                            type: string
+                                            format: binary
+                                        description: 'Product images (multiple files supported, will be added to existing images)'
+                                    image:
+                                        type: string
+                                        format: binary
+                                        description: 'Single product image (alternative to images array, will be added to existing images)'
 
         admin_delete_product:
             class: ApiPlatform\Metadata\Delete
