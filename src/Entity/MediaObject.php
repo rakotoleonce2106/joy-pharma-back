@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\OpenApi\Model\Operation;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\MediaObjectRepository;
@@ -29,9 +30,9 @@ use Vich\UploaderBundle\Mapping\Attribute as Vich;
             inputFormats: ['multipart' => ['multipart/form-data']],
             outputFormats: ['jsonld' => ['application/ld+json'], 'json' => ['application/json']],
             processor: MediaObjectProcessor::class,
-            openapiContext: [
-                'summary' => 'Upload a file (POST only)',
-                'description' => <<<'DESC'
+            openapi: new Operation(
+                summary: 'Upload a file (POST only)',
+                description: <<<'DESC'
 Upload a file to create a MediaObject. This endpoint uses POST method only because:
 
 **Technical Reasons:**
@@ -77,7 +78,7 @@ mapping: "category_images" (optional)
 - If `id` is provided but MediaObject doesn't exist, a new MediaObject will be created
 - Or use PUT/PATCH with JSON and reference existing MediaObject IRI
 DESC
-            ]
+            )
         )
     ]
 )]
