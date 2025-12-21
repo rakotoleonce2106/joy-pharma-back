@@ -4,8 +4,10 @@ namespace App\Dto\Admin;
 
 use App\Entity\MediaObject;
 use ApiPlatform\Metadata\ApiProperty;
+use ApiPlatform\Metadata\ApiResource;
 use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource(operations: [])]
 class CategoryInput
 {
     /**
