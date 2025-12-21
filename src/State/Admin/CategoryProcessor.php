@@ -8,6 +8,7 @@ use App\Dto\Admin\CategoryInput;
 use App\Entity\Category;
 use App\Entity\MediaObject;
 use App\Repository\CategoryRepository;
+use App\Repository\MediaObjectRepository;
 use App\Service\CategoryService;
 use App\Service\MediaObjectService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,7 +21,8 @@ class CategoryProcessor implements ProcessorInterface
         private readonly CategoryService $categoryService,
         private readonly CategoryRepository $categoryRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly MediaObjectService $mediaObjectService
+        private readonly MediaObjectService $mediaObjectService,
+        private readonly MediaObjectRepository $mediaObjectRepository
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Category
@@ -95,9 +97,22 @@ class CategoryProcessor implements ProcessorInterface
         if ($data->image instanceof MediaObject) {
             // Store previous image ID for deletion if it exists and is different
             $previousImageId = $category->getImage()?->getId();
-            $data->image->setMapping('category_images');
-            $category->setImage($data->image);
-            $needsFlush = true;
+            
+            // Reload MediaObject from database to ensure it's properly managed by Doctrine
+            $imageId = $data->image->getId();
+            if ($imageId) {
+                $image = $this->mediaObjectRepository->find($imageId);
+                if ($image) {
+                    $image->setMapping('category_images');
+                    $category->setImage($image);
+                    $needsFlush = true;
+                }
+            } else {
+                // New MediaObject (shouldn't happen with IRI deserialization, but handle it)
+                $data->image->setMapping('category_images');
+                $category->setImage($data->image);
+                $needsFlush = true;
+            }
             
             // Delete previous image if it was replaced
             if ($previousImageId && $previousImageId !== $category->getImage()?->getId()) {
@@ -109,9 +124,22 @@ class CategoryProcessor implements ProcessorInterface
         if ($data->icon instanceof MediaObject) {
             // Store previous icon ID for deletion if it exists and is different
             $previousIconId = $category->getSvg()?->getId();
-            $data->icon->setMapping('category_icons');
-            $category->setSvg($data->icon);
-            $needsFlush = true;
+            
+            // Reload MediaObject from database to ensure it's properly managed by Doctrine
+            $iconId = $data->icon->getId();
+            if ($iconId) {
+                $icon = $this->mediaObjectRepository->find($iconId);
+                if ($icon) {
+                    $icon->setMapping('category_icons');
+                    $category->setSvg($icon);
+                    $needsFlush = true;
+                }
+            } else {
+                // New MediaObject (shouldn't happen with IRI deserialization, but handle it)
+                $data->icon->setMapping('category_icons');
+                $category->setSvg($data->icon);
+                $needsFlush = true;
+            }
             
             // Delete previous icon if it was replaced
             if ($previousIconId && $previousIconId !== $category->getSvg()?->getId()) {
