@@ -21,7 +21,8 @@ class CategoryProvider implements ProviderInterface
     {
         $user = $this->security->getUser();
 
-        if ($user instanceof User && $this->security->isGranted('ROLE_STORE')) {
+        // Skip store-specific logic for admin users
+        if ($user instanceof User && $this->security->isGranted('ROLE_STORE') && !$this->security->isGranted('ROLE_ADMIN')) {
             $store = $this->storeRepository->findOneBy(['owner' => $user]);
 
             if ($store) {

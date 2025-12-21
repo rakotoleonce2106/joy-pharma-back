@@ -49,6 +49,7 @@ App\Entity\Category:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/admin/categories'
             security: 'is_granted("ROLE_ADMIN")'
+            provider: App\State\Product\CategoryProvider
             normalizationContext:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
