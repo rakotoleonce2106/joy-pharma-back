@@ -53,7 +53,19 @@ App\Entity\Category:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'List all categories (Admin)'
-                description: 'Get list of all categories with hierarchical structure'
+                description: 'Get list of all categories with hierarchical structure. Filter by parent category using parent parameter (use parent=null for root categories or parent={id} for child categories).'
+                parameters:
+                    - name: 'parent'
+                      in: 'query'
+                      required: false
+                      description: 'Filter by parent category ID. Use null to get root categories (categories without parent).'
+                      schema:
+                        oneOf:
+                          - type: 'integer'
+                            description: 'Parent category ID'
+                          - type: 'string'
+                            enum: ['null']
+                            description: 'Use "null" to get root categories'
 
         admin_get_category:
             class: ApiPlatform\Metadata\Get
