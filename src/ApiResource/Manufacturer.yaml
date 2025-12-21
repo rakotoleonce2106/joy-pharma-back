@@ -23,62 +23,24 @@ App\Entity\Manufacturer:
             uriTemplate: '/admin/manufacturers'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\ManufacturerInput
-            inputFormats:
-                multipart: ['multipart/form-data']
             processor: App\State\Admin\ManufacturerProcessor
             normalizationContext:
                 groups: ['id:read', 'manufacturer:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Create new manufacturer (Admin)'
-                description: 'Create a new manufacturer with optional logo'
-                requestBody:
-                    content:
-                        multipart/form-data:
-                            schema:
-                                type: object
-                                required:
-                                    - name
-                                properties:
-                                    name:
-                                        type: string
-                                        description: 'Manufacturer name (required)'
-                                    description:
-                                        type: string
-                                        description: 'Manufacturer description'
-                                    image:
-                                        type: string
-                                        format: binary
-                                        description: 'Manufacturer logo file (JPEG, PNG, GIF, WebP)'
+                description: 'Create a new manufacturer with optional logo. Upload logo first using POST /api/media_objects, then reference it using IRI (e.g., "/api/media_objects/123").'
 
         admin_update_manufacturer:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/manufacturers/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\ManufacturerInput
-            inputFormats:
-                multipart: ['multipart/form-data']
             processor: App\State\Admin\ManufacturerProcessor
             normalizationContext:
                 groups: ['id:read', 'manufacturer:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Update manufacturer (Admin)'
-                description: 'Update manufacturer name, description and logo'
-                requestBody:
-                    content:
-                        multipart/form-data:
-                            schema:
-                                type: object
-                                properties:
-                                    name:
-                                        type: string
-                                        description: 'Manufacturer name'
-                                    description:
-                                        type: string
-                                        description: 'Manufacturer description'
-                                    image:
-                                        type: string
-                                        format: binary
-                                        description: 'Manufacturer logo file (JPEG, PNG, GIF, WebP)'
+                description: 'Update manufacturer name, description and logo. Upload logo first using POST /api/media_objects, then reference it using IRI. Old logo will be automatically deleted if replaced.'
 
         admin_delete_manufacturer:
             class: ApiPlatform\Metadata\Delete

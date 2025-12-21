@@ -11,11 +11,10 @@ use App\Entity\Store;
 use App\Entity\User;
 use App\Repository\StoreRepository;
 use App\Repository\UserRepository;
+use App\Service\MediaObjectService;
 use App\Service\StoreService;
 use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -27,7 +26,7 @@ class StoreProcessor implements ProcessorInterface
         private readonly UserService $userService,
         private readonly UserRepository $userRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly RequestStack $requestStack
+        private readonly MediaObjectService $mediaObjectService
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Store
@@ -76,39 +75,19 @@ class StoreProcessor implements ProcessorInterface
         $store->setOwner($owner);
         $owner->setStore($store);
 
-        // Handle image file upload from multipart request
-        $request = $this->requestStack->getCurrentRequest();
         $needsFlush = false;
-        
-        if ($request) {
-            // Try multiple possible field names for compatibility
-            $imageFile = null;
-            if ($request->files->has('image')) {
-                $imageFile = $request->files->get('image');
-            } elseif ($request->files->has('imageFile')) {
-                $imageFile = $request->files->get('imageFile');
-            }
 
-            if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
-                if ($store->getImage()) {
-                    // Update existing image
-                    $existingImage = $store->getImage();
-                    $existingImage->setFile($imageFile);
-                    $existingImage->setMapping('media_object');
-                    // Ensure MediaObject is managed
-                    if (!$this->entityManager->contains($existingImage)) {
-                        $this->entityManager->persist($existingImage);
-                    }
-                    $needsFlush = true;
-                } else {
-                    // Create new MediaObject for image
-                    $imageMediaObject = new MediaObject();
-                    $imageMediaObject->setFile($imageFile);
-                    $imageMediaObject->setMapping('media_object');
-                    $this->entityManager->persist($imageMediaObject);
-                    $store->setImage($imageMediaObject);
-                    $needsFlush = true;
-                }
+        // Handle image: API Platform automatically deserializes IRI to MediaObject entity (JSON-LD)
+        if ($data->image instanceof MediaObject) {
+            // Store previous image ID for deletion if it exists and is different
+            $previousImageId = $store->getImage()?->getId();
+            $data->image->setMapping('media_object');
+            $store->setImage($data->image);
+            $needsFlush = true;
+            
+            // Delete previous image if it was replaced
+            if ($previousImageId && $previousImageId !== $store->getImage()?->getId()) {
+                $this->mediaObjectService->deleteMediaObjectsByIds([$previousImageId]);
             }
         }
 

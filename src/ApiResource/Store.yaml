@@ -23,93 +23,24 @@ App\Entity\Store:
             uriTemplate: '/admin/stores'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\StoreInput
-            inputFormats:
-                multipart: ['multipart/form-data']
             processor: App\State\Admin\StoreProcessor
             normalizationContext:
                 groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'Create new store (Admin)'
-                description: 'Create a new store with optional image'
-                requestBody:
-                    content:
-                        multipart/form-data:
-                            schema:
-                                type: object
-                                required:
-                                    - name
-                                    - ownerEmail
-                                properties:
-                                    name:
-                                        type: string
-                                        description: 'Store name (required)'
-                                    ownerEmail:
-                                        type: string
-                                        format: email
-                                        description: 'Store owner email (required)'
-                                    description:
-                                        type: string
-                                        description: 'Store description'
-                                    address:
-                                        type: string
-                                        description: 'Store address'
-                                    latitude:
-                                        type: number
-                                        format: float
-                                        description: 'Store latitude'
-                                    longitude:
-                                        type: number
-                                        format: float
-                                        description: 'Store longitude'
-                                    image:
-                                        type: string
-                                        format: binary
-                                        description: 'Store image file (JPEG, PNG, GIF, WebP)'
+                description: 'Create a new store with optional image. Upload image first using POST /api/media_objects, then reference it using IRI (e.g., "/api/media_objects/123").'
 
         admin_update_store:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/stores/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\StoreInput
-            inputFormats:
-                multipart: ['multipart/form-data']
             processor: App\State\Admin\StoreProcessor
             normalizationContext:
                 groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'Update store (Admin)'
-                description: 'Update store information including image'
-                requestBody:
-                    content:
-                        multipart/form-data:
-                            schema:
-                                type: object
-                                properties:
-                                    name:
-                                        type: string
-                                        description: 'Store name'
-                                    ownerEmail:
-                                        type: string
-                                        format: email
-                                        description: 'Store owner email'
-                                    description:
-                                        type: string
-                                        description: 'Store description'
-                                    address:
-                                        type: string
-                                        description: 'Store address'
-                                    latitude:
-                                        type: number
-                                        format: float
-                                        description: 'Store latitude'
-                                    longitude:
-                                        type: number
-                                        format: float
-                                        description: 'Store longitude'
-                                    image:
-                                        type: string
-                                        format: binary
-                                        description: 'Store image file (JPEG, PNG, GIF, WebP)'
+                description: 'Update store information including image. Upload image first using POST /api/media_objects, then reference it using IRI. Old image will be automatically deleted if replaced.'
 
         admin_delete_store:
             class: ApiPlatform\Metadata\Delete

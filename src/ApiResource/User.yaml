@@ -14,12 +14,10 @@ App\Entity\User:
             normalizationContext:
                 groups: ['id:read', "user:read", "image:read", "media_object:read", "location:read" ]
             security: "is_granted('ROLE_USER')"
-            input_formats:
-                multipart: [ 'multipart/form-data' ]
             processor: App\State\User\UserUpdateProcessor
             openapi:
                 summary: "Update user profile"
-                description: "Update user profile information with optional avatar upload"
+                description: "Update user profile information. Upload avatar first using POST /api/media_objects, then reference it using IRI (e.g., \"/api/media_objects/123\")."
 
         facebook_login:
             method: "POST"

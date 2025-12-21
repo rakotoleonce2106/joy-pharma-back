@@ -9,9 +9,8 @@ use App\Entity\Brand;
 use App\Entity\MediaObject;
 use App\Repository\BrandRepository;
 use App\Service\BrandService;
+use App\Service\MediaObjectService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -21,7 +20,7 @@ class BrandProcessor implements ProcessorInterface
         private readonly BrandService $brandService,
         private readonly BrandRepository $brandRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly RequestStack $requestStack
+        private readonly MediaObjectService $mediaObjectService
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Brand
@@ -43,40 +42,19 @@ class BrandProcessor implements ProcessorInterface
 
         $brand->setName($data->name);
 
-        // Handle image file upload from multipart request
-        $request = $this->requestStack->getCurrentRequest();
         $needsFlush = false;
-        
-        if ($request) {
-            // Try multiple possible field names for compatibility
-            $imageFile = null;
-            if ($request->files->has('image')) {
-                $imageFile = $request->files->get('image');
-            } elseif ($request->files->has('imageFile')) {
-                $imageFile = $request->files->get('imageFile');
-            } elseif ($data->image instanceof UploadedFile) {
-                $imageFile = $data->image;
-            }
 
-            if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
-                if ($brand->getImage()) {
-                    // Update existing image
-                    $existingImage = $brand->getImage();
-                    $existingImage->setFile($imageFile);
-                    $existingImage->setMapping('media_object');
-                    if (!$this->entityManager->contains($existingImage)) {
-                        $this->entityManager->persist($existingImage);
-                    }
-                    $needsFlush = true;
-                } else {
-                    // Create new MediaObject for image
-                    $imageMediaObject = new MediaObject();
-                    $imageMediaObject->setFile($imageFile);
-                    $imageMediaObject->setMapping('media_object');
-                    $this->entityManager->persist($imageMediaObject);
-                    $brand->setImage($imageMediaObject);
-                    $needsFlush = true;
-                }
+        // Handle image: API Platform automatically deserializes IRI to MediaObject entity (JSON-LD)
+        if ($data->image instanceof MediaObject) {
+            // Store previous image ID for deletion if it exists and is different
+            $previousImageId = $brand->getImage()?->getId();
+            $data->image->setMapping('media_object');
+            $brand->setImage($data->image);
+            $needsFlush = true;
+            
+            // Delete previous image if it was replaced
+            if ($previousImageId && $previousImageId !== $brand->getImage()?->getId()) {
+                $this->mediaObjectService->deleteMediaObjectsByIds([$previousImageId]);
             }
         }
 

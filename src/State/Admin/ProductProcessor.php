@@ -13,10 +13,9 @@ use App\Repository\ManufacturerRepository;
 use App\Repository\FormRepository;
 use App\Repository\UnitRepository;
 use App\Repository\ProductRepository;
+use App\Service\MediaObjectService;
 use App\Service\ProductService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -31,7 +30,7 @@ class ProductProcessor implements ProcessorInterface
         private readonly FormRepository $formRepository,
         private readonly UnitRepository $unitRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly RequestStack $requestStack
+        private readonly MediaObjectService $mediaObjectService
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Product
@@ -111,40 +110,20 @@ class ProductProcessor implements ProcessorInterface
             }
         }
 
-        // Handle image file uploads from multipart request
-        $request = $this->requestStack->getCurrentRequest();
+        // Handle images: API Platform automatically deserializes IRI array to MediaObject entities (JSON-LD)
         $needsFlush = false;
         
-        if ($request) {
-            // Handle multiple images (Product can have multiple images)
-            // Support both single file and multiple files
-            $imageFiles = [];
-            
-            // Try to get multiple files first
-            if ($request->files->has('images')) {
-                $uploadedFiles = $request->files->get('images');
-                if (is_array($uploadedFiles)) {
-                    $imageFiles = array_filter($uploadedFiles, fn($file) => $file instanceof UploadedFile && $file->isValid());
-                } elseif ($uploadedFiles instanceof UploadedFile && $uploadedFiles->isValid()) {
-                    $imageFiles = [$uploadedFiles];
-                }
-            }
-            
-            // Fallback to single image field
-            if (empty($imageFiles) && $request->files->has('image')) {
-                $imageFile = $request->files->get('image');
-                if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
-                    $imageFiles = [$imageFile];
-                }
-            }
-
-            // Process each image file
-            foreach ($imageFiles as $imageFile) {
-                if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
-                    $imageMediaObject = new MediaObject();
-                    $imageMediaObject->setFile($imageFile);
+        // Store previous image IDs before updating
+        $previousImageIds = $product->getImages()->map(fn($img) => $img->getId())->toArray();
+        
+        // Clear existing images and add new ones
+        $product->getImages()->clear();
+        
+        if (!empty($data->images) && is_array($data->images)) {
+            // MediaObject entities from JSON-LD request - API Platform deserialized IRIs automatically
+            foreach ($data->images as $imageMediaObject) {
+                if ($imageMediaObject instanceof MediaObject) {
                     $imageMediaObject->setMapping('product_images');
-                    $this->entityManager->persist($imageMediaObject);
                     $product->addImage($imageMediaObject);
                     $needsFlush = true;
                 }
@@ -154,6 +133,13 @@ class ProductProcessor implements ProcessorInterface
         // Flush MediaObjects if any were created so VichUploader can process the uploads
         if ($needsFlush) {
             $this->entityManager->flush();
+        }
+
+        // Delete previous MediaObjects that are no longer referenced
+        $currentImageIds = $product->getImages()->map(fn($img) => $img->getId())->toArray();
+        $idsToDelete = array_diff($previousImageIds, $currentImageIds);
+        if (!empty($idsToDelete)) {
+            $this->mediaObjectService->deleteMediaObjectsByIds($idsToDelete);
         }
 
         if ($isUpdate) {
