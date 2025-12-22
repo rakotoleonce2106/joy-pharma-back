@@ -154,29 +154,27 @@ App\Entity\Product:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/products'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\ProductInput
+            denormalizationContext:
+                groups: ['product:write']
             validationContext:
                 groups: ['create']
-            processor: App\State\Admin\ProductProcessor
             normalizationContext:
                 groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'unit:read', 'form:read']
             openapi:
                 summary: 'Create new product (Admin)'
-                description: 'Create a new product with all its properties, relations and images. Upload images first using POST /api/media_objects, then reference them using IRI array (e.g., ["/api/media_objects/123", "/api/media_objects/124"]).'
+                description: 'Create a new product with all its properties, relations and images. Upload images first using POST /api/media_objects, then reference them using IRI array (e.g., ["/api/media_objects/123", "/api/media_objects/124"]). API Platform handles JSON-LD automatically.'
 
         admin_update_product:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\ProductInput
-            validationContext:
-                groups: ['update']
-            processor: App\State\Admin\ProductProcessor
+            denormalizationContext:
+                groups: ['product:write']
             normalizationContext:
                 groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'unit:read', 'form:read']
             openapi:
                 summary: 'Update product (Admin)'
-                description: 'Update product information including categories, prices, stock and images. Upload images first using POST /api/media_objects, then reference them using IRI array. Old images not in the array will be automatically deleted. You can send only the fields you want to update (partial update supported).'
+                description: 'Update product information including categories, prices, stock and images. Upload images first using POST /api/media_objects, then reference them using IRI array. API Platform handles JSON-LD automatically. Use PATCH for partial updates.'
 
         admin_delete_product:
             class: ApiPlatform\Metadata\Delete

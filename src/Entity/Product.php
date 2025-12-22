@@ -14,6 +14,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
@@ -26,16 +27,18 @@ class Product
     use EntityTimestampTrait;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
+    #[Assert\NotBlank(groups: ['create'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
+    #[Assert\NotBlank(groups: ['create'])]
     private ?string $code = null;
 
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?string $description = null;
 
     /**
@@ -43,28 +46,28 @@ class Product
      */
     #[ORM\ManyToMany(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinTable(name: 'product_media_objects')]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private Collection $images;
 
 
     #[ORM\ManyToOne]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?Form $form = null;
 
     #[ORM\ManyToOne(inversedBy: 'products')]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?Brand $brand = null;
 
     #[ORM\ManyToOne(inversedBy: 'products')]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?Manufacturer $manufacturer = null;
 
     /**
      * @var Collection<int, Category>
      */
     #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'products')]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private Collection $category;
 
     /**
@@ -75,36 +78,37 @@ class Product
     private Collection $restricted;
 
     #[ORM\Column]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?bool $isActive = null;
 
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?int $quantity = null;
 
     #[ORM\ManyToOne]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?Unit $unit = null;
 
     #[ORM\Column(nullable: true, type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?float $unitPrice = null;
 
     #[ORM\Column(nullable: true, type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?float $totalPrice = null;
 
     #[ORM\ManyToOne(cascade: ['persist', 'remove'])]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?Currency $currency = null;
 
     #[ORM\Column(nullable: true)]
+    #[Groups(['product:read', 'product:write'])]
     private ?int $stock = null;
 
 
     #[ORM\Column(type: Types::ARRAY, nullable: true)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'product:write'])]
     private ?array $variants = null;
 
     /**
