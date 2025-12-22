@@ -63,10 +63,10 @@ class ElasticsearchService
         $this->indexPrefix = $indexPrefix ?: ($elasticsearchPrefix ?: 'joy_pharma');
         
         try {
-            $this->client = ClientBuilder::create()
-                ->setHosts($hosts)
-                ->setLogger($logger)
-                ->build();
+        $this->client = ClientBuilder::create()
+            ->setHosts($hosts)
+            ->setLogger($logger)
+            ->build();
             
             // Test connection
             $this->checkAvailability();
@@ -163,16 +163,16 @@ class ElasticsearchService
         }
 
         try {
-            $body = ['mappings' => $mapping];
-            
-            if (!empty($settings)) {
-                $body['settings'] = $settings;
-            }
+        $body = ['mappings' => $mapping];
+        
+        if (!empty($settings)) {
+            $body['settings'] = $settings;
+        }
 
-            $this->client->indices()->create([
-                'index' => $indexName,
-                'body' => $body
-            ]);
+        $this->client->indices()->create([
+            'index' => $indexName,
+            'body' => $body
+        ]);
         } catch (\Exception $e) {
             $this->logger?->error('Failed to create Elasticsearch index', [
                 'index' => $indexName,
@@ -193,11 +193,11 @@ class ElasticsearchService
         }
         
         try {
-            $this->client->index([
-                'index' => $this->getIndexName($index),
-                'id' => $id,
-                'body' => $document
-            ]);
+        $this->client->index([
+            'index' => $this->getIndexName($index),
+            'id' => $id,
+            'body' => $document
+        ]);
         } catch (\Exception $e) {
             $this->logger?->error('Failed to index document in Elasticsearch', [
                 'index' => $this->getIndexName($index),
@@ -219,13 +219,13 @@ class ElasticsearchService
         }
         
         try {
-            $this->client->update([
-                'index' => $this->getIndexName($index),
-                'id' => $id,
-                'body' => [
-                    'doc' => $document
-                ]
-            ]);
+        $this->client->update([
+            'index' => $this->getIndexName($index),
+            'id' => $id,
+            'body' => [
+                'doc' => $document
+            ]
+        ]);
         } catch (\Exception $e) {
             $this->logger?->error('Failed to update document in Elasticsearch', [
                 'index' => $this->getIndexName($index),
@@ -273,12 +273,12 @@ class ElasticsearchService
         }
         
         try {
-            $response = $this->client->search([
-                'index' => $this->getIndexName($index),
-                'body' => $query
-            ]);
-            
-            return $response->asArray();
+        $response = $this->client->search([
+            'index' => $this->getIndexName($index),
+            'body' => $query
+        ]);
+        
+        return $response->asArray();
         } catch (\Exception $e) {
             $this->logger?->error('Elasticsearch search failed', [
                 'index' => $this->getIndexName($index),
@@ -300,7 +300,7 @@ class ElasticsearchService
         }
 
         try {
-            $this->client->bulk(['body' => $operations]);
+        $this->client->bulk(['body' => $operations]);
         } catch (\Exception $e) {
             $this->logger?->error('Elasticsearch bulk operation failed', [
                 'error' => $e->getMessage(),

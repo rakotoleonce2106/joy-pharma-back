@@ -8,6 +8,12 @@ services:
     volumes:
       # Monter le fichier .env dans le conteneur
       - ./.env:/app/.env:ro
+      # 📁 VOLUMES - Images et uploads persistants
+      # Stockés dans ./data/ (dossier du projet, ignoré par Git)
+      - ./data/images:/app/public/images:rw
+      - ./data/icons:/app/public/icons:rw
+      - ./data/media:/app/public/media:rw
+      - ./data/uploads:/app/public/uploads:rw
     environment:
       # Utiliser :80 pour forcer HTTP dans Caddy (Traefik gère déjà le TLS)
       # Le nom de domaine réel est utilisé par Traefik via les labels
