@@ -155,6 +155,8 @@ App\Entity\Product:
             uriTemplate: '/admin/products'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\ProductInput
+            validationContext:
+                groups: ['create']
             processor: App\State\Admin\ProductProcessor
             normalizationContext:
                 groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'unit:read', 'form:read']
@@ -167,12 +169,14 @@ App\Entity\Product:
             uriTemplate: '/admin/products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             input: App\Dto\Admin\ProductInput
+            validationContext:
+                groups: ['update']
             processor: App\State\Admin\ProductProcessor
             normalizationContext:
                 groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'unit:read', 'form:read']
             openapi:
                 summary: 'Update product (Admin)'
-                description: 'Update product information including categories, prices, stock and images. Upload images first using POST /api/media_objects, then reference them using IRI array. Old images not in the array will be automatically deleted.'
+                description: 'Update product information including categories, prices, stock and images. Upload images first using POST /api/media_objects, then reference them using IRI array. Old images not in the array will be automatically deleted. You can send only the fields you want to update (partial update supported).'
 
         admin_delete_product:
             class: ApiPlatform\Metadata\Delete

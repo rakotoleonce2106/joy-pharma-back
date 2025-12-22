@@ -8,10 +8,16 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class ProductInput
 {
-    #[Assert\NotBlank]
+    /**
+     * Product name - required for create, optional for update
+     */
+    #[Assert\NotBlank(groups: ['create'])]
     public ?string $name = null;
 
-    #[Assert\NotBlank]
+    /**
+     * Product code - required for create, optional for update
+     */
+    #[Assert\NotBlank(groups: ['create'])]
     public ?string $code = null;
 
     public ?string $description = null;
