@@ -13,7 +13,7 @@ class Form
     use EntityIdTrait;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'form:read'])]
     private ?string $label = null;
 
 
@@ -26,5 +26,11 @@ class Form
     {
         $this->label = $label;
         return $this;
+    }
+
+    #[Groups(['form:read'])]
+    public function getName(): ?string
+    {
+        return $this->label;
     }
 }

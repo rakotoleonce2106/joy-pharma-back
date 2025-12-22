@@ -35,7 +35,7 @@ class UnitProcessor implements ProcessorInterface
             $unit = new Unit();
         }
 
-        $unit->setName($data->name);
+        $unit->setLabel($data->name);
 
         if ($isUpdate) {
             $this->unitService->updateUnit($unit);

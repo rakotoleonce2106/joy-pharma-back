@@ -5,7 +5,7 @@ App\Entity\Product:
             class: ApiPlatform\Metadata\Get
             uriTemplate: '/product/{id}'
             normalizationContext:
-                groups: ['id:read','product:read','image:read','media_object:read']
+                groups: ['id:read','product:read','image:read','media_object:read','unit:read','form:read']
             openapi:
                 summary: 'Get a product'
                 description: 'Get a product by id'
@@ -20,7 +20,7 @@ App\Entity\Product:
             uriTemplate: '/products'
             provider: 'App\State\Product\ProductsProvider'
             normalizationContext:
-                groups:  ['id:read','product:read','image:read','media_object:read']
+                groups:  ['id:read','product:read','image:read','media_object:read','unit:read','form:read']
             format: 'json'
             openapi:
                 summary: 'Get all products'
@@ -62,7 +62,7 @@ App\Entity\Product:
             uriTemplate: '/products/suggestion'
             provider: 'App\State\Product\SuggestionProductsProvider'
             normalizationContext:
-                groups:  ['id:read','category:read','product:read','image:read','media_object:read']
+                groups:  ['id:read','category:read','product:read','image:read','media_object:read','unit:read','form:read']
             openapi:
                 summary: 'Get all products home'
                 description: 'Get all products home'
@@ -73,7 +73,7 @@ App\Entity\Product:
             uriTemplate: '/products/search'
             provider: 'App\State\Product\ProductElasticsearchProvider'
             normalizationContext:
-                groups: ['id:read','product:read','image:read','media_object:read']
+                groups: ['id:read','product:read','image:read','media_object:read','unit:read','form:read']
             openapi:
                 summary: 'Search products using Elasticsearch'
                 description: 'Search products with full-text search, filters, and pagination'
@@ -135,7 +135,7 @@ App\Entity\Product:
             uriTemplate: '/admin/products'
             security: 'is_granted("ROLE_ADMIN")'
             normalizationContext:
-                groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'category:read', 'brand:read', 'manufacturer:read']
+                groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'category:read', 'brand:read', 'manufacturer:read', 'unit:read', 'form:read']
             openapi:
                 summary: 'List all products (Admin)'
                 description: 'Get paginated list of all products with filtering and search capabilities'
@@ -145,7 +145,7 @@ App\Entity\Product:
             uriTemplate: '/admin/products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             normalizationContext:
-                groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'category:read', 'brand:read', 'manufacturer:read']
+                groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'category:read', 'brand:read', 'manufacturer:read', 'unit:read', 'form:read']
             openapi:
                 summary: 'Get product by ID (Admin)'
                 description: 'Get detailed information about a specific product'
@@ -157,7 +157,7 @@ App\Entity\Product:
             input: App\Dto\Admin\ProductInput
             processor: App\State\Admin\ProductProcessor
             normalizationContext:
-                groups: ['id:read', 'product:read', 'image:read', 'media_object:read']
+                groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'unit:read', 'form:read']
             openapi:
                 summary: 'Create new product (Admin)'
                 description: 'Create a new product with all its properties, relations and images. Upload images first using POST /api/media_objects, then reference them using IRI array (e.g., ["/api/media_objects/123", "/api/media_objects/124"]).'
@@ -169,7 +169,7 @@ App\Entity\Product:
             input: App\Dto\Admin\ProductInput
             processor: App\State\Admin\ProductProcessor
             normalizationContext:
-                groups: ['id:read', 'product:read', 'image:read', 'media_object:read']
+                groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'unit:read', 'form:read']
             openapi:
                 summary: 'Update product (Admin)'
                 description: 'Update product information including categories, prices, stock and images. Upload images first using POST /api/media_objects, then reference them using IRI array. Old images not in the array will be automatically deleted.'
@@ -194,5 +194,5 @@ App\Entity\Product:
         
 
     normalizationContext:
-        groups: ['id:read','product:read','media_object:read','image:read','brand:read','manufacturer:read','category:read']
+        groups: ['id:read','product:read','media_object:read','image:read','brand:read','manufacturer:read','category:read','unit:read','form:read']
                       
