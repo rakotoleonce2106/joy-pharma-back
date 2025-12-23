@@ -56,36 +56,37 @@ class StoreSetting
     {
         // Initialize business hours only if they don't exist
         // Check if hours exist, if not create new BusinessHours with defaults
-        // Defaults: 9-6 weekdays, 10-4 weekends, closed Sunday
+        // Defaults: Monday-Friday 8:00-17:00, Saturday-Sunday closed
 
-        $defaultHours = new BusinessHours('09:00', '18:00');
+        $defaultWeekdayHours = new BusinessHours('08:00', '17:00');
+        $closedHours = new BusinessHours(null, null, true);
 
         if (!$this->mondayHours) {
-            $this->mondayHours = $defaultHours;
+            $this->mondayHours = $defaultWeekdayHours;
         }
 
         if (!$this->tuesdayHours) {
-            $this->tuesdayHours = $defaultHours;
+            $this->tuesdayHours = $defaultWeekdayHours;
         }
 
         if (!$this->wednesdayHours) {
-            $this->wednesdayHours = $defaultHours;
+            $this->wednesdayHours = $defaultWeekdayHours;
         }
 
         if (!$this->thursdayHours) {
-            $this->thursdayHours = $defaultHours;
+            $this->thursdayHours = $defaultWeekdayHours;
         }
 
         if (!$this->fridayHours) {
-            $this->fridayHours = $defaultHours;
+            $this->fridayHours = $defaultWeekdayHours;
         }
 
         if (!$this->saturdayHours) {
-            $this->saturdayHours = $defaultHours;
+            $this->saturdayHours = $closedHours;
         }
 
         if (!$this->sundayHours) {
-            $this->sundayHours = new BusinessHours(null, null, true); // Closed
+            $this->sundayHours = $closedHours;
         }
     }
 
@@ -99,10 +100,10 @@ class StoreSetting
         
         if (!$hours) {
             // Create default if null
-            if ($property === 'sundayHours') {
+            if ($property === 'sundayHours' || $property === 'saturdayHours') {
                 $hours = new BusinessHours(null, null, true);
             } else {
-                $hours = new BusinessHours('09:00', '18:00', false);
+                $hours = new BusinessHours('08:00', '17:00', false);
             }
             $setter = 'set' . ucfirst($property);
             $this->$setter($hours);
@@ -115,7 +116,7 @@ class StoreSetting
     public function getTuesdayHours(): ?BusinessHours
     {
         if (!$this->tuesdayHours) {
-            $this->tuesdayHours = new BusinessHours('09:00', '18:00', false);
+            $this->tuesdayHours = new BusinessHours('08:00', '17:00', false);
         }
         return $this->tuesdayHours;
     }
@@ -130,7 +131,7 @@ class StoreSetting
     public function getMondayHours(): ?BusinessHours
     {
         if (!$this->mondayHours) {
-            $this->mondayHours = new BusinessHours('09:00', '18:00', false);
+            $this->mondayHours = new BusinessHours('08:00', '17:00', false);
         }
         return $this->mondayHours;
     }
@@ -145,7 +146,7 @@ class StoreSetting
     public function getWednesdayHours(): ?BusinessHours
     {
         if (!$this->wednesdayHours) {
-            $this->wednesdayHours = new BusinessHours('09:00', '18:00', false);
+            $this->wednesdayHours = new BusinessHours('08:00', '17:00', false);
         }
         return $this->wednesdayHours;
     }
@@ -160,7 +161,7 @@ class StoreSetting
     public function getThursdayHours(): ?BusinessHours
     {
         if (!$this->thursdayHours) {
-            $this->thursdayHours = new BusinessHours('09:00', '18:00', false);
+            $this->thursdayHours = new BusinessHours('08:00', '17:00', false);
         }
         return $this->thursdayHours;
     }
@@ -175,7 +176,7 @@ class StoreSetting
     public function getFridayHours(): ?BusinessHours
     {
         if (!$this->fridayHours) {
-            $this->fridayHours = new BusinessHours('09:00', '18:00', false);
+            $this->fridayHours = new BusinessHours('08:00', '17:00', false);
         }
         return $this->fridayHours;
     }
@@ -190,7 +191,7 @@ class StoreSetting
     public function getSaturdayHours(): ?BusinessHours
     {
         if (!$this->saturdayHours) {
-            $this->saturdayHours = new BusinessHours('09:00', '18:00', false);
+            $this->saturdayHours = new BusinessHours(null, null, true); // Closed
         }
         return $this->saturdayHours;
     }
