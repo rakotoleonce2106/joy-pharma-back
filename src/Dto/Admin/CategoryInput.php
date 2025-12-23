@@ -2,10 +2,12 @@
 
 namespace App\Dto\Admin;
 
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Serializer\Attribute\Ignore;
+use App\Entity\MediaObject;
+use ApiPlatform\Metadata\ApiProperty;
+use ApiPlatform\Metadata\ApiResource;
 use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource(operations: [])]
 class CategoryInput
 {
     /**
@@ -24,15 +26,19 @@ class CategoryInput
     public ?string $color = null;
 
     /**
-     * Image file for the category (multipart/form-data)
-     * Field name in form: "image"
+     * Reference to uploaded MediaObject for image
+     * API Platform will automatically deserialize IRI (e.g., "/api/media_objects/123") to MediaObject entity
+     * Use POST /api/media_objects to upload file first, then use the returned IRI here
      */
-    public ?UploadedFile $image = null;
+    #[ApiProperty(types: ['https://schema.org/image'], iris: [MediaObject::class])]
+    public ?MediaObject $image = null;
 
     /**
-     * Icon/SVG file for the category (multipart/form-data)
-     * Field name in form: "icon"
+     * Reference to uploaded MediaObject for icon
+     * API Platform will automatically deserialize IRI (e.g., "/api/media_objects/123") to MediaObject entity
+     * Use POST /api/media_objects to upload file first, then use the returned IRI here
      */
-    public ?UploadedFile $icon = null;
+    #[ApiProperty(types: ['https://schema.org/image'], iris: [MediaObject::class])]
+    public ?MediaObject $icon = null;
 }
 

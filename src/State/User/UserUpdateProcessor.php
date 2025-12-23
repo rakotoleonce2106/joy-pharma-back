@@ -6,11 +6,11 @@ namespace App\State\User;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Delivery;
+use App\Entity\MediaObject;
 use App\Entity\User;
 use App\Exception\ValidationFailedException;
+use App\Service\MediaObjectService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -21,18 +21,12 @@ class UserUpdateProcessor implements ProcessorInterface
         private EntityManagerInterface $entityManager,
         private TokenStorageInterface $tokenStorage,
         private ValidatorInterface $validator,
-        private RequestStack $requestStack
+        private MediaObjectService $mediaObjectService
     ) {
     }
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): User
     {
-        $request = $this->requestStack->getCurrentRequest();
-        
-        if (!$request) {
-            throw new BadRequestHttpException('No request found');
-        }
-
         // Get the current authenticated user
         $token = $this->tokenStorage->getToken();
         if (!$token || !$token->getUser() instanceof User) {
@@ -41,7 +35,7 @@ class UserUpdateProcessor implements ProcessorInterface
 
         $user = $token->getUser();
 
-        // Handle JSON body data if available
+        // Handle JSON-LD data - API Platform automatically deserializes IRI to MediaObject
         if ($data instanceof User) {
             // Data is already denormalized by API Platform
             if ($data->getFirstName() !== null) {
@@ -53,28 +47,31 @@ class UserUpdateProcessor implements ProcessorInterface
             if ($data->getPhone() !== null) {
                 $user->setPhone($data->getPhone());
             }
+
+            // Handle image: API Platform automatically deserializes IRI to MediaObject entity (JSON-LD)
+            if ($data->getImage() instanceof MediaObject) {
+                $previousImageId = $user->getImage()?->getId();
+                $data->getImage()->setMapping('media_object');
+                $user->setImage($data->getImage());
+                
+                // Flush MediaObject so VichUploader can process if needed
+                $this->entityManager->flush();
+                
+                // Delete previous MediaObject if it was replaced
+                if ($previousImageId && $previousImageId !== $user->getImage()?->getId()) {
+                    $this->mediaObjectService->deleteMediaObjectsByIds([$previousImageId]);
+                }
+            }
+
             // Handle delivery updates if user has ROLE_DELIVER
             if (in_array('ROLE_DELIVER', $user->getRoles())) {
                 $delivery = $user->getDelivery();
                 if (!$delivery) {
-                    // Create delivery if it doesn't exist
                     $delivery = new Delivery();
                     $user->setDelivery($delivery);
                 }
-
-            // Handle isOnline - check request content to see if it was provided
-            $content = $request->getContent();
-            if ($content && $request->getContentTypeFormat() === 'json') {
-                $jsonData = json_decode($content, true);
-                if (isset($jsonData['isOnline'])) {
-                        $delivery->setIsOnline(filter_var($jsonData['isOnline'], FILTER_VALIDATE_BOOLEAN));
-                    }
-                }
             }
         }
-
-        // Handle multipart form data
-        $this->processFormData($user, $request);
 
         // Validate the user with the update validation groups
         $violations = $this->validator->validate($user, null, ['Default', 'user:update']);
@@ -88,53 +85,5 @@ class UserUpdateProcessor implements ProcessorInterface
         $this->entityManager->flush();
 
         return $user;
-    }
-
-    private function processFormData(User $user, Request $request): void
-    {
-        // Handle text fields
-        if ($request->request->has('firstName')) {
-            $user->setFirstName($request->request->get('firstName'));
-        }
-
-        if ($request->request->has('lastName')) {
-            $user->setLastName($request->request->get('lastName'));
-        }
-
-        if ($request->request->has('phone')) {
-            $user->setPhone($request->request->get('phone'));
-        }
-
-        // Handle delivery updates if user has ROLE_DELIVER
-        if (in_array('ROLE_DELIVER', $user->getRoles())) {
-            $delivery = $user->getDelivery();
-            if (!$delivery) {
-                // Create delivery if it doesn't exist
-                $delivery = new Delivery();
-                $user->setDelivery($delivery);
-        }
-
-        if ($request->request->has('isOnline')) {
-            $isOnline = filter_var($request->request->get('isOnline'), FILTER_VALIDATE_BOOLEAN);
-                $delivery->setIsOnline($isOnline);
-            }
-
-            if ($request->request->has('vehicleType')) {
-                $delivery->setVehicleType($request->request->get('vehicleType'));
-            }
-
-            if ($request->request->has('vehiclePlate')) {
-                $delivery->setVehiclePlate($request->request->get('vehiclePlate'));
-            }
-        }
-
-        // Handle file upload for profile image
-        if ($request->files->has('imageFile')) {
-            $imageFile = $request->files->get('imageFile');
-            
-            if ($imageFile && $imageFile->isValid()) {
-                $user->setImageFile($imageFile);
-            }
-        }
     }
 }

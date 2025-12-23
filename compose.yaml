@@ -11,6 +11,7 @@ services:
     # Stockés dans ./data/ (dossier du projet, ignoré par Git)
     volumes:
       - ./data/images:/app/public/images:rw
+      - ./data/icons:/app/public/icons:rw
       - ./data/media:/app/public/media:rw
       - ./data/uploads:/app/public/uploads:rw
     environment:

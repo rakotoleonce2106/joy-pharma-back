@@ -32,13 +32,13 @@ class Category
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['category:read','product:read'])]
+    #[Groups(['category:read','product:read', 'media_object:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $image = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['category:read','product:read'])]
+    #[Groups(['category:read','product:read', 'media_object:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $svg = null;
 

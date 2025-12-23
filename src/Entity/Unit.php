@@ -13,7 +13,7 @@ class Unit
     use EntityIdTrait;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'unit:read'])]
     private ?string $label = null;
 
 
@@ -27,5 +27,11 @@ class Unit
         $this->label = $label;
 
         return $this;
+    }
+
+    #[Groups(['unit:read'])]
+    public function getName(): ?string
+    {
+        return $this->label;
     }
 }

@@ -18,16 +18,35 @@ class RefreshTokenFormatSubscriber implements EventSubscriberInterface
     public function onKernelRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();
+        $pathInfo = $request->getPathInfo();
         
-        // Force JSON format for refresh token endpoint
-        if ($request->getPathInfo() === '/api/token/refresh') {
-            // Remove HTML from accepted formats
-            $request->setRequestFormat('json');
-            
-            // Force Accept header to JSON
-            if (!$request->headers->has('Accept') || 
-                str_contains($request->headers->get('Accept', ''), 'text/html')) {
-                $request->headers->set('Accept', 'application/json');
+        // Force JSON format for specific endpoints
+        $endpointsRequiringJson = [
+            '/api/token/refresh',
+            '/api/media_objects',
+        ];
+        
+        foreach ($endpointsRequiringJson as $endpoint) {
+            if ($pathInfo === $endpoint || str_starts_with($pathInfo, $endpoint)) {
+                // Remove HTML from accepted formats
+                $request->setRequestFormat('json');
+                
+                // Force Accept header to JSON (but keep multipart for POST media_objects)
+                if ($pathInfo === '/api/media_objects' && $request->getMethod() === 'POST') {
+                    // For POST requests, we accept multipart/form-data for input
+                    // but force JSON for output
+                    if ($request->headers->has('Accept') && 
+                        str_contains($request->headers->get('Accept', ''), 'text/html')) {
+                        $request->headers->set('Accept', 'application/json');
+                    }
+                } else {
+                    // For other endpoints, force JSON
+                    if (!$request->headers->has('Accept') || 
+                        str_contains($request->headers->get('Accept', ''), 'text/html')) {
+                        $request->headers->set('Accept', 'application/json');
+                    }
+                }
+                break;
             }
         }
     }

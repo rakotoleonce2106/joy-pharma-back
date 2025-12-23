@@ -28,6 +28,7 @@ App\Entity\Store:
                 groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'Create new store (Admin)'
+                description: 'Create a new store with optional image. Upload image first using POST /api/media_objects, then reference it using IRI (e.g., "/api/media_objects/123").'
 
         admin_update_store:
             class: ApiPlatform\Metadata\Put
@@ -39,6 +40,7 @@ App\Entity\Store:
                 groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'Update store (Admin)'
+                description: 'Update store information including image. Upload image first using POST /api/media_objects, then reference it using IRI. Old image will be automatically deleted if replaced.'
 
         admin_delete_store:
             class: ApiPlatform\Metadata\Delete

@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Product;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 class ProductElasticsearchService
 {
@@ -11,7 +12,8 @@ class ProductElasticsearchService
 
     public function __construct(
         private readonly ElasticsearchService $elasticsearchService,
-        private readonly EntityManagerInterface $entityManager
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ?LoggerInterface $logger = null
     ) {
     }
 
@@ -282,7 +284,10 @@ class ProductElasticsearchService
             $result = $this->elasticsearchService->search(self::INDEX_NAME, $searchQuery);
         } catch (\Exception $e) {
             // Log error and return empty array if Elasticsearch is unavailable
-            error_log('Elasticsearch KNN-like suggestion search error: ' . $e->getMessage());
+            $this->logger?->error('Elasticsearch KNN-like suggestion search error', [
+                'query' => $trimmedQuery,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
 
@@ -435,7 +440,11 @@ class ProductElasticsearchService
             $result = $this->elasticsearchService->search(self::INDEX_NAME, $searchQuery);
         } catch (\Exception $e) {
             // Log error and return empty array if Elasticsearch is unavailable
-            error_log('Elasticsearch search error: ' . $e->getMessage());
+            $this->logger?->error('Elasticsearch search error', [
+                'query' => $query,
+                'filters' => $filters,
+                'error' => $e->getMessage()
+            ]);
             return [];
         }
         

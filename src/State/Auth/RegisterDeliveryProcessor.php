@@ -5,9 +5,11 @@ namespace App\State\Auth;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Delivery;
+use App\Entity\MediaObject;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Security\Http\Authentication\AuthenticationSuccessHandler;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -117,8 +119,19 @@ class RegisterDeliveryProcessor implements ProcessorInterface
                     throw new BadRequestHttpException('Vehicle document is not valid');
                 }
 
-                $delivery->setResidenceDocumentFile($data->residenceDocument);
-                $delivery->setVehicleDocumentFile($data->vehicleDocument);
+                // Create MediaObject for residence document
+                $residenceMediaObject = new MediaObject();
+                $residenceMediaObject->setFile($data->residenceDocument);
+                $residenceMediaObject->setMapping('media_object');
+                $this->entityManager->persist($residenceMediaObject);
+                $delivery->setResidenceDocument($residenceMediaObject);
+
+                // Create MediaObject for vehicle document
+                $vehicleMediaObject = new MediaObject();
+                $vehicleMediaObject->setFile($data->vehicleDocument);
+                $vehicleMediaObject->setMapping('media_object');
+                $this->entityManager->persist($vehicleMediaObject);
+                $delivery->setVehicleDocument($vehicleMediaObject);
             } catch (\Exception $fileException) {
                 if ($fileException instanceof BadRequestHttpException) {
                     throw $fileException;

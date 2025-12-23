@@ -1,0 +1,51 @@
+---
+# Exemple de configuration pour ajouter Elasticsearch au docker-compose
+# Copiez ce contenu dans votre compose.yaml ou compose.prod.yaml
+
+services:
+  php:
+    # Ajoutez cette variable d'environnement si elle n'existe pas déjà
+    environment:
+      ELASTICSEARCH_HOST: http://elasticsearch:9200
+    # Ajoutez ce réseau à la liste des réseaux existants
+    networks:
+      - traefik_network
+      - database_network
+      - elasticsearch_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: joy-pharma-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - elasticsearch_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  elasticsearch_network:
+    driver: bridge
+    # Si vous utilisez des réseaux externes, changez en:
+    # external: true
+

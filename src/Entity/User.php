@@ -12,6 +12,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\MediaObject;
 use App\Repository\UserRepository;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -69,8 +70,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['user:read', 'user:store:read'])]
-    #[ApiProperty(types: ['https://schema.org/image'])]
+    #[Groups(['user:read', 'user:update', 'user:store:read', 'media_object:read'])]
+    #[ApiProperty(types: ['https://schema.org/image'], iris: [MediaObject::class])]
     private ?MediaObject $image = null;
 
     /**
@@ -305,6 +306,24 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setImage(?MediaObject $image): static
     {
         $this->image = $image;
+
+        return $this;
+    }
+
+    public function setImageFile(?\Symfony\Component\HttpFoundation\File\UploadedFile $file): static
+    {
+        if ($file) {
+            // Si une image existe déjà, mettre à jour le fichier de l'existant
+            if ($this->image) {
+                $this->image->setFile($file);
+            } else {
+                // Sinon, créer un nouveau MediaObject
+                $mediaObject = new MediaObject();
+                $mediaObject->setFile($file);
+                $mediaObject->setMapping('media_object');
+                $this->image = $mediaObject;
+            }
+        }
 
         return $this;
     }

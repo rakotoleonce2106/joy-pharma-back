@@ -49,11 +49,24 @@ App\Entity\Category:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/admin/categories'
             security: 'is_granted("ROLE_ADMIN")'
+            provider: App\State\Product\CategoryProvider
             normalizationContext:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'List all categories (Admin)'
-                description: 'Get list of all categories with hierarchical structure'
+                description: 'Get list of all categories with hierarchical structure. Filter by parent category using parent parameter (use parent=null for root categories or parent={id} for child categories).'
+                parameters:
+                    - name: 'parent'
+                      in: 'query'
+                      required: false
+                      description: 'Filter by parent category ID. Use null to get root categories (categories without parent).'
+                      schema:
+                        oneOf:
+                          - type: 'integer'
+                            description: 'Parent category ID'
+                          - type: 'string'
+                            enum: ['null']
+                            description: 'Use "null" to get root categories'
 
         admin_get_category:
             class: ApiPlatform\Metadata\Get
@@ -72,43 +85,12 @@ App\Entity\Category:
             input: App\Dto\Admin\CategoryInput
             validationContext:
                 groups: ['create']
-            inputFormats:
-                multipart: ['multipart/form-data']
             processor: App\State\Admin\CategoryProcessor
             normalizationContext:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Create new category (Admin)'
-                description: 'Create a new category with optional parent category, image and icon. If category with same name and parent exists, it will be returned/updated instead of creating a duplicate.'
-                requestBody:
-                    content:
-                        multipart/form-data:
-                            schema:
-                                type: object
-                                required:
-                                    - name
-                                properties:
-                                    name:
-                                        type: string
-                                        description: 'Category name (required)'
-                                    description:
-                                        type: string
-                                        description: 'Category description'
-                                    parent:
-                                        type: integer
-                                        nullable: true
-                                        description: 'Parent category ID (null for root categories)'
-                                    color:
-                                        type: string
-                                        description: 'Category color (hex code)'
-                                    image:
-                                        type: string
-                                        format: binary
-                                        description: 'Category image file (JPEG, PNG, GIF, WebP)'
-                                    icon:
-                                        type: string
-                                        format: binary
-                                        description: 'Category icon/SVG file'
+                description: 'Create a new category with optional parent category, image and icon. Upload images first using POST /api/media_objects, then reference them using IRI (e.g., "/api/media_objects/123"). If category with same name and parent exists, it will be returned/updated instead of creating a duplicate.'
 
         admin_update_category:
             class: ApiPlatform\Metadata\Put
@@ -117,41 +99,12 @@ App\Entity\Category:
             input: App\Dto\Admin\CategoryInput
             validationContext:
                 groups: ['update']
-            inputFormats:
-                multipart: ['multipart/form-data']
             processor: App\State\Admin\CategoryProcessor
             normalizationContext:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Update category (Admin)'
-                description: 'Update category information including parent relationship, image and icon. Name is optional - if not provided, existing name will be kept.'
-                requestBody:
-                    content:
-                        multipart/form-data:
-                            schema:
-                                type: object
-                                properties:
-                                    name:
-                                        type: string
-                                        description: 'Category name (optional - existing name will be kept if not provided)'
-                                    description:
-                                        type: string
-                                        description: 'Category description'
-                                    parent:
-                                        type: integer
-                                        nullable: true
-                                        description: 'Parent category ID (null for root categories)'
-                                    color:
-                                        type: string
-                                        description: 'Category color (hex code)'
-                                    image:
-                                        type: string
-                                        format: binary
-                                        description: 'Category image file (JPEG, PNG, GIF, WebP)'
-                                    icon:
-                                        type: string
-                                        format: binary
-                                        description: 'Category icon/SVG file'
+                description: 'Update category information including parent relationship, image and icon. Upload images first using POST /api/media_objects, then reference them using IRI (e.g., "/api/media_objects/123"). Name is optional - if not provided, existing name will be kept. Old images will be automatically deleted if replaced.'
 
         admin_delete_category:
             class: ApiPlatform\Metadata\Delete

@@ -9,9 +9,8 @@ use App\Entity\Category;
 use App\Entity\MediaObject;
 use App\Repository\CategoryRepository;
 use App\Service\CategoryService;
+use App\Service\MediaObjectService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -21,7 +20,7 @@ class CategoryProcessor implements ProcessorInterface
         private readonly CategoryService $categoryService,
         private readonly CategoryRepository $categoryRepository,
         private readonly EntityManagerInterface $entityManager,
-        private readonly RequestStack $requestStack
+        private readonly MediaObjectService $mediaObjectService
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Category
@@ -91,82 +90,48 @@ class CategoryProcessor implements ProcessorInterface
         $category->setParent($parent);
 
         $needsFlush = false;
-        $request = $this->requestStack->getCurrentRequest();
 
-        // Get files directly from request (more reliable than DTO for multipart)
-        // This works for both POST and PUT operations
-        $imageFile = null;
-        $iconFile = null;
-        
-        if ($request) {
-            // Get files from request->files (works for both POST and PUT)
-            // Try multiple possible field names for compatibility
-            if ($request->files->has('image')) {
-                $imageFile = $request->files->get('image');
-            } elseif ($request->files->has('imageFile')) {
-                $imageFile = $request->files->get('imageFile');
-            } elseif ($data->image instanceof UploadedFile) {
-                $imageFile = $data->image;
+        // Handle image: API Platform automatically deserializes IRI to MediaObject entity (JSON-LD)
+        if ($data->image instanceof MediaObject) {
+            // Store previous image ID for deletion if it exists and is different
+            $previousImageId = $category->getImage()?->getId();
+            
+            // Ensure MediaObject is managed by Doctrine (merge if needed)
+            $image = $data->image;
+            if ($image->getId() && !$this->entityManager->contains($image)) {
+                $image = $this->entityManager->merge($image);
             }
             
-            if ($request->files->has('icon')) {
-                $iconFile = $request->files->get('icon');
-            } elseif ($request->files->has('iconFile')) {
-                $iconFile = $request->files->get('iconFile');
-            } elseif ($request->files->has('svg')) {
-                $iconFile = $request->files->get('svg');
-            } elseif ($data->icon instanceof UploadedFile) {
-                $iconFile = $data->icon;
-            }
-        } else {
-            // Fallback to DTO if no request (shouldn't happen in normal flow)
-            $imageFile = $data->image instanceof UploadedFile ? $data->image : null;
-            $iconFile = $data->icon instanceof UploadedFile ? $data->icon : null;
-        }
-
-        // Handle image file upload
-        if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
-            if ($category->getImage()) {
-                // Update existing image
-                $existingImage = $category->getImage();
-                $existingImage->setFile($imageFile);
-                $existingImage->setMapping('category_images');
-                // Ensure MediaObject is managed
-                if (!$this->entityManager->contains($existingImage)) {
-                    $this->entityManager->persist($existingImage);
-                }
-                $needsFlush = true;
-            } else {
-                // Create new MediaObject for image with category_images mapping
-                $imageMediaObject = new MediaObject();
-                $imageMediaObject->setFile($imageFile);
-                $imageMediaObject->setMapping('category_images');
-                $this->entityManager->persist($imageMediaObject);
-                $category->setImage($imageMediaObject);
-                $needsFlush = true;
+            // Use the MediaObject as-is (mapping should already be set during upload)
+            // Just associate it with the category
+            $category->setImage($image);
+            $needsFlush = true;
+            
+            // Delete previous image if it was replaced
+            if ($previousImageId && $previousImageId !== $image->getId()) {
+                $this->mediaObjectService->deleteMediaObjectsByIds([$previousImageId]);
             }
         }
 
-        // Handle icon/SVG file upload
-        if ($iconFile instanceof UploadedFile && $iconFile->isValid()) {
-            if ($category->getSvg()) {
-                // Update existing icon
-                $existingSvg = $category->getSvg();
-                $existingSvg->setFile($iconFile);
-                $existingSvg->setMapping('category_icons');
-                // Ensure MediaObject is managed
-                if (!$this->entityManager->contains($existingSvg)) {
-                    $this->entityManager->persist($existingSvg);
-                }
-                $needsFlush = true;
-            } else {
-                // Create new MediaObject for icon with category_icons mapping
-                $iconMediaObject = new MediaObject();
-                $iconMediaObject->setFile($iconFile);
-                $iconMediaObject->setMapping('category_icons');
-                $this->entityManager->persist($iconMediaObject);
-                $category->setSvg($iconMediaObject);
-                $needsFlush = true;
+        // Handle icon: API Platform automatically deserializes IRI to MediaObject entity (JSON-LD)
+        if ($data->icon instanceof MediaObject) {
+            // Store previous icon ID for deletion if it exists and is different
+            $previousIconId = $category->getSvg()?->getId();
+            
+            // Ensure MediaObject is managed by Doctrine (merge if needed)
+            $icon = $data->icon;
+            if ($icon->getId() && !$this->entityManager->contains($icon)) {
+                $icon = $this->entityManager->merge($icon);
+            }
+            
+            // Use the MediaObject as-is (mapping should already be set during upload)
+            // Just associate it with the category
+            $category->setSvg($icon);
+            $needsFlush = true;
+            
+            // Delete previous icon if it was replaced
+            if ($previousIconId && $previousIconId !== $icon->getId()) {
+                $this->mediaObjectService->deleteMediaObjectsByIds([$previousIconId]);
             }
         }
 
