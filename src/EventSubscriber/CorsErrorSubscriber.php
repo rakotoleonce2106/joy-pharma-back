@@ -62,11 +62,19 @@ class CorsErrorSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Get the response if it exists
+        // Get the response if it exists, or create one
         $response = $event->getResponse();
-        if ($response) {
-            $this->addCorsHeaders($request, $response);
+        if (!$response) {
+            // If no response exists yet, we'll wait for onKernelResponse
+            // But we can also set the response here to ensure CORS headers are added
+            $response = new \Symfony\Component\HttpFoundation\JsonResponse([
+                'code' => 500,
+                'message' => 'An error occurred.',
+            ], 500);
+            $event->setResponse($response);
         }
+        
+        $this->addCorsHeaders($request, $response);
     }
 
     private function addCorsHeaders($request, $response): void
