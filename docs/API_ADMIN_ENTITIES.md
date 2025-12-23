@@ -957,6 +957,201 @@ async function deleteStoreProduct(storeProductId) {
 
 ---
 
+## ⚙️ Paramètres de magasin (Store Settings)
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/store-settings` - Liste tous les paramètres de magasin
+- **GET** `/api/admin/store-settings/{id}` - Récupère les paramètres d'un magasin par ID
+- **PUT** `/api/admin/store-settings/{id}` - Met à jour les paramètres d'un magasin (mise à jour complète)
+- **PATCH** `/api/admin/store-settings/{id}` - Met à jour les paramètres d'un magasin (mise à jour partielle)
+- **DELETE** `/api/admin/store-settings/{id}` - Supprime les paramètres d'un magasin
+
+### Structure des données
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `mondayHours` | object | ❌ Non | Heures d'ouverture du lundi (BusinessHours) |
+| `tuesdayHours` | object | ❌ Non | Heures d'ouverture du mardi (BusinessHours) |
+| `wednesdayHours` | object | ❌ Non | Heures d'ouverture du mercredi (BusinessHours) |
+| `thursdayHours` | object | ❌ Non | Heures d'ouverture du jeudi (BusinessHours) |
+| `fridayHours` | object | ❌ Non | Heures d'ouverture du vendredi (BusinessHours) |
+| `saturdayHours` | object | ❌ Non | Heures d'ouverture du samedi (BusinessHours) |
+| `sundayHours` | object | ❌ Non | Heures d'ouverture du dimanche (BusinessHours) |
+
+**Structure de BusinessHours :**
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `@id` | string | ❌ Non | IRI si BusinessHours existe déjà (ex: `"/api/business_hours/1"`). Omettez pour créer un nouveau. |
+| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"09:00"`) |
+| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"18:00"`) |
+| `isClosed` | boolean | ❌ Non | Si le magasin est fermé ce jour-là (défaut: `false`) |
+
+### Workflow complet : Récupérer les paramètres d'un magasin
+
+#### Étape 1 : Récupérer le StoreSetting ID depuis le magasin
+
+```bash
+# Récupérer un magasin pour obtenir son StoreSetting ID
+curl -X GET "https://votre-api.com/api/admin/stores/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Réponse inclut: { "setting": { "@id": "/api/store_settings/1", "id": 1, ... } }
+```
+
+#### Étape 2 : Récupérer les paramètres
+
+```bash
+curl -X GET "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function getStoreSetting(storeSettingId) {
+  const response = await fetch(`/api/admin/store-settings/${storeSettingId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  return await response.json();
+}
+```
+
+### Mettre à jour les paramètres d'un magasin
+
+#### Mise à jour complète (PUT)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "mondayHours": {
+      "openTime": "09:00",
+      "closeTime": "18:00",
+      "isClosed": false
+    },
+    "tuesdayHours": {
+      "openTime": "09:00",
+      "closeTime": "18:00",
+      "isClosed": false
+    },
+    "wednesdayHours": {
+      "openTime": "09:00",
+      "closeTime": "18:00",
+      "isClosed": false
+    },
+    "thursdayHours": {
+      "openTime": "09:00",
+      "closeTime": "18:00",
+      "isClosed": false
+    },
+    "fridayHours": {
+      "openTime": "09:00",
+      "closeTime": "18:00",
+      "isClosed": false
+    },
+    "saturdayHours": {
+      "openTime": "10:00",
+      "closeTime": "16:00",
+      "isClosed": false
+    },
+    "sundayHours": {
+      "isClosed": true
+    }
+  }'
+```
+
+#### Mise à jour partielle (PATCH)
+
+```bash
+# Mettre à jour uniquement les heures du lundi
+curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "mondayHours": {
+      "openTime": "08:00",
+      "closeTime": "20:00",
+      "isClosed": false
+    }
+  }'
+
+# Fermer le magasin le dimanche
+curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "sundayHours": {
+      "isClosed": true
+    }
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function updateStoreSetting(storeSettingId, updates) {
+  const response = await fetch(`/api/admin/store-settings/${storeSettingId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(updates)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la mise à jour des paramètres');
+  }
+  
+  return await response.json();
+}
+
+// Exemple d'utilisation
+await updateStoreSetting(1, {
+  mondayHours: {
+    openTime: "08:00",
+    closeTime: "20:00",
+    isClosed: false
+  },
+  sundayHours: {
+    isClosed: true
+  }
+});
+```
+
+### Supprimer les paramètres d'un magasin
+
+```bash
+curl -X DELETE "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function deleteStoreSetting(storeSettingId) {
+  const response = await fetch(`/api/admin/store-settings/${storeSettingId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la suppression des paramètres');
+  }
+  
+  return response.status === 204 ? null : await response.json();
+}
+```
+
+**Note :** 
+- Les heures d'ouverture doivent être au format `"HH:mm"` (ex: `"09:00"`, `"18:30"`)
+- Si `isClosed` est `true`, `openTime` et `closeTime` peuvent être `null`
+- Pour mettre à jour un BusinessHours existant, incluez son `@id` dans l'objet. Sinon, un nouveau BusinessHours sera créé.
+- La suppression d'un StoreSetting supprimera également tous les BusinessHours associés.
+
+---
+
 ## Mappings d'images disponibles
 
 Le paramètre `mapping` lors de l'upload détermine où le fichier sera stocké :
@@ -1170,6 +1365,13 @@ await createMultipleUnits(units);
 - `PUT /api/admin/store-products/{id}` - Mettre à jour un produit de magasin (complète)
 - `PATCH /api/admin/store-products/{id}` - Mettre à jour un produit de magasin (partielle)
 - `DELETE /api/admin/store-products/{id}` - Supprimer un produit de magasin
+
+### Paramètres de magasin
+- `GET /api/admin/store-settings` - Liste des paramètres de magasin
+- `GET /api/admin/store-settings/{id}` - Détails des paramètres d'un magasin
+- `PUT /api/admin/store-settings/{id}` - Mettre à jour les paramètres d'un magasin (complète)
+- `PATCH /api/admin/store-settings/{id}` - Mettre à jour les paramètres d'un magasin (partielle)
+- `DELETE /api/admin/store-settings/{id}` - Supprimer les paramètres d'un magasin
 
 ### Images
 - `POST /api/media_objects` - Uploader une image/icône

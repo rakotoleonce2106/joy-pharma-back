@@ -34,6 +34,64 @@ App\Entity\StoreSetting:
                     - name: id
                       in: path
                       description: The ID of the store settings
+
+        admin_get_store_settings:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/store-settings'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read','store_setting:read']
+            openapi:
+                summary: 'List all store settings (Admin)'
+                description: 'List every store setting across all stores (Admin only)'
+
+        admin_get_store_setting:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/store-settings/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read','store_setting:read']
+            openapi:
+                summary: 'Get store setting by ID (Admin)'
+                description: 'Retrieve any store setting by ID (Admin only)'
+
+        admin_update_store_setting:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/store-settings/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store_setting:write']
+            normalizationContext:
+                groups: ['id:read','store_setting:read']
+            openapi:
+                summary: 'Update store setting (Admin) - Full update'
+                description: 'Update store setting including business hours. Use Content-Type: application/ld+json when sending IRIs. Include @id for existing BusinessHours to update them, or omit @id to create new ones. For partial updates, use PATCH instead.'
+
+        admin_patch_store_setting:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/store-settings/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store_setting:write']
+            normalizationContext:
+                groups: ['id:read','store_setting:read']
+            openapi:
+                summary: 'Update store setting (Admin) - Partial update'
+                description: 'Partially update store setting. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
+
+        admin_delete_store_setting:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/store-settings/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete store setting (Admin)'
+                description: 'Delete a store setting by ID (Admin only). Note: This will also delete associated BusinessHours.'
                       
     normalizationContext:
         groups: ['store_setting:read']
