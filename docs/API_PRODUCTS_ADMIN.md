@@ -34,6 +34,20 @@ Authorization: Bearer VOTRE_TOKEN_JWT
 
 ## Structure des données
 
+### ⚠️ Format des relations (Important)
+
+**Toutes les relations ManyToOne et ManyToMany doivent être envoyées comme des IRIs (chaînes), pas comme des IDs entiers.**
+
+- ✅ **Correct** : `"unit": "/api/admin/units/1"` ou `"categories": ["/api/categories/1", "/api/categories/5"]`
+- ❌ **Incorrect** : `"unit": 1` ou `"categories": [1, 5]` ou `"unit": "/api/units/1"` (si l'endpoint n'existe pas)
+
+**⚠️ Content-Type requis :** Lorsque vous utilisez des IRIs pour les relations, vous **DEVEZ** utiliser le Content-Type `application/ld+json` au lieu de `application/json`. Sinon, vous obtiendrez une erreur "Invalid IRI".
+
+- ✅ **Correct** : `Content-Type: application/ld+json`
+- ❌ **Incorrect** : `Content-Type: application/json` (si vous utilisez des IRIs)
+
+API Platform désérialise automatiquement les IRIs en entités. C'est le même principe que pour les images.
+
 ### Champs du produit (ProductInput)
 
 | Champ | Type | Requis | Description |
@@ -41,11 +55,11 @@ Authorization: Bearer VOTRE_TOKEN_JWT
 | `name` | string | ✅ Oui | Nom du produit |
 | `code` | string | ✅ Oui | Code unique du produit (doit être unique) |
 | `description` | string | ❌ Non | Description du produit |
-| `categories` | array<int> | ❌ Non | Tableau d'IDs de catégories |
-| `form` | int | ❌ Non | ID de la forme (comprimé, sirop, etc.) |
-| `brand` | int | ❌ Non | ID de la marque |
-| `manufacturer` | int | ❌ Non | ID du fabricant |
-| `unit` | int | ❌ Non | ID de l'unité (boîte, flacon, etc.) |
+| `categories` | array<string> | ❌ Non | Tableau d'IRIs de catégories (ex: `["/api/categories/1", "/api/categories/5"]` ou `["/api/admin/categories/1"]`) |
+| `form` | string | ❌ Non | IRI de la forme (ex: `"/api/admin/forms/1"`) |
+| `brand` | string | ❌ Non | IRI de la marque (ex: `"/api/brands/2"` ou `"/api/admin/brands/2"`) |
+| `manufacturer` | string | ❌ Non | IRI du fabricant (ex: `"/api/admin/manufacturers/3"`) |
+| `unit` | string | ❌ Non | IRI de l'unité (ex: `"/api/admin/units/1"`) |
 | `unitPrice` | float | ❌ Non | Prix unitaire |
 | `totalPrice` | float | ❌ Non | Prix total |
 | `quantity` | float | ❌ Non | Quantité |
@@ -132,9 +146,9 @@ const imageIris = await Promise.all(
 // imageIris = ["/api/media_objects/123", "/api/media_objects/124", "/api/media_objects/125"]
 ```
 
-### Étape 2 : Récupérer les IDs des relations (optionnel)
+### Étape 2 : Récupérer les IRIs des relations (optionnel)
 
-Si vous devez associer le produit à des catégories, marques, etc., récupérez d'abord leurs IDs :
+Si vous devez associer le produit à des catégories, marques, etc., récupérez d'abord leurs IRIs. Les réponses de l'API contiennent le champ `@id` qui est l'IRI à utiliser :
 
 ```bash
 # Liste des catégories
@@ -158,26 +172,57 @@ curl -X GET "https://votre-api.com/api/admin/units" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 ```
 
+**Exemple de réponse :**
+```json
+{
+  "@context": "/api/contexts/Unit",
+  "@id": "/api/admin/units",
+  "@type": "hydra:Collection",
+  "hydra:member": [
+    {
+      "@id": "/api/admin/units/1",
+      "@type": "Unit",
+      "id": 1,
+      "label": "Boîte"
+    },
+    {
+      "@id": "/api/admin/units/2",
+      "@type": "Unit",
+      "id": 2,
+      "label": "Flacon"
+    }
+  ]
+}
+```
+
+**Important :** 
+- Utilisez le champ `@id` (ex: `"/api/admin/units/1"`) dans vos requêtes, pas l'ID numérique (`id: 1`).
+- **Note sur les IRIs** : Les IRIs varient selon les endpoints disponibles :
+  - **Unit, Form, Manufacturer** : Utilisent `/api/admin/units/{id}`, `/api/admin/forms/{id}`, `/api/admin/manufacturers/{id}` (endpoints admin uniquement)
+  - **Brand** : Peut utiliser `/api/brands/{id}` (endpoint public) ou `/api/admin/brands/{id}`
+  - **Category** : Peut utiliser `/api/categories/{id}` ou `/api/admin/categories/{id}`
+- **Toujours vérifier** : Faites un GET sur l'endpoint de liste (ex: `GET /api/admin/units`) et utilisez le champ `@id` exact retourné dans la réponse.
+
 ### Étape 3 : Créer le produit
 
 **Endpoint :** `POST /api/admin/products`
 
-**Format :** `application/json`
+**Format :** `application/ld+json` (requis lorsque vous utilisez des IRIs pour les relations)
 
 **Exemple avec cURL :**
 ```bash
 curl -X POST "https://votre-api.com/api/admin/products" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "name": "Paracétamol 500mg",
     "code": "PARA-500-001",
     "description": "Comprimé de paracétamol 500mg, boîte de 20 comprimés",
-    "categories": [1, 5],
-    "form": 1,
-    "brand": 2,
-    "manufacturer": 3,
-    "unit": 1,
+    "categories": ["/api/categories/1", "/api/categories/5"],
+    "form": "/api/admin/forms/1",
+    "brand": "/api/brands/2",
+    "manufacturer": "/api/admin/manufacturers/3",
+    "unit": "/api/admin/units/1",
     "unitPrice": 2500.00,
     "totalPrice": 50000.00,
     "quantity": 20,
@@ -201,18 +246,18 @@ async function createProduct(productData, imageIris) {
   const response = await fetch('/api/admin/products', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/ld+json',
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
       name: productData.name,
       code: productData.code,
       description: productData.description,
-      categories: productData.categoryIds,
-      form: productData.formId,
-      brand: productData.brandId,
-      manufacturer: productData.manufacturerId,
-      unit: productData.unitId,
+      categories: productData.categoryIds.map(id => `/api/categories/${id}`),
+      form: productData.formId ? `/api/admin/forms/${productData.formId}` : null,
+      brand: productData.brandId ? `/api/brands/${productData.brandId}` : null,
+      manufacturer: productData.manufacturerId ? `/api/admin/manufacturers/${productData.manufacturerId}` : null,
+      unit: productData.unitId ? `/api/admin/units/${productData.unitId}` : null,
       unitPrice: productData.unitPrice,
       totalPrice: productData.totalPrice,
       quantity: productData.quantity,
@@ -352,13 +397,119 @@ curl -X POST "https://votre-api.com/api/media_objects" \
 
 **Endpoint :** `PUT /api/admin/products/{id}` ou `PATCH /api/admin/products/{id}`
 
-**Format :** `application/json` ou `application/ld+json`
+**Format :** `application/ld+json` (requis lorsque vous utilisez des IRIs pour les relations)
 
 **Important :** 
-- Avec **PUT** : vous devez fournir tous les champs (même ceux qui ne changent pas)
-- Avec **PATCH** : vous pouvez fournir uniquement les champs à modifier (recommandé pour les mises à jour partielles)
+- **Content-Type requis** : Utilisez toujours `Content-Type: application/ld+json` lorsque vous envoyez des IRIs pour les relations. L'utilisation de `application/json` provoquera une erreur "Invalid IRI".
+- Avec **PUT** : vous devez fournir **TOUS** les champs (même ceux qui ne changent pas). Toutes les relations doivent être envoyées comme des IRIs (chaînes).
+- Avec **PATCH** : vous pouvez fournir uniquement les champs à modifier (recommandé pour les mises à jour partielles). Toutes les relations doivent être envoyées comme des IRIs (chaînes).
+- **Format des relations** : Utilisez toujours des IRIs pour `categories`, `form`, `brand`, `manufacturer`, `unit` et `images` (ex: `"/api/units/1"` au lieu de `1`).
 - Pour les images : fournir **TOUTES** les images que vous voulez garder (anciennes + nouvelles). Les images non incluses dans le tableau seront automatiquement supprimées.
 - API Platform gère automatiquement la conversion des IRIs JSON-LD en entités
+
+### Champs disponibles pour PUT et PATCH
+
+Tous les champs suivants peuvent être modifiés avec PUT ou PATCH. Avec **PUT**, tous les champs doivent être fournis. Avec **PATCH**, seuls les champs à modifier sont nécessaires :
+
+| Champ | Type | Description | Format |
+|-------|------|-------------|--------|
+| `name` | string | Nom du produit | Texte libre |
+| `code` | string | Code unique du produit | Texte libre (doit être unique) |
+| `description` | string | Description du produit | Texte libre |
+| `categories` | array<string> | Tableau d'IRIs de catégories | `["/api/categories/1", "/api/categories/5", "/api/categories/7"]` ou `["/api/admin/categories/1"]` |
+| `form` | string | IRI de la forme (comprimé, sirop, etc.) | `"/api/admin/forms/1"` |
+| `brand` | string | IRI de la marque | `"/api/brands/2"` ou `"/api/admin/brands/2"` |
+| `manufacturer` | string | IRI du fabricant | `"/api/admin/manufacturers/3"` |
+| `unit` | string | IRI de l'unité (boîte, flacon, etc.) | `"/api/admin/units/1"` |
+| `unitPrice` | float | Prix unitaire | `2500.00` |
+| `totalPrice` | float | Prix total | `50000.00` |
+| `quantity` | float | Quantité | `20` |
+| `stock` | int | Stock disponible | `150` |
+| `currency` | string | Code devise (ex: "MGA", "EUR") | `"MGA"` |
+| `isActive` | boolean | Statut actif/inactif | `true` ou `false` |
+| `variants` | object | Variantes du produit (structure libre) | `{"dosage": "500mg", "packaging": "boîte de 20"}` |
+| `images` | array<string> | Tableau d'IRIs d'images | `["/api/media_objects/123", "/api/media_objects/124"]` |
+
+**Exemple avec cURL - Mettre à jour tous les champs disponibles avec PUT (mise à jour complète) :**
+```bash
+# Exemple complet avec tous les champs (PUT nécessite tous les champs)
+curl -X PUT "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "name": "Paracétamol 500mg - Nouveau packaging",
+    "code": "PARA-500-001",
+    "description": "Comprimé de paracétamol 500mg, boîte de 30 comprimés",
+    "categories": ["/api/categories/1", "/api/categories/5", "/api/categories/7"],
+    "form": "/api/admin/forms/1",
+    "brand": "/api/brands/2",
+    "manufacturer": "/api/admin/manufacturers/3",
+    "unit": "/api/admin/units/1",
+    "unitPrice": 2800.00,
+    "totalPrice": 84000.00,
+    "quantity": 30,
+    "stock": 200,
+    "currency": "MGA",
+    "isActive": true,
+    "variants": {
+      "dosage": "500mg",
+      "packaging": "boîte de 30"
+    },
+    "images": [
+      "/api/media_objects/123",
+      "/api/media_objects/124",
+      "/api/media_objects/125",
+      "/api/media_objects/126"
+    ]
+  }'
+```
+
+**Exemple avec cURL - Mettre à jour tous les champs disponibles avec PATCH (mise à jour partielle) :**
+```bash
+# Exemple complet avec tous les champs modifiables
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "name": "Paracétamol 500mg - Nouveau packaging",
+    "code": "PARA-500-001",
+    "description": "Comprimé de paracétamol 500mg, boîte de 30 comprimés",
+    "categories": ["/api/categories/1", "/api/categories/5", "/api/categories/7"],
+    "form": "/api/admin/forms/1",
+    "brand": "/api/brands/2",
+    "manufacturer": "/api/admin/manufacturers/3",
+    "unit": "/api/admin/units/1",
+    "unitPrice": 2800.00,
+    "totalPrice": 84000.00,
+    "quantity": 30,
+    "stock": 200,
+    "currency": "MGA",
+    "isActive": true,
+    "variants": {
+      "dosage": "500mg",
+      "packaging": "boîte de 30"
+    },
+    "images": [
+      "/api/media_objects/123",
+      "/api/media_objects/124",
+      "/api/media_objects/125",
+      "/api/media_objects/126"
+    ]
+  }'
+```
+
+**Exemple avec cURL - Mise à jour partielle (uniquement certains champs) :**
+```bash
+# Mettre à jour uniquement le nom, le stock et le prix unitaire
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "name": "Paracétamol 500mg - Promo",
+    "unitPrice": 2500.00,
+    "stock": 150
+  }'
+```
 
 **Exemple avec cURL - Ajouter des images (garder les anciennes + nouvelles) :**
 ```bash
@@ -369,7 +520,7 @@ curl -X POST "https://votre-api.com/api/media_objects" \
 
 curl -X PATCH "https://votre-api.com/api/admin/products/42" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "images": [
       "/api/media_objects/123",
@@ -385,7 +536,7 @@ curl -X PATCH "https://votre-api.com/api/admin/products/42" \
 # Remplacer toutes les images par de nouvelles
 curl -X PATCH "https://votre-api.com/api/admin/products/42" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "images": [
       "/api/media_objects/125",
@@ -394,20 +545,85 @@ curl -X PATCH "https://votre-api.com/api/admin/products/42" \
   }'
 ```
 
+**Exemple avec cURL - Mettre à jour uniquement les relations (catégories, marque, etc.) :**
+```bash
+# Modifier uniquement les catégories et la marque
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "categories": ["/api/categories/1", "/api/categories/3", "/api/categories/5"],
+    "brand": "/api/brands/4",
+    "manufacturer": "/api/admin/manufacturers/2",
+    "form": "/api/admin/forms/1",
+    "unit": "/api/admin/units/2"
+  }'
+```
+
+**Exemple avec cURL - Mettre à jour uniquement les prix et le stock :**
+```bash
+# Modifier uniquement les informations de prix et de stock
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "unitPrice": 3000.00,
+    "totalPrice": 60000.00,
+    "quantity": 20,
+    "stock": 250,
+    "currency": "MGA"
+  }'
+```
+
+**Exemple avec cURL - Activer/Désactiver un produit :**
+```bash
+# Désactiver un produit
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "isActive": false
+  }'
+
+# Réactiver un produit
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "isActive": true
+  }'
+```
+
+**Exemple avec cURL - Mettre à jour uniquement les variantes :**
+```bash
+# Modifier uniquement les variantes du produit
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "variants": {
+      "dosage": "500mg",
+      "packaging": "boîte de 30 comprimés",
+      "prescription": false,
+      "expiryDate": "2025-12-31"
+    }
+  }'
+```
+
 **Exemple avec cURL - Mettre à jour plusieurs champs + ajouter des images :**
 ```bash
 curl -X PUT "https://votre-api.com/api/admin/products/42" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "name": "Paracétamol 500mg - Nouveau packaging",
     "code": "PARA-500-001",
     "description": "Comprimé de paracétamol 500mg, boîte de 30 comprimés",
     "categories": ["/api/categories/1", "/api/categories/5", "/api/categories/7"],
-    "form": "/api/forms/1",
+    "form": "/api/admin/forms/1",
     "brand": "/api/brands/2",
-    "manufacturer": "/api/manufacturers/3",
-    "unit": "/api/units/1",
+    "manufacturer": "/api/admin/manufacturers/3",
+    "unit": "/api/admin/units/1",
     "unitPrice": 2800.00,
     "totalPrice": 84000.00,
     "quantity": 30,
@@ -451,7 +667,7 @@ async function addImagesToProduct(productId, newImageFiles) {
   const response = await fetch(`/api/admin/products/${productId}`, {
     method: 'PATCH',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/ld+json',
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
@@ -477,7 +693,7 @@ async function updateProduct(productId, productData, imageIris) {
   const response = await fetch(`/api/admin/products/${productId}`, {
     method: 'PATCH', // Utiliser PATCH pour mise à jour partielle
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/ld+json',
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
@@ -487,10 +703,10 @@ async function updateProduct(productId, productData, imageIris) {
       stock: productData.stock,
       // Utiliser des IRIs - API Platform les convertit automatiquement
       categories: productData.categoryIds.map(id => `/api/categories/${id}`),
-      form: productData.formId ? `/api/forms/${productData.formId}` : null,
+      form: productData.formId ? `/api/admin/forms/${productData.formId}` : null,
       brand: productData.brandId ? `/api/brands/${productData.brandId}` : null,
-      manufacturer: productData.manufacturerId ? `/api/manufacturers/${productData.manufacturerId}` : null,
-      unit: productData.unitId ? `/api/units/${productData.unitId}` : null,
+      manufacturer: productData.manufacturerId ? `/api/admin/manufacturers/${productData.manufacturerId}` : null,
+      unit: productData.unitId ? `/api/admin/units/${productData.unitId}` : null,
       images: imageIris // Toutes les images à garder (anciennes + nouvelles)
     })
   });
@@ -541,7 +757,7 @@ curl -X POST "https://votre-api.com/api/media_objects" \
 # Supposons que le produit avait déjà: /api/media_objects/123, /api/media_objects/124
 curl -X PATCH "https://votre-api.com/api/admin/products/42" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "images": [
       "/api/media_objects/123",
@@ -589,7 +805,7 @@ async function addMultipleImagesToProduct(productId, newImageFiles) {
   const response = await fetch(`/api/admin/products/${productId}`, {
     method: 'PATCH',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/ld+json',
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
@@ -640,7 +856,7 @@ async function addImagesToProduct(productId, newImageFiles) {
   const response = await fetch(`/api/admin/products/${productId}`, {
     method: 'PATCH',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/ld+json',
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
@@ -712,7 +928,7 @@ async function replaceAllProductImages(productId, newImageFiles) {
 ```bash
 curl -X POST "https://votre-api.com/api/admin/products" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "name": "Aspirine 100mg",
     "code": "ASP-100-001",
@@ -726,16 +942,16 @@ curl -X POST "https://votre-api.com/api/admin/products" \
 ```bash
 curl -X POST "https://votre-api.com/api/admin/products" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "name": "Ibuprofène 400mg",
     "code": "IBU-400-001",
     "description": "Comprimé d'\''ibuprofène 400mg, anti-inflammatoire",
-    "categories": [1, 2, 3],
-    "form": 1,
-    "brand": 5,
-    "manufacturer": 8,
-    "unit": 2,
+    "categories": ["/api/categories/1", "/api/categories/2", "/api/categories/3"],
+    "form": "/api/admin/forms/1",
+    "brand": "/api/brands/5",
+    "manufacturer": "/api/admin/manufacturers/8",
+    "unit": "/api/admin/units/2",
     "unitPrice": 3500.00,
     "totalPrice": 70000.00,
     "quantity": 20,
@@ -765,16 +981,16 @@ PRODUCT=$(curl -X GET "https://votre-api.com/api/admin/products/42" \
 # 2. Extraire les données et mettre à jour uniquement le stock
 curl -X PUT "https://votre-api.com/api/admin/products/42" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "name": "Paracétamol 500mg",
     "code": "PARA-500-001",
     "description": "Comprimé de paracétamol 500mg",
-    "categories": [1, 5],
-    "form": 1,
-    "brand": 2,
-    "manufacturer": 3,
-    "unit": 1,
+    "categories": ["/api/categories/1", "/api/categories/5"],
+    "form": "/api/admin/forms/1",
+    "brand": "/api/brands/2",
+    "manufacturer": "/api/admin/manufacturers/3",
+    "unit": "/api/admin/units/1",
     "unitPrice": 2500.00,
     "totalPrice": 50000.00,
     "quantity": 20,
@@ -807,6 +1023,47 @@ curl -X PUT "https://votre-api.com/api/admin/products/42" \
 
 **Solution :** Utiliser un code unique pour chaque produit.
 
+#### Invalid IRI (IRI incorrecte ou Content-Type incorrect)
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc2616#section-10",
+  "title": "An error occurred",
+  "detail": "Invalid IRI \"/api/units/1\".",
+  "status": 500
+}
+```
+
+**Causes possibles :**
+
+1. **Content-Type incorrect** : Utiliser `application/json` au lieu de `application/ld+json`
+   - ❌ **Incorrect** : `Content-Type: application/json` (avec des IRIs)
+   - ✅ **Correct** : `Content-Type: application/ld+json` (avec des IRIs)
+
+2. **IRI incorrecte** : L'IRI utilisée ne correspond pas à un endpoint existant
+   - Pour **Unit**, **Form**, **Manufacturer** : Utilisez `/api/admin/units/{id}`, `/api/admin/forms/{id}`, `/api/admin/manufacturers/{id}`
+   - Pour **Brand** : Vous pouvez utiliser `/api/brands/{id}` (endpoint public) ou `/api/admin/brands/{id}`
+   - Pour **Category** : Utilisez `/api/categories/{id}` ou `/api/admin/categories/{id}`
+   
+   **Important** : Vérifiez toujours l'IRI exacte retournée par l'API lors d'un GET. Utilisez le champ `@id` de la réponse.
+
+**Solution complète :**
+- Utiliser le Content-Type `application/ld+json`
+- Utiliser l'IRI exacte retournée par l'API (vérifier avec GET `/api/admin/units` pour voir le format exact)
+
+#### Format de relation incorrect (unit, form, brand, manufacturer, categories)
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc2616#section-10",
+  "title": "An error occurred",
+  "detail": "The type of the \"unit\" attribute must be \"array\" (nested document) or \"string\" (IRI), \"integer\" given.",
+  "status": 500
+}
+```
+
+**Solution :** Utiliser des IRIs (chaînes) pour toutes les relations, pas des IDs entiers, ET utiliser le Content-Type `application/ld+json`. 
+- ❌ **Incorrect** : `"unit": 1`, `"form": 2`, `"categories": [1, 5]` avec `Content-Type: application/json`
+- ✅ **Correct** : `"unit": "/api/units/1"`, `"form": "/api/forms/2"`, `"categories": ["/api/categories/1", "/api/categories/5"]` avec `Content-Type: application/ld+json`
+
 #### Relation introuvable (form, brand, etc.)
 ```json
 {
@@ -817,7 +1074,7 @@ curl -X PUT "https://votre-api.com/api/admin/products/42" \
 }
 ```
 
-**Solution :** Vérifier que l'ID de la relation existe via les endpoints GET correspondants.
+**Solution :** Vérifier que l'IRI de la relation existe via les endpoints GET correspondants.
 
 #### Produit introuvable (pour PUT)
 ```json
@@ -891,10 +1148,12 @@ curl -X POST "https://votre-api.com/api/admin/products/batch-delete" \
 1. **Toujours uploader les images d'abord** avant de créer/mettre à jour le produit
 2. **Utiliser `mapping=product_images`** pour les images de produits
 3. **Vérifier l'unicité du code** avant de créer un produit
-4. **Récupérer les IDs des relations** (catégories, marques, etc.) avant de créer le produit
-5. **Pour les mises à jour**, fournir TOUTES les images que vous voulez garder (les autres seront supprimées)
-6. **Gérer les erreurs** et afficher des messages clairs à l'utilisateur
-7. **Valider les données** côté client avant d'envoyer à l'API
+4. **Utiliser des IRIs pour toutes les relations** (catégories, marques, unités, etc.) - jamais des IDs entiers
+5. **Utiliser `Content-Type: application/ld+json`** lorsque vous envoyez des IRIs (obligatoire pour éviter l'erreur "Invalid IRI")
+6. **Récupérer les IRIs des relations** via les endpoints GET (utiliser le champ `@id` dans les réponses)
+7. **Pour les mises à jour**, fournir TOUTES les images que vous voulez garder (les autres seront supprimées)
+8. **Gérer les erreurs** et afficher des messages clairs à l'utilisateur
+9. **Valider les données** côté client avant d'envoyer à l'API
 
 ---
 

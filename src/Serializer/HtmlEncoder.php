@@ -89,8 +89,11 @@ class HtmlEncoder implements EncoderInterface, DecoderInterface
         $pathInfo = $request->getPathInfo();
         
         // Allow HTML for Swagger UI and ReDoc documentation routes
+        // API Platform exposes Swagger UI at /api (entrypoint) when Accept: text/html
+        // Also allow /docs and /api/docs for explicit documentation routes
         return str_starts_with($pathInfo, '/docs') || 
-               str_starts_with($pathInfo, '/api/docs');
+               str_starts_with($pathInfo, '/api/docs') ||
+               ($pathInfo === '/api' && str_contains($request->headers->get('Accept', ''), 'text/html'));
     }
 }
 
