@@ -1147,8 +1147,24 @@ async function deleteStoreSetting(storeSettingId) {
 **Note :** 
 - Les heures d'ouverture doivent être au format `"HH:mm"` (ex: `"09:00"`, `"18:30"`)
 - Si `isClosed` est `true`, `openTime` et `closeTime` peuvent être `null`
-- Pour mettre à jour un BusinessHours existant, incluez son `@id` dans l'objet. Sinon, un nouveau BusinessHours sera créé.
+- Pour mettre à jour un BusinessHours existant, incluez son `@id` dans l'objet. Sinon, les propriétés seront mises à jour sur l'objet BusinessHours existant.
+- **Important pour PATCH** : Lors d'une mise à jour partielle (PATCH), vous pouvez mettre à jour un seul jour sans affecter les autres. Les autres jours resteront inchangés.
 - La suppression d'un StoreSetting supprimera également tous les BusinessHours associés.
+
+**Exemple de mise à jour partielle (PATCH) - Mettre à jour uniquement le mardi :**
+```bash
+# Seul tuesdayHours sera modifié, les autres jours restent inchangés
+curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "tuesdayHours": {
+      "openTime": "08:00",
+      "closeTime": "20:00",
+      "isClosed": false
+    }
+  }'
+```
 
 ---
 
