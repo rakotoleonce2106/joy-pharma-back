@@ -49,6 +49,9 @@ security:
        - { path: ^/docs.jsonopenapi, roles: PUBLIC_ACCESS }
        - { path: ^/docs.jsonld, roles: PUBLIC_ACCESS }
        - { path: ^/docs.json, roles: PUBLIC_ACCESS }
+       - { path: ^/api/docs, roles: PUBLIC_ACCESS }
+       # Entrypoint /api pour Swagger UI (accessible publiquement si Accept: text/html)
+       - { path: ^/api$, roles: PUBLIC_ACCESS }
        - { path: ^/api/register/delivery, roles: PUBLIC_ACCESS }
        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
        - { path: ^/api/register, roles: PUBLIC_ACCESS }
