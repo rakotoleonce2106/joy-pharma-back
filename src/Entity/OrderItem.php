@@ -28,11 +28,11 @@ class OrderItem
 
     #[ORM\ManyToOne(inversedBy: 'orderItems')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['order:create','order:read'])]
+    #[Groups(['order:create','order:read','order_item:write'])]
     private ?Product $product = null;
 
     #[ORM\Column]
-    #[Groups(['order:create','order:read'])]
+    #[Groups(['order:create','order:read','order_item:write'])]
     private ?int $quantity = null;
 
     #[ORM\Column]
@@ -43,7 +43,7 @@ class OrderItem
     private ?Order $orderParent = null;
 
     #[ORM\ManyToOne]
-    #[Groups(['order:read'])]
+    #[Groups(['order:read','order_item:write'])]
     private ?Store $store = null;
 
     #[ORM\Column(type: 'string', length: 20, enumType: OrderItemStatus::class)]
