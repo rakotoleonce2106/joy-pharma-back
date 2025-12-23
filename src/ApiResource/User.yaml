@@ -9,15 +9,34 @@ App\Entity\User:
         put:
             class: ApiPlatform\Metadata\Put
             uriTemplate: "/user/update"
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['user:update']
             validationContext:
-                groups: ['user:update' ]
+                groups: ['user:update']
             normalizationContext:
                 groups: ['id:read', "user:read", "image:read", "media_object:read", "location:read" ]
             security: "is_granted('ROLE_USER')"
-            processor: App\State\User\UserUpdateProcessor
             openapi:
-                summary: "Update user profile"
-                description: "Update user profile information. Upload avatar first using POST /api/media_objects, then reference it using IRI (e.g., \"/api/media_objects/123\")."
+                summary: "Update user profile - Full update"
+                description: "Update user profile information. Upload avatar first using POST /api/media_objects with mapping=user_images, then reference it using IRI (e.g., \"/api/media_objects/123\"). Use Content-Type: application/ld+json when sending IRIs. For partial updates, use PATCH instead."
+
+        patch:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: "/user/update"
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['user:update']
+            normalizationContext:
+                groups: ['id:read', "user:read", "image:read", "media_object:read", "location:read" ]
+            security: "is_granted('ROLE_USER')"
+            openapi:
+                summary: "Update user profile - Partial update"
+                description: "Partially update user profile information. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs."
 
         facebook_login:
             method: "POST"
