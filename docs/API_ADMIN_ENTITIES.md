@@ -928,6 +928,33 @@ curl -X PATCH "https://votre-api.com/api/admin/store-products/1" \
 - Le prix doit être supérieur à 0.
 - Le stock doit être supérieur ou égal à 0.
 
+### Supprimer un produit de magasin
+
+```bash
+curl -X DELETE "https://votre-api.com/api/admin/store-products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function deleteStoreProduct(storeProductId) {
+  const response = await fetch(`/api/admin/store-products/${storeProductId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la suppression du produit de magasin');
+  }
+  
+  // DELETE retourne généralement 204 No Content
+  return response.status === 204 ? null : await response.json();
+}
+```
+
 ---
 
 ## Mappings d'images disponibles
@@ -1142,6 +1169,7 @@ await createMultipleUnits(units);
 - `POST /api/admin/store-products` - Créer un produit de magasin
 - `PUT /api/admin/store-products/{id}` - Mettre à jour un produit de magasin (complète)
 - `PATCH /api/admin/store-products/{id}` - Mettre à jour un produit de magasin (partielle)
+- `DELETE /api/admin/store-products/{id}` - Supprimer un produit de magasin
 
 ### Images
 - `POST /api/media_objects` - Uploader une image/icône

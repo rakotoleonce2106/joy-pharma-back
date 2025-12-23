@@ -130,6 +130,14 @@ App\Entity\StoreProduct:
                 summary: 'Update store product (Admin) - Partial update'
                 description: 'Partially update store product information. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
 
+        admin_delete_store_product:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/store-products/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete store product (Admin)'
+                description: 'Delete a store product by ID (Admin only)'
+
     normalizationContext:
         groups: ['id:read','store-product:read','product:read','image:read','media_object:read']
     denormalizationContext:
