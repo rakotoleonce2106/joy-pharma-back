@@ -45,23 +45,39 @@ class ProductSubscriber
     }
 
     /**
-     * Store previous image IDs before update
+     * Store previous image IDs and protect required fields from being set to null
      */
     public function preUpdate(Product $product, PreUpdateEventArgs $event): void
     {
-        // Get the original entity from the unit of work to get previous image IDs
+        // Get the original entity from the unit of work
         $uow = $event->getObjectManager()->getUnitOfWork();
         $originalData = $uow->getOriginalEntityData($product);
         
-        // If we have the original entity, get its images
+        // If we have the original entity, get its images and protect required fields
         if (isset($originalData['id'])) {
             $originalProduct = $event->getObjectManager()->find(Product::class, $originalData['id']);
             if ($originalProduct) {
                 $this->previousImageIds = $originalProduct->getImages()->map(fn($img) => $img->getId())->toArray();
+                
+                // Protect required fields from being set to null during partial updates
+                // If name is null but was not null before, restore the original value
+                if ($product->getName() === null && $originalProduct->getName() !== null) {
+                    $product->setName($originalProduct->getName());
+                }
+                
+                // Code can be nullable in DB but we still protect it if it was set before
+                if ($product->getCode() === null && $originalProduct->getCode() !== null) {
+                    $product->setCode($originalProduct->getCode());
+                }
             }
         } else {
             // Fallback: get from current product (may not have changes yet)
             $this->previousImageIds = $product->getImages()->map(fn($img) => $img->getId())->toArray();
+        }
+        
+        // Final validation: ensure name is never null (required field)
+        if ($product->getName() === null) {
+            throw new BadRequestHttpException('Product name cannot be null');
         }
     }
 

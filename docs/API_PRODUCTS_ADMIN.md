@@ -295,30 +295,107 @@ const product = await createProduct({
 
 ## Mettre à jour un produit
 
-### Étape 1 : Récupérer le produit actuel (optionnel)
+### Étape 1 : Récupérer le produit actuel (recommandé)
+
+Pour ajouter des images, vous devez d'abord récupérer les images existantes :
 
 ```bash
 curl -X GET "https://votre-api.com/api/admin/products/42" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 ```
 
+**Réponse :**
+```json
+{
+  "@id": "/api/products/42",
+  "id": 42,
+  "name": "Paracétamol 500mg",
+  "images": [
+    {
+      "@id": "/api/media_objects/123",
+      "id": 123,
+      "contentUrl": "/images/products/image1.jpg"
+    },
+    {
+      "@id": "/api/media_objects/124",
+      "id": 124,
+      "contentUrl": "/images/products/image2.jpg"
+    }
+  ],
+  ...
+}
+```
+
 ### Étape 2 : Uploader de nouvelles images (si nécessaire)
 
-Si vous voulez ajouter ou remplacer des images, uploader d'abord les nouvelles images comme à l'étape 1.
+Si vous voulez ajouter des images, uploader d'abord les nouvelles images :
 
-### Étape 3 : Mettre à jour le produit
+```bash
+# Uploader une nouvelle image
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -F "file=@/chemin/vers/nouvelle-image.jpg" \
+  -F "mapping=product_images"
 
-**Endpoint :** `PUT /api/admin/products/{id}`
+# Réponse: { "@id": "/api/media_objects/125", "id": 125, ... }
 
-**Format :** `application/json`
+# Uploader une autre image
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -F "file=@/chemin/vers/autre-image.jpg" \
+  -F "mapping=product_images"
+
+# Réponse: { "@id": "/api/media_objects/126", "id": 126, ... }
+```
+
+### Étape 3 : Mettre à jour le produit avec toutes les images
+
+**Endpoint :** `PUT /api/admin/products/{id}` ou `PATCH /api/admin/products/{id}`
+
+**Format :** `application/json` ou `application/ld+json`
 
 **Important :** 
-- Tous les champs doivent être fournis (même ceux qui ne changent pas)
-- Pour les images : fournir TOUTES les images que vous voulez garder. Les images non incluses dans le tableau seront automatiquement supprimées.
+- Avec **PUT** : vous devez fournir tous les champs (même ceux qui ne changent pas)
+- Avec **PATCH** : vous pouvez fournir uniquement les champs à modifier (recommandé pour les mises à jour partielles)
+- Pour les images : fournir **TOUTES** les images que vous voulez garder (anciennes + nouvelles). Les images non incluses dans le tableau seront automatiquement supprimées.
+- API Platform gère automatiquement la conversion des IRIs JSON-LD en entités
 
-**Exemple avec cURL :**
+**Exemple avec cURL - Ajouter des images (garder les anciennes + nouvelles) :**
 ```bash
-# Mettre à jour le produit avec de nouvelles images
+# Mettre à jour le produit en ajoutant 2 nouvelles images aux images existantes
+# Images existantes: /api/media_objects/123, /api/media_objects/124
+# Nouvelles images uploadées: /api/media_objects/125, /api/media_objects/126
+# Résultat: 4 images au total
+
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "images": [
+      "/api/media_objects/123",
+      "/api/media_objects/124",
+      "/api/media_objects/125",
+      "/api/media_objects/126"
+    ]
+  }'
+```
+
+**Exemple avec cURL - Remplacer toutes les images :**
+```bash
+# Remplacer toutes les images par de nouvelles
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "images": [
+      "/api/media_objects/125",
+      "/api/media_objects/126"
+    ]
+  }'
+```
+
+**Exemple avec cURL - Mettre à jour plusieurs champs + ajouter des images :**
+```bash
 curl -X PUT "https://votre-api.com/api/admin/products/42" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -H "Content-Type: application/json" \
@@ -326,11 +403,11 @@ curl -X PUT "https://votre-api.com/api/admin/products/42" \
     "name": "Paracétamol 500mg - Nouveau packaging",
     "code": "PARA-500-001",
     "description": "Comprimé de paracétamol 500mg, boîte de 30 comprimés",
-    "categories": [1, 5, 7],
-    "form": 1,
-    "brand": 2,
-    "manufacturer": 3,
-    "unit": 1,
+    "categories": ["/api/categories/1", "/api/categories/5", "/api/categories/7"],
+    "form": "/api/forms/1",
+    "brand": "/api/brands/2",
+    "manufacturer": "/api/manufacturers/3",
+    "unit": "/api/units/1",
     "unitPrice": 2800.00,
     "totalPrice": 84000.00,
     "quantity": 30,
@@ -342,38 +419,79 @@ curl -X PUT "https://votre-api.com/api/admin/products/42" \
       "packaging": "boîte de 30"
     },
     "images": [
+      "/api/media_objects/123",
+      "/api/media_objects/124",
       "/api/media_objects/125",
       "/api/media_objects/126"
     ]
   }'
 ```
 
-**Exemple avec JavaScript :**
+**Note :** Avec l'API native d'API Platform, vous pouvez utiliser soit des IRIs simples (`"/api/media_objects/123"`), soit le format JSON-LD complet. API Platform convertit automatiquement les IRIs en entités.
+
+**Exemple avec JavaScript - Ajouter des images :**
+```javascript
+async function addImagesToProduct(productId, newImageFiles) {
+  // 1. Récupérer le produit actuel pour obtenir les images existantes
+  const productResponse = await fetch(`/api/admin/products/${productId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const product = await productResponse.json();
+  
+  // 2. Uploader les nouvelles images
+  const newImageIris = await Promise.all(
+    newImageFiles.map(file => uploadProductImage(file))
+  );
+  
+  // 3. Combiner les anciennes et nouvelles images
+  const currentImageIris = product.images.map(img => img['@id'] || `/api/media_objects/${img.id}`);
+  const allImageIris = [...currentImageIris, ...newImageIris];
+  
+  // 4. Mettre à jour le produit avec PATCH (mise à jour partielle)
+  const response = await fetch(`/api/admin/products/${productId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      images: allImageIris
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la mise à jour du produit');
+  }
+  
+  return await response.json();
+}
+
+// Utilisation
+await addImagesToProduct(42, [file1, file2, file3]);
+```
+
+**Exemple avec JavaScript - Mettre à jour avec JSON-LD :**
 ```javascript
 async function updateProduct(productId, productData, imageIris) {
   const response = await fetch(`/api/admin/products/${productId}`, {
-    method: 'PUT',
+    method: 'PATCH', // Utiliser PATCH pour mise à jour partielle
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
       name: productData.name,
-      code: productData.code,
       description: productData.description,
-      categories: productData.categoryIds,
-      form: productData.formId,
-      brand: productData.brandId,
-      manufacturer: productData.manufacturerId,
-      unit: productData.unitId,
       unitPrice: productData.unitPrice,
-      totalPrice: productData.totalPrice,
-      quantity: productData.quantity,
       stock: productData.stock,
-      currency: productData.currency,
-      isActive: productData.isActive,
-      variants: productData.variants,
-      images: imageIris // Toutes les images à garder
+      // Utiliser des IRIs - API Platform les convertit automatiquement
+      categories: productData.categoryIds.map(id => `/api/categories/${id}`),
+      form: productData.formId ? `/api/forms/${productData.formId}` : null,
+      brand: productData.brandId ? `/api/brands/${productData.brandId}` : null,
+      manufacturer: productData.manufacturerId ? `/api/manufacturers/${productData.manufacturerId}` : null,
+      unit: productData.unitId ? `/api/units/${productData.unitId}` : null,
+      images: imageIris // Toutes les images à garder (anciennes + nouvelles)
     })
   });
   
@@ -390,11 +508,116 @@ async function updateProduct(productId, productData, imageIris) {
 
 ## Gestion des images
 
-### Ajouter des images à un produit existant
+### ⭐ Ajouter plusieurs images à un produit existant (Recommandé)
 
-1. Uploader les nouvelles images
-2. Récupérer les images actuelles du produit
-3. Mettre à jour le produit avec l'ancien tableau + les nouveaux IRIs
+C'est le cas d'usage le plus courant : vous avez un produit avec des images existantes et vous voulez en ajouter d'autres.
+
+**Exemple complet avec cURL :**
+```bash
+# 1. Récupérer le produit actuel
+PRODUCT=$(curl -X GET "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN")
+
+# 2. Uploader plusieurs nouvelles images
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -F "file=@image3.jpg" \
+  -F "mapping=product_images"
+# Réponse: { "@id": "/api/media_objects/125", ... }
+
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -F "file=@image4.jpg" \
+  -F "mapping=product_images"
+# Réponse: { "@id": "/api/media_objects/126", ... }
+
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -F "file=@image5.jpg" \
+  -F "mapping=product_images"
+# Réponse: { "@id": "/api/media_objects/127", ... }
+
+# 3. Mettre à jour le produit avec TOUTES les images (anciennes + nouvelles)
+# Supposons que le produit avait déjà: /api/media_objects/123, /api/media_objects/124
+curl -X PATCH "https://votre-api.com/api/admin/products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "images": [
+      "/api/media_objects/123",
+      "/api/media_objects/124",
+      "/api/media_objects/125",
+      "/api/media_objects/126",
+      "/api/media_objects/127"
+    ]
+  }'
+```
+
+**Exemple complet avec JavaScript :**
+```javascript
+async function addMultipleImagesToProduct(productId, newImageFiles) {
+  // 1. Récupérer le produit actuel
+  const productResponse = await fetch(`/api/admin/products/${productId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  const product = await productResponse.json();
+  
+  // 2. Extraire les IRIs des images existantes
+  const existingImageIris = product.images.map(img => 
+    img['@id'] || `/api/media_objects/${img.id}`
+  );
+  
+  // 3. Uploader toutes les nouvelles images en parallèle
+  const uploadPromises = newImageFiles.map(file => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mapping', 'product_images');
+    
+    return fetch('/api/media_objects', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    }).then(res => res.json()).then(data => data['@id']);
+  });
+  
+  const newImageIris = await Promise.all(uploadPromises);
+  
+  // 4. Combiner toutes les images (anciennes + nouvelles)
+  const allImageIris = [...existingImageIris, ...newImageIris];
+  
+  // 5. Mettre à jour le produit avec PATCH
+  const response = await fetch(`/api/admin/products/${productId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      images: allImageIris
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de l\'ajout des images');
+  }
+  
+  return await response.json();
+}
+
+// Utilisation : ajouter 3 nouvelles images
+const fileInput = document.querySelector('input[type="file"]');
+await addMultipleImagesToProduct(42, Array.from(fileInput.files));
+```
+
+### Ajouter des images à un produit existant (méthode alternative)
+
+**Workflow complet :**
+
+1. **Récupérer le produit actuel** pour obtenir les images existantes
+2. **Uploader les nouvelles images** via `/api/media_objects`
+3. **Combiner les IRIs** (anciennes + nouvelles)
+4. **Mettre à jour le produit** avec PATCH en incluant toutes les images
 
 ```javascript
 async function addImagesToProduct(productId, newImageFiles) {
@@ -410,12 +633,30 @@ async function addImagesToProduct(productId, newImageFiles) {
   );
   
   // 3. Combiner les anciennes et nouvelles images
-  const currentImageIris = product.images.map(img => img['@id']);
+  const currentImageIris = product.images.map(img => img['@id'] || `/api/media_objects/${img.id}`);
   const allImageIris = [...currentImageIris, ...newImageIris];
   
-  // 4. Mettre à jour le produit
-  return await updateProduct(productId, product, allImageIris);
+  // 4. Mettre à jour le produit avec PATCH (seulement les images)
+  const response = await fetch(`/api/admin/products/${productId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      images: allImageIris
+    })
+  });
+  
+  if (!response.ok) {
+    throw new Error('Échec de l\'ajout des images');
+  }
+  
+  return await response.json();
 }
+
+// Utilisation
+await addImagesToProduct(42, [file1, file2, file3]); // Ajoute 3 nouvelles images
 ```
 
 ### Supprimer des images d'un produit

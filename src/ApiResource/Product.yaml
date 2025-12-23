@@ -173,8 +173,20 @@ App\Entity\Product:
             normalizationContext:
                 groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'unit:read', 'form:read']
             openapi:
-                summary: 'Update product (Admin)'
-                description: 'Update product information including categories, prices, stock and images. Upload images first using POST /api/media_objects, then reference them using IRI array. API Platform handles JSON-LD automatically. Use PATCH for partial updates.'
+                summary: 'Update product (Admin) - Full update'
+                description: 'Update product information with all fields. Upload images first using POST /api/media_objects, then reference them using IRI array. API Platform handles JSON-LD automatically. For partial updates, use PATCH instead.'
+
+        admin_patch_product:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/products/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            denormalizationContext:
+                groups: ['product:write']
+            normalizationContext:
+                groups: ['id:read', 'product:read', 'image:read', 'media_object:read', 'unit:read', 'form:read']
+            openapi:
+                summary: 'Update product (Admin) - Partial update'
+                description: 'Partially update product information. Only provide the fields you want to update. Required fields (name, code) are protected from being set to null. Upload images first using POST /api/media_objects, then reference them using IRI array. API Platform handles JSON-LD automatically.'
 
         admin_delete_product:
             class: ApiPlatform\Metadata\Delete
