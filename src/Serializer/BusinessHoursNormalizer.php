@@ -25,47 +25,47 @@ final class BusinessHoursNormalizer implements NormalizerInterface, NormalizerAw
         }
 
         // Replace openTime/closeTime DateTime objects with formatted strings (HH:mm format)
-        // The normalizer will convert DateTime to string format
+        // Convert DateTime objects or ISO datetime strings to simple "HH:mm" format
         
-        // Handle openTime - replace DateTime with formatted string
+        // Handle openTime
         if (isset($data['openTime'])) {
             if ($data['openTime'] instanceof \DateTimeInterface) {
                 // Convert DateTime to HH:mm format
                 $data['openTime'] = $data['openTime']->format('H:i');
             } elseif (is_string($data['openTime'])) {
-                // Handle ISO datetime strings like "1970-01-01T08:00:00+00:00"
-                if (preg_match('/^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})/', $data['openTime'], $matches)) {
+                // Handle ISO datetime strings like "1970-01-01T08:00:00+00:00" or "1970-01-01T08:00:00Z"
+                if (preg_match('/^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})(?::\d{2})?/', $data['openTime'], $matches)) {
                     $data['openTime'] = $matches[1];
                 }
                 // If already in HH:mm format, keep it as is
             }
-        }
-        
-        // Use openTimeString if available and openTime is not set or is DateTime
-        if (isset($data['openTimeString']) && (!isset($data['openTime']) || $data['openTime'] instanceof \DateTimeInterface)) {
+        } elseif (isset($data['openTimeString'])) {
+            // Fallback to openTimeString if openTime is not set
             $data['openTime'] = $data['openTimeString'];
-        }
-        if (isset($data['openTimeString'])) {
             unset($data['openTimeString']);
         }
 
-        // Handle closeTime - replace DateTime with formatted string
+        // Handle closeTime
         if (isset($data['closeTime'])) {
             if ($data['closeTime'] instanceof \DateTimeInterface) {
                 // Convert DateTime to HH:mm format
                 $data['closeTime'] = $data['closeTime']->format('H:i');
             } elseif (is_string($data['closeTime'])) {
-                // Handle ISO datetime strings like "1970-01-01T17:00:00+00:00"
-                if (preg_match('/^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})/', $data['closeTime'], $matches)) {
+                // Handle ISO datetime strings like "1970-01-01T17:00:00+00:00" or "1970-01-01T17:00:00Z"
+                if (preg_match('/^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})(?::\d{2})?/', $data['closeTime'], $matches)) {
                     $data['closeTime'] = $matches[1];
                 }
                 // If already in HH:mm format, keep it as is
             }
+        } elseif (isset($data['closeTimeString'])) {
+            // Fallback to closeTimeString if closeTime is not set
+            $data['closeTime'] = $data['closeTimeString'];
+            unset($data['closeTimeString']);
         }
         
-        // Use closeTimeString if available and closeTime is not set or is DateTime
-        if (isset($data['closeTimeString']) && (!isset($data['closeTime']) || $data['closeTime'] instanceof \DateTimeInterface)) {
-            $data['closeTime'] = $data['closeTimeString'];
+        // Clean up any remaining string properties
+        if (isset($data['openTimeString'])) {
+            unset($data['openTimeString']);
         }
         if (isset($data['closeTimeString'])) {
             unset($data['closeTimeString']);

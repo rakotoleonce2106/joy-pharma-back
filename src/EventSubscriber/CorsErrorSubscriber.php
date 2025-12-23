@@ -78,27 +78,25 @@ class CorsErrorSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Check if CORS headers are already set by NelmioCorsBundle
-        if ($response->headers->has('Access-Control-Allow-Origin')) {
-            return;
-        }
-
         // Determine if origin is allowed
         $allowedOrigin = $this->getAllowedOrigin($origin);
         if (!$allowedOrigin) {
             return;
         }
 
-        // Add CORS headers
-        $response->headers->set('Access-Control-Allow-Origin', $allowedOrigin);
-        $response->headers->set('Access-Control-Allow-Credentials', 'true');
-        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-        $response->headers->set('Access-Control-Expose-Headers', 'Link');
+        // Always set CORS headers, even if NelmioCorsBundle already set them
+        // This ensures CORS headers are present in all cases
+        $response->headers->set('Access-Control-Allow-Origin', $allowedOrigin, true);
+        $response->headers->set('Access-Control-Allow-Credentials', 'true', true);
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS', true);
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin', true);
+        $response->headers->set('Access-Control-Expose-Headers', 'Link', true);
         
         // Handle preflight requests
         if ($request->getMethod() === 'OPTIONS') {
-            $response->headers->set('Access-Control-Max-Age', '3600');
+            $response->headers->set('Access-Control-Max-Age', '3600', true);
+            // For preflight requests, return 200 immediately
+            $response->setStatusCode(200);
         }
     }
 
