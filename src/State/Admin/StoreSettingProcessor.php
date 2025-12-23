@@ -52,8 +52,23 @@ class StoreSettingProcessor implements ProcessorInterface
 
             // Only update if incoming hours are provided (not null)
             if ($incomingHours !== null) {
-                if ($existingHours === null) {
-                    // Create new BusinessHours if it doesn't exist
+                // Check if the existing BusinessHours is shared with other days
+                $isShared = false;
+                if ($existingHours !== null && $existingHours->getId() !== null) {
+                    foreach ($days as $otherDay) {
+                        if ($otherDay !== $day) {
+                            $otherGetter = 'get' . ucfirst($otherDay);
+                            $otherHours = $existingStoreSetting->$otherGetter();
+                            if ($otherHours !== null && $otherHours->getId() === $existingHours->getId()) {
+                                $isShared = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // If shared or null, create a new instance for this day
+                if ($existingHours === null || $isShared) {
                     $existingHours = new BusinessHours(null, null, false);
                     $existingStoreSetting->$setter($existingHours);
                     $this->entityManager->persist($existingHours);
