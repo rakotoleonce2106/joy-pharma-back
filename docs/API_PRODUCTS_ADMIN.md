@@ -1109,11 +1109,13 @@ Le paramètre `mapping` lors de l'upload détermine où le fichier sera stocké 
 | Mapping | Dossier de stockage | Usage recommandé |
 |---------|---------------------|-------------------|
 | `product_images` | `/public/images/products/` | Images de produits (recommandé) |
-| `media_object` | `/public/media/` | Par défaut (générique) |
 | `category_images` | `/public/images/categories/` | Images de catégories |
 | `category_icons` | `/public/icons/categories/` | Icônes SVG de catégories |
 | `brand_images` | `/public/images/brands/` | Images de marques |
 | `manufacturer_images` | `/public/images/manufacturers/` | Images de fabricants |
+| `user_images` | `/public/images/users/` | Avatars d'utilisateurs |
+| `store_images` | `/public/images/stores/` | Photos de magasins |
+| `media_object` | `/public/media/` | Par défaut (générique, documents de livraison, etc.) |
 
 **Pour les produits, utilisez toujours `mapping=product_images`.**
 

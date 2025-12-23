@@ -182,14 +182,14 @@ curl -X PUT "/api/admin/products/1" \
 ```bash
 curl -X POST "/api/media_objects" \
   -F "file=@brand-logo.jpg" \
-  -F "mapping=media_object"
+  -F "mapping=brand_images"
 # Réponse: { "@id": "/api/media_objects/127" }
 ```
 
 **Créer/Mettre à jour la marque :**
 ```bash
 curl -X PUT "/api/admin/brands/1" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "name": "Sanofi",
     "image": "/api/media_objects/127"
@@ -202,37 +202,59 @@ curl -X PUT "/api/admin/brands/1" \
 ```bash
 curl -X POST "/api/media_objects" \
   -F "file=@manufacturer-logo.jpg" \
-  -F "mapping=media_object"
+  -F "mapping=manufacturer_images"
 # Réponse: { "@id": "/api/media_objects/128" }
 ```
 
 **Créer/Mettre à jour le fabricant :**
 ```bash
 curl -X PUT "/api/admin/manufacturers/1" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "name": "Pfizer",
     "image": "/api/media_objects/128"
   }'
 ```
 
-### 5. Store (Magasin)
+### 5. User (Utilisateur)
+
+**Uploader l'avatar :**
+```bash
+curl -X POST "/api/media_objects" \
+  -F "file=@avatar.jpg" \
+  -F "mapping=user_images"
+# Réponse: { "@id": "/api/media_objects/129", "contentUrl": "/images/users/abc123.jpg" }
+```
+
+**Créer/Mettre à jour l'utilisateur :**
+```bash
+curl -X PUT "/api/admin/users/1" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "email": "user@example.com",
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "image": "/api/media_objects/129"
+  }'
+```
+
+### 6. Store (Magasin)
 
 **Uploader l'image :**
 ```bash
 curl -X POST "/api/media_objects" \
   -F "file=@store-photo.jpg" \
-  -F "mapping=media_object"
-# Réponse: { "@id": "/api/media_objects/129" }
+  -F "mapping=store_images"
+# Réponse: { "@id": "/api/media_objects/130" }
 ```
 
 **Créer/Mettre à jour le magasin :**
 ```bash
 curl -X PUT "/api/admin/stores/1" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/ld+json" \
   -d '{
     "name": "Pharmacie Centrale",
-    "image": "/api/media_objects/129"
+    "image": "/api/media_objects/130"
   }'
 ```
 
@@ -242,10 +264,14 @@ Le paramètre `mapping` détermine où le fichier sera stocké :
 
 | Mapping | Dossier de stockage | Usage |
 |---------|---------------------|-------|
-| `media_object` | `/public/media/` | Par défaut (Brand, Manufacturer, Store) |
 | `category_images` | `/public/images/categories/` | Images de catégories |
 | `category_icons` | `/public/icons/categories/` | Icônes SVG de catégories |
 | `product_images` | `/public/images/products/` | Images de produits |
+| `brand_images` | `/public/images/brands/` | Logos de marques |
+| `manufacturer_images` | `/public/images/manufacturers/` | Logos de fabricants |
+| `user_images` | `/public/images/users/` | **Avatars d'utilisateurs (recommandé)** |
+| `store_images` | `/public/images/stores/` | Photos de magasins |
+| `media_object` | `/public/media/` | Par défaut (documents génériques, livraisons, etc.) |
 
 ## Cas d'usage : Mettre à jour une image existante
 
@@ -357,9 +383,10 @@ await uploadCategoryImage(1, fileInput.files[0]);
 ## Endpoints concernés
 
 - ✅ **POST** `/api/media_objects` - Upload/Mise à jour d'images
-- ✅ **PUT/PATCH** `/api/admin/categories/{id}` - Utilise `image` et `icon`
+- ✅ **PUT/PATCH** `/api/admin/categories/{id}` - Utilise `image` et `svg`
 - ✅ **PUT/PATCH** `/api/admin/products/{id}` - Utilise `images` (tableau)
 - ✅ **PUT/PATCH** `/api/admin/brands/{id}` - Utilise `image`
 - ✅ **PUT/PATCH** `/api/admin/manufacturers/{id}` - Utilise `image`
+- ✅ **PUT/PATCH** `/api/admin/users/{id}` - Utilise `image` (avatar)
 - ✅ **PUT/PATCH** `/api/admin/stores/{id}` - Utilise `image`
 

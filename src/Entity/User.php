@@ -318,10 +318,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             if ($this->image) {
                 $this->image->setFile($file);
             } else {
-                // Sinon, créer un nouveau MediaObject
+                // Sinon, créer un nouveau MediaObject avec le mapping user_images
                 $mediaObject = new MediaObject();
                 $mediaObject->setFile($file);
-                $mediaObject->setMapping('media_object');
+                $mediaObject->setMapping('user_images');
                 $this->image = $mediaObject;
             }
         }

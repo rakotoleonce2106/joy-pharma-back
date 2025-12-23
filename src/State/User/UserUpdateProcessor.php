@@ -51,7 +51,8 @@ class UserUpdateProcessor implements ProcessorInterface
             // Handle image: API Platform automatically deserializes IRI to MediaObject entity (JSON-LD)
             if ($data->getImage() instanceof MediaObject) {
                 $previousImageId = $user->getImage()?->getId();
-                $data->getImage()->setMapping('media_object');
+                // Use user_images mapping for user avatars
+                $data->getImage()->setMapping('user_images');
                 $user->setImage($data->getImage());
                 
                 // Flush MediaObject so VichUploader can process if needed

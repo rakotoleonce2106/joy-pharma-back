@@ -506,10 +506,12 @@ curl -X PATCH "https://votre-api.com/api/admin/units/1" \
 curl -X POST "https://votre-api.com/api/media_objects" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -F "file=@/chemin/vers/avatar.jpg" \
-  -F "mapping=media_object"
+  -F "mapping=user_images"
 
-# Réponse: { "@id": "/api/media_objects/123", "id": 123, ... }
+# Réponse: { "@id": "/api/media_objects/123", "id": 123, "contentUrl": "/images/users/abc123.jpg", ... }
 ```
+
+**Important :** Utilisez toujours `mapping=user_images` pour les avatars d'utilisateurs. Cela garantit que les fichiers sont stockés dans `/public/images/users/` et organisés correctement.
 
 #### Étape 2 : Créer l'utilisateur
 
@@ -534,8 +536,8 @@ curl -X POST "https://votre-api.com/api/admin/users" \
 **Exemple avec JavaScript :**
 ```javascript
 async function createUser(userData, avatarFile) {
-  // 1. Uploader l'avatar si fourni
-  const avatarIri = avatarFile ? await uploadMediaObject(avatarFile, 'media_object') : null;
+  // 1. Uploader l'avatar si fourni (utiliser user_images pour les avatars)
+  const avatarIri = avatarFile ? await uploadMediaObject(avatarFile, 'user_images') : null;
   
   // 2. Créer l'utilisateur
   const response = await fetch('/api/admin/users', {
@@ -634,9 +636,14 @@ Le paramètre `mapping` lors de l'upload détermine où le fichier sera stocké 
 |---------|---------------------|-------------------|
 | `category_images` | `/public/images/categories/` | Images de catégories |
 | `category_icons` | `/public/icons/categories/` | Icônes SVG de catégories |
+| `product_images` | `/public/images/products/` | Images de produits |
 | `brand_images` | `/public/images/brands/` | Images/logos de marques |
 | `manufacturer_images` | `/public/images/manufacturers/` | Images/logos de fabricants |
-| `media_object` | `/public/media/` | Par défaut (générique) |
+| `user_images` | `/public/images/users/` | **Avatars d'utilisateurs (recommandé)** |
+| `store_images` | `/public/images/stores/` | Photos de magasins |
+| `media_object` | `/public/media/` | Par défaut (générique, documents de livraison, etc.) |
+
+**Pour les avatars d'utilisateurs, utilisez toujours `mapping=user_images`.**
 
 ---
 
