@@ -17,9 +17,15 @@ final class BusinessHoursDenormalizer implements DenormalizerInterface, Denormal
     {
         $context[self::ALREADY_CALLED] = true;
 
-        // Convert string times to DateTime objects if needed
-        if (is_array($data)) {
-            if (isset($data['openTime']) && is_string($data['openTime'])) {
+        // Only process if data is an array (JSON deserialization)
+        if (!is_array($data)) {
+            return $this->denormalizer->denormalize($data, $type, $format, $context);
+        }
+
+        // Convert string times to DateTime objects ONLY if they are non-empty strings
+        // Leave null values as null - they should not be converted
+        if (isset($data['openTime']) && $data['openTime'] !== null && $data['openTime'] !== '') {
+            if (is_string($data['openTime'])) {
                 try {
                     $parsedTime = \DateTime::createFromFormat('H:i', $data['openTime']);
                     if ($parsedTime === false) {
@@ -29,11 +35,13 @@ final class BusinessHoursDenormalizer implements DenormalizerInterface, Denormal
                         $data['openTime'] = $parsedTime;
                     }
                 } catch (\Exception $e) {
-                    // Keep as string if parsing fails, let API Platform handle it
+                    // Keep as string if parsing fails
                 }
             }
+        }
 
-            if (isset($data['closeTime']) && is_string($data['closeTime'])) {
+        if (isset($data['closeTime']) && $data['closeTime'] !== null && $data['closeTime'] !== '') {
+            if (is_string($data['closeTime'])) {
                 try {
                     $parsedTime = \DateTime::createFromFormat('H:i', $data['closeTime']);
                     if ($parsedTime === false) {
@@ -43,9 +51,18 @@ final class BusinessHoursDenormalizer implements DenormalizerInterface, Denormal
                         $data['closeTime'] = $parsedTime;
                     }
                 } catch (\Exception $e) {
-                    // Keep as string if parsing fails, let API Platform handle it
+                    // Keep as string if parsing fails
                 }
             }
+        }
+
+        // Ensure null values are explicitly set to null (not unset)
+        // This prevents API Platform from trying to convert null to DateTime
+        if (array_key_exists('openTime', $data) && $data['openTime'] === null) {
+            $data['openTime'] = null;
+        }
+        if (array_key_exists('closeTime', $data) && $data['closeTime'] === null) {
+            $data['closeTime'] = null;
         }
 
         return $this->denormalizer->denormalize($data, $type, $format, $context);
