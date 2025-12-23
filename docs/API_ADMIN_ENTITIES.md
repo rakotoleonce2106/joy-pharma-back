@@ -628,6 +628,308 @@ curl -X POST "https://votre-api.com/api/admin/users/1/toggle-active" \
 
 ---
 
+## 🏪 Magasins (Stores)
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/stores` - Liste tous les magasins
+- **GET** `/api/admin/stores/{id}` - Récupère un magasin par son ID
+- **POST** `/api/admin/stores` - Crée un nouveau magasin
+- **PUT** `/api/admin/stores/{id}` - Met à jour un magasin existant (mise à jour complète)
+- **PATCH** `/api/admin/stores/{id}` - Met à jour un magasin existant (mise à jour partielle)
+- **DELETE** `/api/admin/stores/{id}` - Supprime un magasin
+- **POST** `/api/admin/stores/batch-delete` - Supprime plusieurs magasins en lot
+
+### Structure des données
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `name` | string | ✅ Oui (create) | Nom du magasin |
+| `description` | string | ❌ Non | Description du magasin |
+| `image` | string | ❌ Non | IRI de l'image (ex: `"/api/media_objects/123"`) |
+| `owner` | string | ❌ Non | IRI de l'utilisateur propriétaire (ex: `"/api/admin/users/1"`). Si non fourni, l'utilisateur doit être créé séparément. |
+| `contact` | object | ❌ Non | Objet ContactInfo avec `phone` et `email` |
+| `location` | object | ❌ Non | Objet Location avec `address`, `latitude`, `longitude`, `city` |
+
+**Note :** `contact` et `location` peuvent être fournis comme objets imbriqués ou comme IRIs. Pour une création simple, utilisez des objets imbriqués.
+
+### Workflow complet : Créer un magasin avec image
+
+#### Étape 1 : Créer l'utilisateur propriétaire (si nécessaire)
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/users" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "email": "storeowner@example.com",
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "roles": ["ROLE_STORE"],
+    "plainPassword": "MotDePasse123!"
+  }'
+
+# Réponse: { "@id": "/api/admin/users/1", "id": 1, ... }
+```
+
+#### Étape 2 : Uploader l'image du magasin (optionnel)
+
+```bash
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -F "file=@/chemin/vers/store-image.jpg" \
+  -F "mapping=store_images"
+
+# Réponse: { "@id": "/api/media_objects/123", "id": 123, ... }
+```
+
+**Important :** Utilisez toujours `mapping=store_images` pour les images de magasins.
+
+#### Étape 3 : Créer le magasin
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/stores" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "name": "Pharmacie Centrale",
+    "description": "Pharmacie principale du centre-ville",
+    "image": "/api/media_objects/123",
+    "owner": "/api/admin/users/1",
+    "contact": {
+      "phone": "+261341234567",
+      "email": "pharmacie@example.com"
+    },
+    "location": {
+      "address": "123 Rue de la République",
+      "latitude": -18.8792,
+      "longitude": 47.5079,
+      "city": "Antananarivo"
+    }
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function createStore(storeData, imageFile, ownerId) {
+  // 1. Uploader l'image si fournie
+  const imageIri = imageFile ? await uploadMediaObject(imageFile, 'store_images') : null;
+  
+  // 2. Créer le magasin
+  const response = await fetch('/api/admin/stores', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      name: storeData.name,
+      description: storeData.description || null,
+      image: imageIri,
+      owner: ownerId ? `/api/admin/users/${ownerId}` : null,
+      contact: storeData.contact ? {
+        phone: storeData.contact.phone,
+        email: storeData.contact.email
+      } : null,
+      location: storeData.location ? {
+        address: storeData.location.address,
+        latitude: storeData.location.latitude,
+        longitude: storeData.location.longitude,
+        city: storeData.location.city || null
+      } : null
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la création du magasin');
+  }
+  
+  return await response.json();
+}
+```
+
+### Mettre à jour un magasin
+
+#### Mise à jour complète (PUT)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/stores/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "name": "Pharmacie Centrale - Mise à jour",
+    "description": "Description mise à jour",
+    "image": "/api/media_objects/125",
+    "owner": "/api/admin/users/2",
+    "contact": {
+      "phone": "+261349876543",
+      "email": "nouveau@example.com"
+    },
+    "location": {
+      "address": "456 Nouvelle Adresse",
+      "latitude": -18.9000,
+      "longitude": 47.5200,
+      "city": "Antananarivo"
+    }
+  }'
+```
+
+#### Mise à jour partielle (PATCH)
+
+```bash
+# Mettre à jour uniquement le nom et l'image
+curl -X PATCH "https://votre-api.com/api/admin/stores/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "name": "Nouveau nom",
+    "image": "/api/media_objects/127"
+  }'
+
+# Mettre à jour uniquement la localisation
+curl -X PATCH "https://votre-api.com/api/admin/stores/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "location": {
+      "address": "789 Autre Adresse",
+      "latitude": -18.9100,
+      "longitude": 47.5300,
+      "city": "Antananarivo"
+    }
+  }'
+```
+
+**Note :** Lors de la création d'un magasin, un `StoreSetting` avec des `BusinessHours` par défaut est automatiquement créé. L'image est automatiquement mappée avec `store_images`, et l'ancienne image est supprimée si elle est remplacée.
+
+---
+
+## 📦 Produits de magasin (Store Products)
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/store-products` - Liste tous les produits de magasin
+- **GET** `/api/admin/store-products/{id}` - Récupère un produit de magasin par son ID
+- **POST** `/api/admin/store-products` - Crée un nouveau produit de magasin
+- **PUT** `/api/admin/store-products/{id}` - Met à jour un produit de magasin existant (mise à jour complète)
+- **PATCH** `/api/admin/store-products/{id}` - Met à jour un produit de magasin existant (mise à jour partielle)
+
+### Structure des données
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `product` | string | ✅ Oui (create) | IRI du produit (ex: `"/api/products/1"`) |
+| `store` | string | ✅ Oui (create) | IRI du magasin (ex: `"/api/admin/stores/1"`) |
+| `price` | float | ✅ Oui (create) | Prix de vente (doit être > 0) |
+| `stock` | integer | ✅ Oui (create) | Quantité en stock (doit être >= 0) |
+| `unitPrice` | float | ❌ Non | Prix unitaire |
+
+### Workflow complet : Créer un produit de magasin
+
+#### Étape 1 : Récupérer les IRIs du produit et du magasin
+
+```bash
+# Récupérer un produit
+curl -X GET "https://votre-api.com/api/products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Réponse: { "@id": "/api/products/1", "id": 1, ... }
+
+# Récupérer un magasin
+curl -X GET "https://votre-api.com/api/admin/stores/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Réponse: { "@id": "/api/admin/stores/1", "id": 1, ... }
+```
+
+#### Étape 2 : Créer le produit de magasin
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/store-products" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "product": "/api/products/1",
+    "store": "/api/admin/stores/1",
+    "price": 15000.00,
+    "stock": 50,
+    "unitPrice": 15000.00
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function createStoreProduct(productId, storeId, price, stock, unitPrice = null) {
+  const response = await fetch('/api/admin/store-products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      product: `/api/products/${productId}`,
+      store: `/api/admin/stores/${storeId}`,
+      price: price,
+      stock: stock,
+      unitPrice: unitPrice || null
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la création du produit de magasin');
+  }
+  
+  return await response.json();
+}
+```
+
+### Mettre à jour un produit de magasin
+
+#### Mise à jour complète (PUT)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/store-products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "product": "/api/products/2",
+    "store": "/api/admin/stores/1",
+    "price": 18000.00,
+    "stock": 75,
+    "unitPrice": 18000.00
+  }'
+```
+
+#### Mise à jour partielle (PATCH)
+
+```bash
+# Mettre à jour uniquement le prix et le stock
+curl -X PATCH "https://votre-api.com/api/admin/store-products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "price": 16000.00,
+    "stock": 60
+  }'
+
+# Mettre à jour uniquement le stock
+curl -X PATCH "https://votre-api.com/api/admin/store-products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "stock": 100
+  }'
+```
+
+**Note :** 
+- Un produit ne peut être associé qu'une seule fois à un magasin. Si vous essayez de créer un `StoreProduct` avec un produit et un magasin qui sont déjà associés, vous obtiendrez une erreur.
+- Le prix doit être supérieur à 0.
+- Le stock doit être supérieur ou égal à 0.
+
+---
+
 ## Mappings d'images disponibles
 
 Le paramètre `mapping` lors de l'upload détermine où le fichier sera stocké :
@@ -824,6 +1126,22 @@ await createMultipleUnits(units);
 - `PATCH /api/admin/users/{id}` - Mettre à jour un utilisateur (partielle)
 - `DELETE /api/admin/users/{id}` - Supprimer un utilisateur
 - `POST /api/admin/users/{id}/toggle-active` - Activer/désactiver un utilisateur
+
+### Magasins
+- `GET /api/admin/stores` - Liste des magasins
+- `GET /api/admin/stores/{id}` - Détails d'un magasin
+- `POST /api/admin/stores` - Créer un magasin
+- `PUT /api/admin/stores/{id}` - Mettre à jour un magasin (complète)
+- `PATCH /api/admin/stores/{id}` - Mettre à jour un magasin (partielle)
+- `DELETE /api/admin/stores/{id}` - Supprimer un magasin
+- `POST /api/admin/stores/batch-delete` - Supprimer plusieurs magasins en lot
+
+### Produits de magasin
+- `GET /api/admin/store-products` - Liste des produits de magasin
+- `GET /api/admin/store-products/{id}` - Détails d'un produit de magasin
+- `POST /api/admin/store-products` - Créer un produit de magasin
+- `PUT /api/admin/store-products/{id}` - Mettre à jour un produit de magasin (complète)
+- `PATCH /api/admin/store-products/{id}` - Mettre à jour un produit de magasin (partielle)
 
 ### Images
 - `POST /api/media_objects` - Uploader une image/icône

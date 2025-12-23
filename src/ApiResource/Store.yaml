@@ -22,25 +22,48 @@ App\Entity\Store:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/stores'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\StoreInput
-            processor: App\State\Admin\StoreProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store:write', 'contact:write', 'location:write']
+            validationContext:
+                groups: ['create']
             normalizationContext:
                 groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
                 summary: 'Create new store (Admin)'
-                description: 'Create a new store with optional image. Upload image first using POST /api/media_objects, then reference it using IRI (e.g., "/api/media_objects/123").'
+                description: 'Create a new store with optional image. Upload image first using POST /api/media_objects with mapping=store_images, then reference it using IRI (e.g., "/api/media_objects/123"). Use Content-Type: application/ld+json when sending IRIs. The owner user must exist or be created separately via POST /api/admin/users.'
 
         admin_update_store:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/stores/{id}'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\StoreInput
-            processor: App\State\Admin\StoreProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store:write', 'contact:write', 'location:write']
             normalizationContext:
                 groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
             openapi:
-                summary: 'Update store (Admin)'
-                description: 'Update store information including image. Upload image first using POST /api/media_objects, then reference it using IRI. Old image will be automatically deleted if replaced.'
+                summary: 'Update store (Admin) - Full update'
+                description: 'Update store information including image. Upload image first using POST /api/media_objects with mapping=store_images, then reference it using IRI. Use Content-Type: application/ld+json when sending IRIs. Old image will be automatically deleted if replaced. For partial updates, use PATCH instead.'
+
+        admin_patch_store:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/stores/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store:write', 'contact:write', 'location:write']
+            normalizationContext:
+                groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read']
+            openapi:
+                summary: 'Update store (Admin) - Partial update'
+                description: 'Partially update store information. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
 
         admin_delete_store:
             class: ApiPlatform\Metadata\Delete

@@ -83,6 +83,53 @@ App\Entity\StoreProduct:
                 summary: 'Get store product by ID (Admin)'
                 description: 'Retrieve any store product by ID (Admin only)'
 
+        admin_create_store_product:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/store-products'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store-product:write']
+            validationContext:
+                groups: ['create']
+            normalizationContext:
+                groups: ['id:read','store-product:read','product:read','image:read','media_object:read','store:read','location:read','user:store:read','store_setting:read']
+            openapi:
+                summary: 'Create store product (Admin)'
+                description: 'Create a new store product. Use Content-Type: application/ld+json when sending IRIs. Product and Store must be provided as IRIs (e.g., "/api/products/1", "/api/admin/stores/1").'
+
+        admin_update_store_product:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/store-products/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store-product:write']
+            normalizationContext:
+                groups: ['id:read','store-product:read','product:read','image:read','media_object:read','store:read','location:read','user:store:read','store_setting:read']
+            openapi:
+                summary: 'Update store product (Admin) - Full update'
+                description: 'Update store product information. Use Content-Type: application/ld+json when sending IRIs. For partial updates, use PATCH instead.'
+
+        admin_patch_store_product:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/store-products/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store-product:write']
+            normalizationContext:
+                groups: ['id:read','store-product:read','product:read','image:read','media_object:read','store:read','location:read','user:store:read','store_setting:read']
+            openapi:
+                summary: 'Update store product (Admin) - Partial update'
+                description: 'Partially update store product information. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
+
     normalizationContext:
         groups: ['id:read','store-product:read','product:read','image:read','media_object:read']
     denormalizationContext:

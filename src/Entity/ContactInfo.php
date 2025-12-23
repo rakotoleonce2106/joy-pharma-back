@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\ContactInfoRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ContactInfoRepository::class)]
 class ContactInfo
@@ -13,10 +15,15 @@ class ContactInfo
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column(length: 255)]
+    #[Groups(['contact:read', 'contact:write'])]
     private ?string $phone = null;
 
+    #[Assert\NotBlank(groups: ['create'])]
+    #[Assert\Email]
     #[ORM\Column(length: 255)]
+    #[Groups(['contact:read', 'contact:write'])]
     private ?string $email = null;
 
     #[ORM\OneToOne(mappedBy: 'contact')]

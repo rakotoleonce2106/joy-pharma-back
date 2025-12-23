@@ -8,6 +8,7 @@ use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\StoreProductRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: StoreProductRepository::class)]
 class StoreProduct
@@ -16,22 +17,27 @@ class StoreProduct
     use EntityStatusTrait;
     use EntityTimestampTrait;
 
+    #[Assert\NotBlank(groups: ['create'])]
     #[ORM\ManyToOne(inversedBy: 'storeProducts')]
     #[Groups(['store-product:read', 'store-product:write'])]
     private ?Product $product = null;
 
     #[ORM\ManyToOne(inversedBy: 'storeProducts')]
-    #[Groups(['store-product:read'])]
+    #[Groups(['store-product:read', 'store-product:write'])]
     private ?Store $store = null;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['store-product:read', 'store-product:write'])]
     private ?float $unitPrice = null;
 
+    #[Assert\NotBlank(groups: ['create'])]
+    #[Assert\GreaterThanOrEqual(0)]
     #[ORM\Column]
     #[Groups(['store-product:read', 'store-product:write'])]
     private ?int $stock = null;
 
+    #[Assert\NotBlank(groups: ['create'])]
+    #[Assert\GreaterThan(0)]
     #[ORM\Column]
     #[Groups(['store-product:read', 'store-product:write'])]
     private ?float $price = null;
