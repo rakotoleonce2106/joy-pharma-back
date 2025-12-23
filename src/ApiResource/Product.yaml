@@ -168,6 +168,9 @@ App\Entity\Product:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
             denormalizationContext:
                 groups: ['product:write']
             normalizationContext:
@@ -180,6 +183,9 @@ App\Entity\Product:
             class: ApiPlatform\Metadata\Patch
             uriTemplate: '/admin/products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
             denormalizationContext:
                 groups: ['product:write']
             normalizationContext:
