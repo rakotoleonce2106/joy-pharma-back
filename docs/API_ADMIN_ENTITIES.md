@@ -1168,6 +1168,277 @@ curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
 
 ---
 
+## 📋 Commandes (Orders)
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/orders` - Liste toutes les commandes
+- **GET** `/api/admin/orders/{id}` - Récupère une commande par son ID
+- **POST** `/api/admin/orders` - Crée une nouvelle commande
+- **PUT** `/api/admin/orders/{id}` - Met à jour une commande existante (mise à jour complète)
+- **PATCH** `/api/admin/orders/{id}` - Met à jour une commande existante (mise à jour partielle)
+- **DELETE** `/api/admin/orders/{id}` - Supprime une commande
+- **POST** `/api/admin/orders/batch-delete` - Supprime plusieurs commandes en lot
+
+### Structure des données
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `owner` | string | ✅ Oui (create) | IRI du client (ex: `"/api/admin/users/1"`) |
+| `phone` | string | ✅ Oui (create) | Numéro de téléphone |
+| `status` | string | ❌ Non | Statut de la commande (`pending`, `confirmed`, `processing`, `shipped`, `collected`, `delivered`, `cancelled`). Par défaut: `pending` |
+| `priority` | string | ❌ Non | Priorité (`urgent`, `standard`, `planified`). Par défaut: `standard` |
+| `reference` | string | ❌ Non | Référence de la commande. Générée automatiquement si non fournie (format: `ORD-YYYY-XXXXXX`) |
+| `scheduledDate` | string | ❌ Non | Date de livraison prévue (format ISO 8601) |
+| `notes` | string | ❌ Non | Notes sur la commande |
+| `deliver` | string | ❌ Non | IRI du livreur (ex: `"/api/admin/users/2"`) |
+| `location` | object | ❌ Non | Objet Location avec `address`, `latitude`, `longitude`, `city` |
+| `items` | array | ✅ Oui (create) | Tableau d'objets OrderItem (minimum 1) |
+
+**Structure de OrderItem :**
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `product` | string | ✅ Oui | IRI du produit (ex: `"/api/products/1"`) |
+| `quantity` | integer | ✅ Oui | Quantité (doit être > 0) |
+| `store` | string | ❌ Non | IRI du magasin (ex: `"/api/admin/stores/1"`) |
+
+**Structure de Location (si fournie comme objet) :**
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `address` | string | ✅ Oui | Adresse complète |
+| `latitude` | float | ✅ Oui | Latitude |
+| `longitude` | float | ✅ Oui | Longitude |
+| `city` | string | ❌ Non | Ville |
+
+**Note :** 
+- Le `totalAmount` est calculé automatiquement en fonction des produits et quantités dans `items`
+- La référence est générée automatiquement si non fournie (format: `ORD-YYYY-XXXXXX`)
+- Le QR code est généré automatiquement lors de la création
+- Les valeurs par défaut : `status` = `pending`, `priority` = `standard`
+
+### Workflow complet : Créer une commande
+
+#### Étape 1 : Récupérer les IRIs nécessaires
+
+```bash
+# Récupérer un client
+curl -X GET "https://votre-api.com/api/admin/users/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Réponse: { "@id": "/api/admin/users/1", "id": 1, ... }
+
+# Récupérer des produits
+curl -X GET "https://votre-api.com/api/products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Réponse: { "@id": "/api/products/1", "id": 1, ... }
+```
+
+#### Étape 2 : Créer la commande
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/orders" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "owner": "/api/admin/users/1",
+    "phone": "+261341234567",
+    "status": "pending",
+    "priority": "standard",
+    "scheduledDate": "2025-12-25T10:00:00+00:00",
+    "notes": "Livraison urgente",
+    "location": {
+      "address": "123 Rue de la République",
+      "latitude": -18.8792,
+      "longitude": 47.5079,
+      "city": "Antananarivo"
+    },
+    "items": [
+      {
+        "product": "/api/products/1",
+        "quantity": 2,
+        "store": "/api/admin/stores/1"
+      },
+      {
+        "product": "/api/products/2",
+        "quantity": 1
+      }
+    ]
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function createOrder(orderData) {
+  const response = await fetch('/api/admin/orders', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      owner: `/api/admin/users/${orderData.customerId}`,
+      phone: orderData.phone,
+      status: orderData.status || 'pending',
+      priority: orderData.priority || 'standard',
+      scheduledDate: orderData.scheduledDate || null,
+      notes: orderData.notes || null,
+      deliver: orderData.deliverId ? `/api/admin/users/${orderData.deliverId}` : null,
+      location: orderData.location ? {
+        address: orderData.location.address,
+        latitude: orderData.location.latitude,
+        longitude: orderData.location.longitude,
+        city: orderData.location.city || null
+      } : null,
+      items: orderData.items.map(item => ({
+        product: `/api/products/${item.productId}`,
+        quantity: item.quantity,
+        store: item.storeId ? `/api/admin/stores/${item.storeId}` : null
+      }))
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la création de la commande');
+  }
+  
+  return await response.json();
+}
+```
+
+### Mettre à jour une commande
+
+#### Mise à jour complète (PUT)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/orders/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "owner": "/api/admin/users/1",
+    "phone": "+261341234567",
+    "status": "confirmed",
+    "priority": "urgent",
+    "scheduledDate": "2025-12-26T14:00:00+00:00",
+    "notes": "Notes mises à jour",
+    "deliver": "/api/admin/users/5",
+    "location": {
+      "address": "456 Nouvelle Adresse",
+      "latitude": -18.9000,
+      "longitude": 47.5200,
+      "city": "Antananarivo"
+    },
+    "items": [
+      {
+        "product": "/api/products/2",
+        "quantity": 3,
+        "store": "/api/admin/stores/1"
+      }
+    ]
+  }'
+```
+
+#### Mise à jour partielle (PATCH)
+
+```bash
+# Mettre à jour uniquement le statut
+curl -X PATCH "https://votre-api.com/api/admin/orders/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "status": "processing"
+  }'
+
+# Mettre à jour le statut et le livreur
+curl -X PATCH "https://votre-api.com/api/admin/orders/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "status": "shipped",
+    "deliver": "/api/admin/users/5"
+  }'
+
+# Mettre à jour uniquement les items
+curl -X PATCH "https://votre-api.com/api/admin/orders/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "items": [
+      {
+        "product": "/api/products/3",
+        "quantity": 5,
+        "store": "/api/admin/stores/2"
+      }
+    ]
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function updateOrder(orderId, updates) {
+  const response = await fetch(`/api/admin/orders/${orderId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(updates)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la mise à jour de la commande');
+  }
+  
+  return await response.json();
+}
+
+// Exemple d'utilisation
+await updateOrder(1, {
+  status: 'processing',
+  deliver: '/api/admin/users/5'
+});
+```
+
+### Supprimer une commande
+
+```bash
+curl -X DELETE "https://votre-api.com/api/admin/orders/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function deleteOrder(orderId) {
+  const response = await fetch(`/api/admin/orders/${orderId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la suppression de la commande');
+  }
+  
+  return response.status === 204 ? null : await response.json();
+}
+```
+
+**Note :** 
+- Le `totalAmount` est calculé automatiquement en fonction des prix des produits et des quantités
+- La référence doit être unique. Si vous fournissez une référence qui existe déjà, une erreur sera retournée
+- Si la référence n'est pas fournie, elle sera générée automatiquement au format `ORD-YYYY-XXXXXX`
+- Le QR code est généré automatiquement lors de la création
+- Les statuts valides sont : `pending`, `confirmed`, `processing`, `shipped`, `collected`, `delivered`, `cancelled`
+- Les priorités valides sont : `urgent`, `standard`, `planified`
+- Lors d'une mise à jour partielle (PATCH), seuls les champs fournis seront modifiés
+- La suppression d'une commande supprimera également tous les OrderItems associés
+
+---
+
 ## Mappings d'images disponibles
 
 Le paramètre `mapping` lors de l'upload détermine où le fichier sera stocké :
@@ -1213,7 +1484,7 @@ Le paramètre `mapping` lors de l'upload détermine où le fichier sera stocké 
 }
 ```
 
-**Solution :** Fournir tous les champs requis (`name` pour Category/Brand/Manufacturer, `label` pour Form/Unit).
+**Solution :** Fournir tous les champs requis (`name` pour Category/Brand/Manufacturer, `label` pour Form/Unit, `owner`, `phone` et `items` pour Order).
 
 #### Entité introuvable
 ```json
@@ -1312,6 +1583,44 @@ async function createMultipleUnits(units) {
 await createMultipleUnits(units);
 ```
 
+### Exemple 4 : Créer une commande avec plusieurs produits
+
+```bash
+# Créer une commande avec plusieurs items
+curl -X POST "https://votre-api.com/api/admin/orders" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "owner": "/api/admin/users/1",
+    "phone": "+261341234567",
+    "status": "pending",
+    "priority": "urgent",
+    "scheduledDate": "2025-12-25T10:00:00+00:00",
+    "location": {
+      "address": "123 Rue de la République",
+      "latitude": -18.8792,
+      "longitude": 47.5079,
+      "city": "Antananarivo"
+    },
+    "items": [
+      {
+        "product": "/api/products/1",
+        "quantity": 2,
+        "store": "/api/admin/stores/1"
+      },
+      {
+        "product": "/api/products/2",
+        "quantity": 1,
+        "store": "/api/admin/stores/1"
+      },
+      {
+        "product": "/api/products/3",
+        "quantity": 3
+      }
+    ]
+  }'
+```
+
 ---
 
 ## Endpoints de référence
@@ -1388,6 +1697,15 @@ await createMultipleUnits(units);
 - `PUT /api/admin/store-settings/{id}` - Mettre à jour les paramètres d'un magasin (complète)
 - `PATCH /api/admin/store-settings/{id}` - Mettre à jour les paramètres d'un magasin (partielle)
 - `DELETE /api/admin/store-settings/{id}` - Supprimer les paramètres d'un magasin
+
+### Commandes
+- `GET /api/admin/orders` - Liste des commandes
+- `GET /api/admin/orders/{id}` - Détails d'une commande
+- `POST /api/admin/orders` - Créer une commande
+- `PUT /api/admin/orders/{id}` - Mettre à jour une commande (complète)
+- `PATCH /api/admin/orders/{id}` - Mettre à jour une commande (partielle)
+- `DELETE /api/admin/orders/{id}` - Supprimer une commande
+- `POST /api/admin/orders/batch-delete` - Supprimer plusieurs commandes en lot
 
 ### Images
 - `POST /api/media_objects` - Uploader une image/icône
