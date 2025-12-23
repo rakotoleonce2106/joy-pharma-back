@@ -62,6 +62,7 @@ App\Entity\StoreSetting:
             inputFormats:
                 json: ['application/json']
                 jsonld: ['application/ld+json']
+            processor: App\State\Admin\StoreSettingProcessor
             denormalizationContext:
                 groups: ['store_setting:write']
             normalizationContext:
@@ -77,13 +78,14 @@ App\Entity\StoreSetting:
             inputFormats:
                 json: ['application/json']
                 jsonld: ['application/ld+json']
+            processor: App\State\Admin\StoreSettingProcessor
             denormalizationContext:
                 groups: ['store_setting:write']
             normalizationContext:
                 groups: ['id:read','store_setting:read']
             openapi:
                 summary: 'Update store setting (Admin) - Partial update'
-                description: 'Partially update store setting. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
+                description: 'Partially update store setting. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs. Only the provided days will be updated, others remain unchanged.'
 
         admin_delete_store_setting:
             class: ApiPlatform\Metadata\Delete
