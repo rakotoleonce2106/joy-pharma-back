@@ -13,15 +13,15 @@ class BusinessHours
     use EntityIdTrait;
 
     #[ORM\Column(type: 'time', nullable: true)]
-    #[Groups(['store_setting:read', 'store_setting:write'])]
+    #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
     private ?\DateTimeInterface $openTime = null;
 
     #[ORM\Column(type: 'time', nullable: true)]
-    #[Groups(['store_setting:read', 'store_setting:write'])]
+    #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
     private ?\DateTimeInterface $closeTime = null;
 
     #[ORM\Column]
-    #[Groups(['store_setting:read', 'store_setting:write'])]
+    #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
     private ?bool $isClosed = null;
 
 

@@ -801,7 +801,11 @@ curl -X PATCH "https://votre-api.com/api/admin/stores/1" \
   }'
 ```
 
-**Note :** Lors de la création d'un magasin, un `StoreSetting` avec des `BusinessHours` par défaut est automatiquement créé. L'image est automatiquement mappée avec `store_images`, et l'ancienne image est supprimée si elle est remplacée.
+**Note :** Lors de la création d'un magasin, un `StoreSetting` avec des `BusinessHours` par défaut est automatiquement créé :
+- **Lundi-Vendredi** : 8:00 - 17:00 (ouvert)
+- **Samedi-Dimanche** : Fermé
+
+L'image est automatiquement mappée avec `store_images`, et l'ancienne image est supprimée si elle est remplacée.
 
 ---
 
@@ -963,9 +967,12 @@ async function deleteStoreProduct(storeProductId) {
 
 - **GET** `/api/admin/store-settings` - Liste tous les paramètres de magasin
 - **GET** `/api/admin/store-settings/{id}` - Récupère les paramètres d'un magasin par ID
+- **POST** `/api/admin/store-settings` - Crée un nouveau paramètre de magasin
 - **PUT** `/api/admin/store-settings/{id}` - Met à jour les paramètres d'un magasin (mise à jour complète)
 - **PATCH** `/api/admin/store-settings/{id}` - Met à jour les paramètres d'un magasin (mise à jour partielle)
 - **DELETE** `/api/admin/store-settings/{id}` - Supprime les paramètres d'un magasin
+
+**Note importante :** Toutes les opérations de création et mise à jour (POST, PUT, PATCH) utilisent uniquement le format `application/ld+json`. Les heures par défaut lors de la création d'un magasin sont : **Lundi-Vendredi 8:00-17:00**, **Samedi-Dimanche fermé**.
 
 ### Structure des données
 
@@ -982,10 +989,123 @@ async function deleteStoreProduct(storeProductId) {
 **Structure de BusinessHours :**
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
-| `@id` | string | ❌ Non | IRI si BusinessHours existe déjà (ex: `"/api/business_hours/1"`). Omettez pour créer un nouveau. |
-| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"09:00"`) |
-| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"18:00"`) |
+| `@id` | string | ❌ Non | IRI si BusinessHours existe déjà (ex: `"/api/admin/business-hours/1"`). Omettez pour créer un nouveau. |
+| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). Doit être `null` si `isClosed` est `true`. |
+| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). Doit être `null` si `isClosed` est `true`. |
 | `isClosed` | boolean | ❌ Non | Si le magasin est fermé ce jour-là (défaut: `false`) |
+
+### Créer un nouveau paramètre de magasin
+
+**Option 1 : Utiliser des IRI vers des BusinessHours existants**
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/store-settings" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "mondayHours": "/api/admin/business-hours/1",
+    "tuesdayHours": "/api/admin/business-hours/1",
+    "wednesdayHours": "/api/admin/business-hours/1",
+    "thursdayHours": "/api/admin/business-hours/1",
+    "fridayHours": "/api/admin/business-hours/1",
+    "saturdayHours": "/api/admin/business-hours/2",
+    "sundayHours": "/api/admin/business-hours/2"
+  }'
+```
+
+**Option 2 : Créer de nouveaux BusinessHours inline**
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/store-settings" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "mondayHours": {
+      "openTime": "08:00",
+      "closeTime": "17:00",
+      "isClosed": false
+    },
+    "tuesdayHours": {
+      "openTime": "08:00",
+      "closeTime": "17:00",
+      "isClosed": false
+    },
+    "wednesdayHours": {
+      "openTime": "08:00",
+      "closeTime": "17:00",
+      "isClosed": false
+    },
+    "thursdayHours": {
+      "openTime": "08:00",
+      "closeTime": "17:00",
+      "isClosed": false
+    },
+    "fridayHours": {
+      "openTime": "08:00",
+      "closeTime": "17:00",
+      "isClosed": false
+    },
+    "saturdayHours": {
+      "isClosed": true
+    },
+    "sundayHours": {
+      "isClosed": true
+    }
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function createStoreSetting(storeSettingData) {
+  const response = await fetch('/api/admin/store-settings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(storeSettingData)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la création des paramètres');
+  }
+  
+  return await response.json();
+}
+
+// Exemple 1 : Utiliser des IRI vers des BusinessHours existants
+await createStoreSetting({
+  mondayHours: "/api/admin/business-hours/1",
+  tuesdayHours: "/api/admin/business-hours/1",
+  wednesdayHours: "/api/admin/business-hours/1",
+  thursdayHours: "/api/admin/business-hours/1",
+  fridayHours: "/api/admin/business-hours/1",
+  saturdayHours: "/api/admin/business-hours/2",
+  sundayHours: "/api/admin/business-hours/2"
+});
+
+// Exemple 2 : Créer de nouveaux BusinessHours inline
+await createStoreSetting({
+  mondayHours: {
+    openTime: "08:00",
+    closeTime: "17:00",
+    isClosed: false
+  },
+  tuesdayHours: {
+    openTime: "08:00",
+    closeTime: "17:00",
+    isClosed: false
+  },
+  // ... autres jours
+  saturdayHours: {
+    isClosed: true
+  },
+  sundayHours: {
+    isClosed: true
+  }
+});
+```
 
 ### Workflow complet : Récupérer les paramètres d'un magasin
 
@@ -1020,40 +1140,57 @@ async function getStoreSetting(storeSettingId) {
 
 #### Mise à jour complète (PUT)
 
+**Option 1 : Utiliser des IRI vers des BusinessHours existants**
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "mondayHours": "/api/admin/business-hours/1",
+    "tuesdayHours": "/api/admin/business-hours/1",
+    "wednesdayHours": "/api/admin/business-hours/1",
+    "thursdayHours": "/api/admin/business-hours/1",
+    "fridayHours": "/api/admin/business-hours/1",
+    "saturdayHours": "/api/admin/business-hours/2",
+    "sundayHours": "/api/admin/business-hours/2"
+  }'
+```
+
+**Option 2 : Créer ou mettre à jour des BusinessHours inline**
+
 ```bash
 curl -X PUT "https://votre-api.com/api/admin/store-settings/1" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -H "Content-Type: application/ld+json" \
   -d '{
     "mondayHours": {
-      "openTime": "09:00",
-      "closeTime": "18:00",
+      "openTime": "08:00",
+      "closeTime": "17:00",
       "isClosed": false
     },
     "tuesdayHours": {
-      "openTime": "09:00",
-      "closeTime": "18:00",
+      "openTime": "08:00",
+      "closeTime": "17:00",
       "isClosed": false
     },
     "wednesdayHours": {
-      "openTime": "09:00",
-      "closeTime": "18:00",
+      "openTime": "08:00",
+      "closeTime": "17:00",
       "isClosed": false
     },
     "thursdayHours": {
-      "openTime": "09:00",
-      "closeTime": "18:00",
+      "openTime": "08:00",
+      "closeTime": "17:00",
       "isClosed": false
     },
     "fridayHours": {
-      "openTime": "09:00",
-      "closeTime": "18:00",
+      "openTime": "08:00",
+      "closeTime": "17:00",
       "isClosed": false
     },
     "saturdayHours": {
-      "openTime": "10:00",
-      "closeTime": "16:00",
-      "isClosed": false
+      "isClosed": true
     },
     "sundayHours": {
       "isClosed": true
@@ -1062,6 +1199,20 @@ curl -X PUT "https://votre-api.com/api/admin/store-settings/1" \
 ```
 
 #### Mise à jour partielle (PATCH)
+
+**Option 1 : Utiliser une IRI vers un BusinessHours existant**
+
+```bash
+# Mettre à jour uniquement les heures du lundi avec un BusinessHours existant
+curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "mondayHours": "/api/admin/business-hours/3"
+  }'
+```
+
+**Option 2 : Créer ou mettre à jour un BusinessHours inline**
 
 ```bash
 # Mettre à jour uniquement les heures du lundi
@@ -1144,14 +1295,242 @@ async function deleteStoreSetting(storeSettingId) {
 }
 ```
 
-**Note :** 
-- Les heures d'ouverture doivent être au format `"HH:mm"` (ex: `"09:00"`, `"18:30"`)
-- Si `isClosed` est `true`, `openTime` et `closeTime` peuvent être `null`
-- Pour mettre à jour un BusinessHours existant, incluez son `@id` dans l'objet. Sinon, les propriétés seront mises à jour sur l'objet BusinessHours existant.
+**Notes importantes :** 
+- **Format requis** : Toutes les opérations POST, PUT et PATCH utilisent uniquement `Content-Type: application/ld+json`
+- Les heures d'ouverture doivent être au format `"HH:mm"` (ex: `"08:00"`, `"17:00"`)
+- Si `isClosed` est `true`, `openTime` et `closeTime` doivent être `null`
+- Pour référencer un BusinessHours existant, utilisez son `@id` (ex: `"/api/admin/business-hours/1"`). Omettez `@id` pour créer un nouveau BusinessHours.
+- **Heures par défaut** : Lors de la création d'un magasin, les StoreSettings sont automatiquement créés avec : **Lundi-Vendredi 8:00-17:00**, **Samedi-Dimanche fermé**
 - **Important pour PATCH** : Lors d'une mise à jour partielle (PATCH), vous pouvez mettre à jour un seul jour sans affecter les autres. Les autres jours resteront inchangés.
 - La suppression d'un StoreSetting supprimera également tous les BusinessHours associés.
 
 **Exemple de mise à jour partielle (PATCH) - Mettre à jour uniquement le mardi :**
+```bash
+# Seul tuesdayHours sera modifié, les autres jours restent inchangés
+curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "tuesdayHours": {
+      "openTime": "09:00",
+      "closeTime": "18:00",
+      "isClosed": false
+    }
+  }'
+```
+
+---
+
+## 🕐 Heures d'ouverture (Business Hours)
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/business-hours` - Liste toutes les heures d'ouverture
+- **GET** `/api/admin/business-hours/{id}` - Récupère des heures d'ouverture par ID
+- **POST** `/api/admin/business-hours` - Crée de nouvelles heures d'ouverture
+- **PUT** `/api/admin/business-hours/{id}` - Met à jour des heures d'ouverture (mise à jour complète)
+- **PATCH** `/api/admin/business-hours/{id}` - Met à jour des heures d'ouverture (mise à jour partielle)
+- **DELETE** `/api/admin/business-hours/{id}` - Supprime des heures d'ouverture
+
+### Structure des données
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). Doit être `null` si `isClosed` est `true`. |
+| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). Doit être `null` si `isClosed` est `true`. |
+| `isClosed` | boolean | ❌ Non | Si le magasin est fermé (défaut: `false`) |
+
+### Créer des heures d'ouverture
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/business-hours" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "openTime": "08:00",
+    "closeTime": "17:00",
+    "isClosed": false
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function createBusinessHours(openTime, closeTime, isClosed = false) {
+  const response = await fetch('/api/admin/business-hours', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      openTime: openTime,
+      closeTime: closeTime,
+      isClosed: isClosed
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la création des heures d\'ouverture');
+  }
+  
+  return await response.json();
+}
+
+// Exemple : Créer des heures d'ouverture
+await createBusinessHours("08:00", "17:00", false);
+
+// Exemple : Créer des heures fermées
+await createBusinessHours(null, null, true);
+```
+
+### Récupérer des heures d'ouverture
+
+```bash
+# Liste toutes les heures d'ouverture
+curl -X GET "https://votre-api.com/api/admin/business-hours" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Récupère une heure d'ouverture par ID
+curl -X GET "https://votre-api.com/api/admin/business-hours/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+### Mettre à jour des heures d'ouverture
+
+#### Mise à jour complète (PUT)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/business-hours/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "openTime": "09:00",
+    "closeTime": "18:00",
+    "isClosed": false
+  }'
+```
+
+#### Mise à jour partielle (PATCH)
+
+```bash
+# Mettre à jour uniquement l'heure d'ouverture
+curl -X PATCH "https://votre-api.com/api/admin/business-hours/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "openTime": "08:30"
+  }'
+
+# Fermer le magasin
+curl -X PATCH "https://votre-api.com/api/admin/business-hours/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "isClosed": true,
+    "openTime": null,
+    "closeTime": null
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function updateBusinessHours(businessHoursId, updates) {
+  const response = await fetch(`/api/admin/business-hours/${businessHoursId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(updates)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la mise à jour des heures d\'ouverture');
+  }
+  
+  return await response.json();
+}
+
+// Exemple d'utilisation
+await updateBusinessHours(1, {
+  openTime: "09:00",
+  closeTime: "18:00",
+  isClosed: false
+});
+```
+
+### Supprimer des heures d'ouverture
+
+```bash
+curl -X DELETE "https://votre-api.com/api/admin/business-hours/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function deleteBusinessHours(businessHoursId) {
+  const response = await fetch(`/api/admin/business-hours/${businessHoursId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la suppression des heures d\'ouverture');
+  }
+  
+  return response.status === 204 ? null : await response.json();
+}
+```
+
+**Notes importantes :**
+- **Format requis** : Toutes les opérations POST, PUT et PATCH utilisent uniquement `Content-Type: application/ld+json`
+- Les heures doivent être au format `"HH:mm"` (ex: `"08:00"`, `"17:00"`)
+- Si `isClosed` est `true`, `openTime` et `closeTime` doivent être `null`
+- **Attention** : La suppression d'un BusinessHours supprimera également toutes les références dans les StoreSettings qui l'utilisent
+
+---
+
+## 📝 Notes générales sur Store Settings et Business Hours
+
+### Utilisation dans Store Settings
+
+Les BusinessHours peuvent être référencés dans les StoreSettings de deux façons :
+
+1. **Référencer un BusinessHours existant** : Utilisez le `@id` du BusinessHours
+```json
+{
+  "mondayHours": {
+    "@id": "/api/admin/business-hours/1"
+  }
+}
+```
+
+2. **Créer un nouveau BusinessHours** : Omettez le `@id` et fournissez les propriétés
+```json
+{
+  "mondayHours": {
+    "openTime": "08:00",
+    "closeTime": "17:00",
+    "isClosed": false
+  }
+}
+```
+
+### Heures par défaut lors de la création d'un magasin
+
+Lors de la création d'un magasin via `POST /api/admin/stores`, un StoreSetting est automatiquement créé avec les heures par défaut suivantes :
+
+- **Lundi-Vendredi** : 8:00 - 17:00 (ouvert)
+- **Samedi-Dimanche** : Fermé
+
+Ces valeurs peuvent être modifiées ultérieurement via les endpoints Store Settings ou Business Hours.
+
+---
+
+## Exemple de mise à jour partielle (PATCH) - Mettre à jour uniquement le mardi :**
 ```bash
 # Seul tuesdayHours sera modifié, les autres jours restent inchangés
 curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \

@@ -1,0 +1,80 @@
+App\Entity\BusinessHours:
+    operations:
+        admin_get_business_hours:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/business-hours'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'business_hours:read']
+            openapi:
+                summary: 'List all business hours (Admin)'
+                description: 'Get a list of all business hours entries'
+
+        admin_get_business_hours_item:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/business-hours/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'business_hours:read']
+            openapi:
+                summary: 'Get business hours by ID (Admin)'
+                description: 'Get detailed information about a specific business hours entry'
+
+        admin_create_business_hours:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/business-hours'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['business_hours:write']
+            validationContext:
+                groups: ['create']
+            normalizationContext:
+                groups: ['id:read', 'business_hours:read']
+            openapi:
+                summary: 'Create new business hours (Admin)'
+                description: 'Create a new business hours entry. Use Content-Type: application/ld+json. openTime and closeTime should be in format "HH:mm" (e.g., "08:00", "17:00"). Set isClosed to true if the business is closed.'
+
+        admin_update_business_hours:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/business-hours/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['business_hours:write']
+            normalizationContext:
+                groups: ['id:read', 'business_hours:read']
+            openapi:
+                summary: 'Update business hours (Admin) - Full update'
+                description: 'Update business hours information. Use Content-Type: application/ld+json. For partial updates, use PATCH instead. openTime and closeTime should be in format "HH:mm" (e.g., "08:00", "17:00").'
+
+        admin_patch_business_hours:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/business-hours/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['business_hours:write']
+            normalizationContext:
+                groups: ['id:read', 'business_hours:read']
+            openapi:
+                summary: 'Update business hours (Admin) - Partial update'
+                description: 'Partially update business hours information. Only provide the fields you want to update. Use Content-Type: application/ld+json. openTime and closeTime should be in format "HH:mm" (e.g., "08:00", "17:00").'
+
+        admin_delete_business_hours:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/business-hours/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete business hours (Admin)'
+                description: 'Delete a business hours entry by ID. Warning: This will remove the business hours from any StoreSettings that reference it.'
+
+    normalizationContext:
+        groups: ['id:read', 'business_hours:read']
+

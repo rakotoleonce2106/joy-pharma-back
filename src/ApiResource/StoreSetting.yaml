@@ -55,14 +55,28 @@ App\Entity\StoreSetting:
                 summary: 'Get store setting by ID (Admin)'
                 description: 'Retrieve any store setting by ID (Admin only)'
 
+        admin_create_store_setting:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/store-settings'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store_setting:write']
+            validationContext:
+                groups: ['create']
+            normalizationContext:
+                groups: ['id:read','store_setting:read']
+            openapi:
+                summary: 'Create store setting (Admin)'
+                description: 'Create a new store setting with business hours. Use Content-Type: application/ld+json. Include BusinessHours objects with @id for existing ones or omit @id to create new ones.'
+
         admin_update_store_setting:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/store-settings/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             inputFormats:
-                json: ['application/json']
                 jsonld: ['application/ld+json']
-            processor: App\State\Admin\StoreSettingProcessor
             denormalizationContext:
                 groups: ['store_setting:write']
             normalizationContext:
@@ -76,9 +90,7 @@ App\Entity\StoreSetting:
             uriTemplate: '/admin/store-settings/{id}'
             security: 'is_granted("ROLE_ADMIN")'
             inputFormats:
-                json: ['application/json']
                 jsonld: ['application/ld+json']
-            processor: App\State\Admin\StoreSettingProcessor
             denormalizationContext:
                 groups: ['store_setting:write']
             normalizationContext:
