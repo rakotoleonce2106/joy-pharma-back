@@ -34,27 +34,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     use EntityStatusTrait;
     use EntityTimestampTrait;
 
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(groups: ['create'])]
     #[Assert\Email]
-    #[Groups(['user:read', 'user:create', 'user:store:read'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
     #[ORM\Column]
     private ?string $password = null;
 
-    #[Assert\NotBlank(groups: ['user:create'])]
-    #[Groups(['user:create'])]
+    #[Groups(['user:create', 'user:update'])]
     private ?string $plainPassword = null;
 
     #[ORM\Column(type: 'json')]
     #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     private array $roles = [];
 
+    #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column(length: 255)]
     #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     private ?string $firstName = null;
 
+    #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column(length: 255)]
     #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
     private ?string $lastName = null;
@@ -70,7 +71,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['user:read', 'user:update', 'user:store:read', 'media_object:read'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read', 'media_object:read'])]
     #[ApiProperty(types: ['https://schema.org/image'], iris: [MediaObject::class])]
     private ?MediaObject $image = null;
 

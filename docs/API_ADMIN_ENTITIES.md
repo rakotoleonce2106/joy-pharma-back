@@ -473,6 +473,159 @@ curl -X PATCH "https://votre-api.com/api/admin/units/1" \
 
 ---
 
+## 👤 Utilisateurs (Users)
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/users` - Liste tous les utilisateurs
+- **GET** `/api/admin/users/{id}` - Récupère un utilisateur par son ID
+- **POST** `/api/admin/users` - Crée un nouvel utilisateur
+- **PUT** `/api/admin/users/{id}` - Met à jour un utilisateur existant (mise à jour complète)
+- **PATCH** `/api/admin/users/{id}` - Met à jour un utilisateur existant (mise à jour partielle)
+- **DELETE** `/api/admin/users/{id}` - Supprime un utilisateur
+- **POST** `/api/admin/users/{id}/toggle-active` - Active/désactive un utilisateur
+
+### Structure des données
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `email` | string | ✅ Oui (create) | Email de l'utilisateur (doit être unique) |
+| `firstName` | string | ✅ Oui (create) | Prénom de l'utilisateur |
+| `lastName` | string | ✅ Oui (create) | Nom de l'utilisateur |
+| `plainPassword` | string | ❌ Non | Mot de passe en clair (sera hashé automatiquement). Si non fourni lors de la création, un mot de passe par défaut sera généré. |
+| `roles` | array<string> | ❌ Non | Tableau des rôles (ex: `["ROLE_ADMIN", "ROLE_STORE"]`). Par défaut, `ROLE_USER` est ajouté automatiquement. |
+| `active` | boolean | ❌ Non | Statut actif/inactif (défaut: `true`) |
+| `phone` | string | ❌ Non | Numéro de téléphone |
+| `image` | string | ❌ Non | IRI de l'avatar (ex: `"/api/media_objects/123"`) |
+
+### Workflow complet : Créer un utilisateur avec avatar
+
+#### Étape 1 : Uploader l'avatar (optionnel)
+
+```bash
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -F "file=@/chemin/vers/avatar.jpg" \
+  -F "mapping=media_object"
+
+# Réponse: { "@id": "/api/media_objects/123", "id": 123, ... }
+```
+
+#### Étape 2 : Créer l'utilisateur
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/users" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "email": "user@example.com",
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "plainPassword": "MotDePasse123!",
+    "roles": ["ROLE_STORE"],
+    "active": true,
+    "phone": "+261341234567",
+    "image": "/api/media_objects/123"
+  }'
+```
+
+**Note :** Si `plainPassword` n'est pas fourni, un mot de passe par défaut sera généré automatiquement (`JoyPharma2025!`).
+
+**Exemple avec JavaScript :**
+```javascript
+async function createUser(userData, avatarFile) {
+  // 1. Uploader l'avatar si fourni
+  const avatarIri = avatarFile ? await uploadMediaObject(avatarFile, 'media_object') : null;
+  
+  // 2. Créer l'utilisateur
+  const response = await fetch('/api/admin/users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      plainPassword: userData.password || null, // Optionnel, génère un mot de passe par défaut si null
+      roles: userData.roles || [],
+      active: userData.active !== undefined ? userData.active : true,
+      phone: userData.phone || null,
+      image: avatarIri
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la création de l\'utilisateur');
+  }
+  
+  return await response.json();
+}
+```
+
+### Mettre à jour un utilisateur
+
+#### Mise à jour complète (PUT)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/users/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "email": "user@example.com",
+    "firstName": "Jean",
+    "lastName": "Dupont",
+    "roles": ["ROLE_STORE", "ROLE_ADMIN"],
+    "active": true,
+    "phone": "+261341234567",
+    "image": "/api/media_objects/125"
+  }'
+```
+
+#### Mise à jour partielle (PATCH)
+
+```bash
+# Mettre à jour uniquement le statut actif
+curl -X PATCH "https://votre-api.com/api/admin/users/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "active": false
+  }'
+
+# Mettre à jour uniquement les rôles
+curl -X PATCH "https://votre-api.com/api/admin/users/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "roles": ["ROLE_ADMIN"]
+  }'
+
+# Changer le mot de passe
+curl -X PATCH "https://votre-api.com/api/admin/users/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "plainPassword": "NouveauMotDePasse123!"
+  }'
+```
+
+### Activer/Désactiver un utilisateur
+
+```bash
+# Désactiver un utilisateur
+curl -X POST "https://votre-api.com/api/admin/users/1/toggle-active" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Réactiver un utilisateur (même endpoint)
+curl -X POST "https://votre-api.com/api/admin/users/1/toggle-active" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+---
+
 ## Mappings d'images disponibles
 
 Le paramètre `mapping` lors de l'upload détermine où le fichier sera stocké :
@@ -655,6 +808,15 @@ await createMultipleUnits(units);
 - `PUT /api/admin/units/{id}` - Mettre à jour une unité (complète)
 - `PATCH /api/admin/units/{id}` - Mettre à jour une unité (partielle)
 - `DELETE /api/admin/units/{id}` - Supprimer une unité
+
+### Utilisateurs
+- `GET /api/admin/users` - Liste des utilisateurs
+- `GET /api/admin/users/{id}` - Détails d'un utilisateur
+- `POST /api/admin/users` - Créer un utilisateur
+- `PUT /api/admin/users/{id}` - Mettre à jour un utilisateur (complète)
+- `PATCH /api/admin/users/{id}` - Mettre à jour un utilisateur (partielle)
+- `DELETE /api/admin/users/{id}` - Supprimer un utilisateur
+- `POST /api/admin/users/{id}/toggle-active` - Activer/désactiver un utilisateur
 
 ### Images
 - `POST /api/media_objects` - Uploader une image/icône

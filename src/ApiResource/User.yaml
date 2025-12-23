@@ -123,25 +123,45 @@ App\Entity\User:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/users'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\UserInput
-            processor: App\State\Admin\UserProcessor
+            denormalizationContext:
+                groups: ['user:create']
+            validationContext:
+                groups: ['create']
             normalizationContext:
                 groups: ['id:read', 'user:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Create new user (Admin)'
-                description: 'Create a new user account with specified roles and permissions'
+                description: 'Create a new user account with specified roles and permissions. Upload avatar first using POST /api/media_objects, then reference it using IRI (e.g., "/api/media_objects/123"). Use Content-Type: application/ld+json when sending IRIs. If no password is provided, a default password will be generated.'
 
         admin_update_user:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/users/{id}'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\UserInput
-            processor: App\State\Admin\UserProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['user:update']
             normalizationContext:
                 groups: ['id:read', 'user:read', 'image:read', 'media_object:read']
             openapi:
-                summary: 'Update user (Admin)'
-                description: 'Update user information including roles and active status'
+                summary: 'Update user (Admin) - Full update'
+                description: 'Update user information including roles and active status. Upload avatar first using POST /api/media_objects, then reference it using IRI. Use Content-Type: application/ld+json when sending IRIs. For partial updates, use PATCH instead.'
+
+        admin_patch_user:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/users/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['user:update']
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Update user (Admin) - Partial update'
+                description: 'Partially update user information. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
 
         admin_delete_user:
             class: ApiPlatform\Metadata\Delete
@@ -165,9 +185,6 @@ App\Entity\User:
 
     normalizationContext:
         groups: ['id:read','user:read','image:read','media_object:read','location:read']
-
-    denormalizationContext:
-        groups: ['user:create', 'user:update']
         
 
 
