@@ -11,6 +11,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -22,28 +23,30 @@ class Category
     use EntityIdTrait;
     use EntityTimestampTrait;
     #[ORM\Column(length: 255)]
-    #[Groups(['category:read','product:read'])]
+    #[Groups(['category:read', 'category:write', 'product:read'])]
+    #[Assert\NotBlank(groups: ['create'])]
     private ?string $name = null;
 
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['category:read','product:read'])]
+    #[Groups(['category:read', 'category:write', 'product:read'])]
     private ?string $description = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['category:read','product:read', 'media_object:read'])]
+    #[Groups(['category:read', 'category:write', 'product:read', 'media_object:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $image = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['category:read','product:read', 'media_object:read'])]
+    #[Groups(['category:read', 'category:write', 'product:read', 'media_object:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $svg = null;
 
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'categories')]
+    #[Groups(['category:write'])]
     private ?self $parent = null;
 
     /**
@@ -61,7 +64,7 @@ class Category
     private Collection $products;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['category:read'])]
+    #[Groups(['category:read', 'category:write'])]
     private ?string $color = null;
 
     public function __construct()

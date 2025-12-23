@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[ORM\Entity(repositoryClass: BrandRepository::class)]
@@ -19,12 +20,13 @@ class Brand
     use EntityTimestampTrait;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['brand:read','product:read'])]
+    #[Groups(['brand:read', 'brand:write', 'product:read'])]
+    #[Assert\NotBlank(groups: ['create'])]
     private ?string $name = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['brand:read','product:read'])]
+    #[Groups(['brand:read', 'brand:write', 'product:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $image = null;
 

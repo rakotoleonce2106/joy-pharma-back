@@ -6,6 +6,7 @@ use App\Entity\Traits\EntityIdTrait;
 use App\Repository\FormRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: FormRepository::class)]
 class Form
@@ -13,7 +14,8 @@ class Form
     use EntityIdTrait;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['product:read', 'form:read'])]
+    #[Groups(['product:read', 'form:read', 'form:write'])]
+    #[Assert\NotBlank(groups: ['create'])]
     private ?string $label = null;
 
 

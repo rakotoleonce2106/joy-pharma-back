@@ -49,25 +49,45 @@ App\Entity\Brand:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/brands'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\BrandInput
-            processor: App\State\Admin\BrandProcessor
+            denormalizationContext:
+                groups: ['brand:write']
+            validationContext:
+                groups: ['create']
             normalizationContext:
                 groups: ['id:read', 'brand:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Create new brand (Admin)'
-                description: 'Create a new brand with optional logo. Upload logo first using POST /api/media_objects, then reference it using IRI (e.g., "/api/media_objects/123").'
+                description: 'Create a new brand with optional logo. Upload logo first using POST /api/media_objects, then reference it using IRI (e.g., "/api/media_objects/123"). Use Content-Type: application/ld+json when sending IRIs.'
 
         admin_update_brand:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/brands/{id}'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\BrandInput
-            processor: App\State\Admin\BrandProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['brand:write']
             normalizationContext:
                 groups: ['id:read', 'brand:read', 'image:read', 'media_object:read']
             openapi:
-                summary: 'Update brand (Admin)'
-                description: 'Update brand name and logo. Upload logo first using POST /api/media_objects, then reference it using IRI. Old logo will be automatically deleted if replaced.'
+                summary: 'Update brand (Admin) - Full update'
+                description: 'Update brand name and logo. Upload logo first using POST /api/media_objects, then reference it using IRI. Use Content-Type: application/ld+json when sending IRIs. For partial updates, use PATCH instead.'
+
+        admin_patch_brand:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/brands/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['brand:write']
+            normalizationContext:
+                groups: ['id:read', 'brand:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Update brand (Admin) - Partial update'
+                description: 'Partially update brand information. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
 
         admin_delete_brand:
             class: ApiPlatform\Metadata\Delete

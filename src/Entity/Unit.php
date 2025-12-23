@@ -6,6 +6,7 @@ use App\Entity\Traits\EntityIdTrait;
 use App\Repository\UnitRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UnitRepository::class)]
 class Unit
@@ -13,7 +14,8 @@ class Unit
     use EntityIdTrait;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['product:read', 'unit:read'])]
+    #[Groups(['product:read', 'unit:read', 'unit:write'])]
+    #[Assert\NotBlank(groups: ['create'])]
     private ?string $label = null;
 
 

@@ -82,29 +82,45 @@ App\Entity\Category:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/categories'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\CategoryInput
+            denormalizationContext:
+                groups: ['category:write']
             validationContext:
                 groups: ['create']
-            processor: App\State\Admin\CategoryProcessor
             normalizationContext:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
                 summary: 'Create new category (Admin)'
-                description: 'Create a new category with optional parent category, image and icon. Upload images first using POST /api/media_objects, then reference them using IRI (e.g., "/api/media_objects/123"). If category with same name and parent exists, it will be returned/updated instead of creating a duplicate.'
+                description: 'Create a new category with optional parent category, image and icon. Upload images first using POST /api/media_objects, then reference them using IRI (e.g., "/api/media_objects/123"). Use Content-Type: application/ld+json when sending IRIs.'
 
         admin_update_category:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/categories/{id}'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\CategoryInput
-            validationContext:
-                groups: ['update']
-            processor: App\State\Admin\CategoryProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['category:write']
             normalizationContext:
                 groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
             openapi:
-                summary: 'Update category (Admin)'
-                description: 'Update category information including parent relationship, image and icon. Upload images first using POST /api/media_objects, then reference them using IRI (e.g., "/api/media_objects/123"). Name is optional - if not provided, existing name will be kept. Old images will be automatically deleted if replaced.'
+                summary: 'Update category (Admin) - Full update'
+                description: 'Update category information including parent relationship, image and icon. Upload images first using POST /api/media_objects, then reference them using IRI. Use Content-Type: application/ld+json when sending IRIs. For partial updates, use PATCH instead.'
+
+        admin_patch_category:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/categories/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['category:write']
+            normalizationContext:
+                groups: ['id:read', 'category:read', 'image:read', 'media_object:read']
+            openapi:
+                summary: 'Update category (Admin) - Partial update'
+                description: 'Partially update category information. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
 
         admin_delete_category:
             class: ApiPlatform\Metadata\Delete

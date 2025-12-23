@@ -22,23 +22,45 @@ App\Entity\Unit:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/units'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\UnitInput
-            processor: App\State\Admin\UnitProcessor
+            denormalizationContext:
+                groups: ['unit:write']
+            validationContext:
+                groups: ['create']
             normalizationContext:
                 groups: ['id:read', 'unit:read']
             openapi:
                 summary: 'Create new unit (Admin)'
+                description: 'Create a new unit. Use Content-Type: application/ld+json.'
 
         admin_update_unit:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/units/{id}'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\UnitInput
-            processor: App\State\Admin\UnitProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['unit:write']
             normalizationContext:
                 groups: ['id:read', 'unit:read']
             openapi:
-                summary: 'Update unit (Admin)'
+                summary: 'Update unit (Admin) - Full update'
+                description: 'Update unit information. Use Content-Type: application/ld+json. For partial updates, use PATCH instead.'
+
+        admin_patch_unit:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/units/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['unit:write']
+            normalizationContext:
+                groups: ['id:read', 'unit:read']
+            openapi:
+                summary: 'Update unit (Admin) - Partial update'
+                description: 'Partially update unit information. Only provide the fields you want to update. Use Content-Type: application/ld+json.'
 
         admin_delete_unit:
             class: ApiPlatform\Metadata\Delete
