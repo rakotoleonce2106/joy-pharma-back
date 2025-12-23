@@ -22,8 +22,20 @@ final class BusinessHoursDenormalizer implements DenormalizerInterface, Denormal
             return $this->denormalizer->denormalize($data, $type, $format, $context);
         }
 
+        // Create BusinessHours object directly to avoid DateTimeNormalizer issues with null values
+        $businessHours = new BusinessHours();
+        
+        // Handle isClosed
+        $isClosed = $data['isClosed'] ?? false;
+        if (isset($data['isClosed'])) {
+            $businessHours->setIsClosed((bool) $data['isClosed']);
+        } else {
+            $businessHours->setIsClosed(false);
+        }
+
         // Convert string times to DateTime objects ONLY if they are non-empty strings
         // Leave null values as null - they should not be converted
+        $openTime = null;
         if (isset($data['openTime']) && $data['openTime'] !== null && $data['openTime'] !== '') {
             if (is_string($data['openTime'])) {
                 try {
@@ -32,14 +44,18 @@ final class BusinessHoursDenormalizer implements DenormalizerInterface, Denormal
                         $parsedTime = \DateTime::createFromFormat('H:i:s', $data['openTime']);
                     }
                     if ($parsedTime !== false) {
-                        $data['openTime'] = $parsedTime;
+                        $openTime = $parsedTime;
                     }
                 } catch (\Exception $e) {
-                    // Keep as string if parsing fails
+                    // Keep as null if parsing fails
                 }
+            } elseif ($data['openTime'] instanceof \DateTimeInterface) {
+                $openTime = $data['openTime'];
             }
         }
+        $businessHours->setOpenTime($openTime);
 
+        $closeTime = null;
         if (isset($data['closeTime']) && $data['closeTime'] !== null && $data['closeTime'] !== '') {
             if (is_string($data['closeTime'])) {
                 try {
@@ -48,24 +64,18 @@ final class BusinessHoursDenormalizer implements DenormalizerInterface, Denormal
                         $parsedTime = \DateTime::createFromFormat('H:i:s', $data['closeTime']);
                     }
                     if ($parsedTime !== false) {
-                        $data['closeTime'] = $parsedTime;
+                        $closeTime = $parsedTime;
                     }
                 } catch (\Exception $e) {
-                    // Keep as string if parsing fails
+                    // Keep as null if parsing fails
                 }
+            } elseif ($data['closeTime'] instanceof \DateTimeInterface) {
+                $closeTime = $data['closeTime'];
             }
         }
+        $businessHours->setCloseTime($closeTime);
 
-        // Ensure null values are explicitly set to null (not unset)
-        // This prevents API Platform from trying to convert null to DateTime
-        if (array_key_exists('openTime', $data) && $data['openTime'] === null) {
-            $data['openTime'] = null;
-        }
-        if (array_key_exists('closeTime', $data) && $data['closeTime'] === null) {
-            $data['closeTime'] = null;
-        }
-
-        return $this->denormalizer->denormalize($data, $type, $format, $context);
+        return $businessHours;
     }
 
     public function supportsDenormalization($data, string $type, ?string $format = null, array $context = []): bool
@@ -91,4 +101,5 @@ final class BusinessHoursDenormalizer implements DenormalizerInterface, Denormal
         ];
     }
 }
+
 
