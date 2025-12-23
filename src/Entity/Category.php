@@ -17,7 +17,7 @@ use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
-#[ApiFilter(SearchFilter::class, properties: ['parent' => 'exact'])]
+#[ApiFilter(SearchFilter::class, properties: ['parent' => 'exact', 'name' => 'ipartial'])]
 class Category
 {
     use EntityIdTrait;

@@ -2,13 +2,16 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiFilter;
 use App\Entity\Traits\EntityIdTrait;
 use App\Repository\UnitRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 #[ORM\Entity(repositoryClass: UnitRepository::class)]
+#[ApiFilter(SearchFilter::class, properties: ['label' => 'ipartial'])]
 class Unit
 {
     use EntityIdTrait;

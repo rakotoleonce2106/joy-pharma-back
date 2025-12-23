@@ -40,6 +40,33 @@ API Platform désérialise automatiquement les IRIs en entités.
 - **DELETE** `/api/admin/categories/{id}` - Supprime une catégorie
 - **POST** `/api/admin/categories/batch-delete` - Supprime plusieurs catégories en lot
 
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/categories` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `name` | string | Recherche partielle dans le nom (insensible à la casse) | `?name=médicament` |
+| `parent` | integer\|null | Filtrer par catégorie parente. Utilisez `parent=null` pour les catégories racines | `?parent=1` ou `?parent=null` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10) | `?itemsPerPage=20` |
+
+**Exemples de recherche :**
+
+```bash
+# Rechercher les catégories contenant "médicament" dans le nom
+curl -X GET "https://votre-api.com/api/admin/categories?name=médicament" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher les catégories racines (sans parent)
+curl -X GET "https://votre-api.com/api/admin/categories?parent=null" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec pagination
+curl -X GET "https://votre-api.com/api/admin/categories?name=pharma&page=1&itemsPerPage=20" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
 ### Structure des données
 
 | Champ | Type | Requis | Description |
@@ -196,6 +223,28 @@ curl -X PATCH "https://votre-api.com/api/admin/categories/1" \
 - **DELETE** `/api/admin/brands/{id}` - Supprime une marque
 - **POST** `/api/admin/brands/batch-delete` - Supprime plusieurs marques en lot
 
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/brands` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `name` | string | Recherche partielle dans le nom (insensible à la casse) | `?name=pfizer` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10) | `?itemsPerPage=20` |
+
+**Exemples de recherche :**
+
+```bash
+# Rechercher les marques contenant "pfizer" dans le nom
+curl -X GET "https://votre-api.com/api/admin/brands?name=pfizer" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec pagination
+curl -X GET "https://votre-api.com/api/admin/brands?name=pharma&page=1&itemsPerPage=20" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
 ### Structure des données
 
 | Champ | Type | Requis | Description |
@@ -282,6 +331,28 @@ curl -X PATCH "https://votre-api.com/api/admin/brands/1" \
 - **DELETE** `/api/admin/manufacturers/{id}` - Supprime un fabricant
 - **POST** `/api/admin/manufacturers/batch-delete` - Supprime plusieurs fabricants en lot
 
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/manufacturers` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `name` | string | Recherche partielle dans le nom (insensible à la casse) | `?name=novartis` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10) | `?itemsPerPage=20` |
+
+**Exemples de recherche :**
+
+```bash
+# Rechercher les fabricants contenant "novartis" dans le nom
+curl -X GET "https://votre-api.com/api/admin/manufacturers?name=novartis" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec pagination
+curl -X GET "https://votre-api.com/api/admin/manufacturers?name=pharma&page=1&itemsPerPage=20" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
 ### Structure des données
 
 | Champ | Type | Requis | Description |
@@ -353,6 +424,28 @@ async function createManufacturer(manufacturerData, logoFile) {
 - **DELETE** `/api/admin/forms/{id}` - Supprime une forme
 - **POST** `/api/admin/forms/batch-delete` - Supprime plusieurs formes en lot
 
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/forms` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `label` | string | Recherche partielle dans le label (insensible à la casse) | `?label=comprimé` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10) | `?itemsPerPage=20` |
+
+**Exemples de recherche :**
+
+```bash
+# Rechercher les formes contenant "comprimé" dans le label
+curl -X GET "https://votre-api.com/api/admin/forms?label=comprimé" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec pagination
+curl -X GET "https://votre-api.com/api/admin/forms?label=gélule&page=1&itemsPerPage=20" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
 ### Structure des données
 
 | Champ | Type | Requis | Description |
@@ -418,6 +511,28 @@ curl -X PATCH "https://votre-api.com/api/admin/forms/1" \
 - **PATCH** `/api/admin/units/{id}` - Met à jour une unité existante (mise à jour partielle)
 - **DELETE** `/api/admin/units/{id}` - Supprime une unité
 - **POST** `/api/admin/units/batch-delete` - Supprime plusieurs unités en lot
+
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/units` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `label` | string | Recherche partielle dans le label (insensible à la casse) | `?label=mg` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10) | `?itemsPerPage=20` |
+
+**Exemples de recherche :**
+
+```bash
+# Rechercher les unités contenant "mg" dans le label
+curl -X GET "https://votre-api.com/api/admin/units?label=mg" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec pagination
+curl -X GET "https://votre-api.com/api/admin/units?label=ml&page=1&itemsPerPage=20" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
 
 ### Structure des données
 
