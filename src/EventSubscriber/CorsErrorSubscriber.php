@@ -15,9 +15,11 @@ class CorsErrorSubscriber implements EventSubscriberInterface
 {
     private const ALLOWED_ORIGINS = [
         'http://localhost:3000',
+        'http://localhost:3001',
         'https://www.joy-pharma.com',
         'https://joy-pharma.com',
         'https://admin.joy-pharma.com',
+        'https://back.joy-pharma.com',
         'https://back-preprod.joy-pharma.com',
     ];
 
