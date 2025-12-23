@@ -74,6 +74,10 @@ services:
         tags: 
             - { name: 'serializer.normalizer', priority: 100 }
     
+    App\Serializer\BusinessHoursDenormalizer:
+        tags: 
+            - { name: 'serializer.normalizer', priority: 100 }
+    
     App\Serializer\AdminDashboardDataNormalizer:
         tags: 
             - { name: 'serializer.normalizer', priority: 64 }

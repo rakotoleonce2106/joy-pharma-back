@@ -57,36 +57,34 @@ class StoreSetting
         // Initialize business hours only if they don't exist
         // Check if hours exist, if not create new BusinessHours with defaults
         // Defaults: Monday-Friday 8:00-17:00, Saturday-Sunday closed
-
-        $defaultWeekdayHours = new BusinessHours('08:00', '17:00');
-        $closedHours = new BusinessHours(null, null, true);
+        // IMPORTANT: Create a new instance for each day to avoid shared references
 
         if (!$this->mondayHours) {
-            $this->mondayHours = $defaultWeekdayHours;
+            $this->mondayHours = new BusinessHours('08:00', '17:00');
         }
 
         if (!$this->tuesdayHours) {
-            $this->tuesdayHours = $defaultWeekdayHours;
+            $this->tuesdayHours = new BusinessHours('08:00', '17:00');
         }
 
         if (!$this->wednesdayHours) {
-            $this->wednesdayHours = $defaultWeekdayHours;
+            $this->wednesdayHours = new BusinessHours('08:00', '17:00');
         }
 
         if (!$this->thursdayHours) {
-            $this->thursdayHours = $defaultWeekdayHours;
+            $this->thursdayHours = new BusinessHours('08:00', '17:00');
         }
 
         if (!$this->fridayHours) {
-            $this->fridayHours = $defaultWeekdayHours;
+            $this->fridayHours = new BusinessHours('08:00', '17:00');
         }
 
         if (!$this->saturdayHours) {
-            $this->saturdayHours = $closedHours;
+            $this->saturdayHours = new BusinessHours(null, null, true);
         }
 
         if (!$this->sundayHours) {
-            $this->sundayHours = $closedHours;
+            $this->sundayHours = new BusinessHours(null, null, true);
         }
     }
 

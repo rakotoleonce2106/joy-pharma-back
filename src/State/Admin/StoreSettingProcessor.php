@@ -34,14 +34,21 @@ class StoreSettingProcessor implements ProcessorInterface
         }
 
         // Update only the BusinessHours that are provided in the request
+        // Use reflection to access private properties directly, avoiding getters that create defaults
+        $reflection = new \ReflectionClass(StoreSetting::class);
+        
         $days = ['mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours', 'fridayHours', 'saturdayHours', 'sundayHours'];
 
         foreach ($days as $day) {
-            $getter = 'get' . ucfirst($day);
-            $setter = 'set' . ucfirst($day);
+            $property = $reflection->getProperty($day);
+            $property->setAccessible(true);
             
-            $incomingHours = $data->$getter();
-            $existingHours = $existingStoreSetting->$getter();
+            $setter = 'set' . ucfirst($day);
+            $existingGetter = 'get' . ucfirst($day);
+            
+            // Access incoming hours directly via reflection to avoid getter side effects
+            $incomingHours = $property->getValue($data);
+            $existingHours = $existingStoreSetting->$existingGetter();
 
             // Only update if incoming hours are provided (not null)
             if ($incomingHours !== null) {
