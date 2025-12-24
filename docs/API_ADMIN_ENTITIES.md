@@ -1105,8 +1105,8 @@ async function deleteStoreProduct(storeProductId) {
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
 | `@id` | string | ❌ Non | IRI si BusinessHours existe déjà (ex: `"/api/admin/business-hours/1"`). Omettez pour créer un nouveau. |
-| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). Doit être `null` si `isClosed` est `true`. |
-| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). Doit être `null` si `isClosed` est `true`. |
+| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). |
+| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). |
 | `isClosed` | boolean | ❌ Non | Si le magasin est fermé ce jour-là (défaut: `false`) |
 
 ### Créer un nouveau paramètre de magasin
@@ -1451,8 +1451,8 @@ curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
 
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
-| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). Doit être `null` si `isClosed` est `true`. |
-| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). Doit être `null` si `isClosed` est `true`. |
+| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). |
+| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). |
 | `isClosed` | boolean | ❌ Non | Si le magasin est fermé (défaut: `false`) |
 
 ### Créer des heures d'ouverture
