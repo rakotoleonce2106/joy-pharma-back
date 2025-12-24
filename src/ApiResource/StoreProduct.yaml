@@ -3,28 +3,23 @@ App\Entity\StoreProduct:
         get_store_product:
             method: 'GET'
             class: ApiPlatform\Metadata\Get
-            uriTemplate: '/store_products/{id}'
+            uriTemplate: '/store/products/{id}'
             security: 'is_granted("ROLE_STORE")'
             provider: App\State\Product\StoreProductItemProvider
             normalizationContext:
                 groups: ['id:read','store-product:read', 'product:read','image:read','media_object:read']
             openapi:
                 summary: 'Get a store product'
-                description: 'Get a store product by id (only accessible by store owner)'
-                parameters:
-                    - name: 'id'
-                      in: 'path'
-                      description: 'The id of the store product'
+                description: 'Get a store product by ID for the authenticated store owner'
 
         get_store_products:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
-            uriTemplate: '/store_products'
+            uriTemplate: '/store/products'
             security: 'is_granted("ROLE_STORE")'
             provider: App\State\Product\StoreProductProvider
             normalizationContext:
                 groups:  ['id:read','store-product:read', 'product:read','image:read']
-            format: 'json'
             openapi:
                 summary: 'Get all store products'
                 description: 'Get all store products for the authenticated store owner'
@@ -32,36 +27,47 @@ App\Entity\StoreProduct:
         post_store_product:
             method: 'POST'
             class: ApiPlatform\Metadata\Post
-            uriTemplate: '/store_products'
+            uriTemplate: '/store/products'
             security: 'is_granted("ROLE_STORE")'
-            processor: App\State\Product\StoreProductCreateProcessor
+            inputFormats:
+                jsonld: ['application/ld+json']
             denormalizationContext:
                 groups: ['store-product:write']
             normalizationContext:
                 groups: ['id:read','store-product:read', 'product:read','image:read','media_object:read']
-            format: 'json'
             openapi:
                 summary: 'Create a store product'
-                description: 'Create a new store product (only accessible by store owner)'
+                description: 'Create a new store product for the authenticated store. The store is automatically assigned to the authenticated owner. Use Content-Type: application/ld+json when sending IRIs.'
 
         put_store_product:
             method: 'PUT'
             class: ApiPlatform\Metadata\Put
-            uriTemplate: '/store_products/{id}'
+            uriTemplate: '/store/products/{id}'
             security: 'is_granted("ROLE_STORE")'
-            processor: App\State\Product\StoreProductUpdateProcessor
+            inputFormats:
+                jsonld: ['application/ld+json']
             denormalizationContext:
                 groups: ['store-product:write']
             normalizationContext:
                 groups: ['id:read','store-product:read', 'product:read','image:read','media_object:read']
-            format: 'json'
             openapi:
                 summary: 'Update a store product'
-                description: 'Update a store product by id (only accessible by store owner who owns the product)'
-                parameters:
-                    - name: 'id'
-                      in: 'path'
-                      description: 'The id of the store product'
+                description: 'Update a store product by ID. Use Content-Type: application/ld+json when sending IRIs.'
+
+        patch_store_product:
+            method: 'PATCH'
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/store/products/{id}'
+            security: 'is_granted("ROLE_STORE")'
+            inputFormats:
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store-product:write']
+            normalizationContext:
+                groups: ['id:read','store-product:read', 'product:read','image:read','media_object:read']
+            openapi:
+                summary: 'Partial update a store product'
+                description: 'Partially update a store product by ID. Use Content-Type: application/ld+json when sending IRIs.'
 
         admin_get_store_products:
             class: ApiPlatform\Metadata\GetCollection

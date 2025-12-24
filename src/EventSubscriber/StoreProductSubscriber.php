@@ -13,12 +13,16 @@ use Doctrine\ORM\Events;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+use Symfony\Bundle\SecurityBundle\Security;
+use App\Entity\User;
+
 /**
  * EventSubscriber for StoreProduct entity lifecycle events
  * Handles:
  * - Product validation
  * - Duplicate StoreProduct validation
  * - Price and stock validation
+ * - Automatic Store assignment for STORE role
  */
 #[AsEntityListener(event: Events::prePersist, method: 'prePersist', entity: StoreProduct::class)]
 #[AsEntityListener(event: Events::preUpdate, method: 'preUpdate', entity: StoreProduct::class)]
@@ -26,7 +30,8 @@ class StoreProductSubscriber
 {
     public function __construct(
         private readonly ProductRepository $productRepository,
-        private readonly StoreProductRepository $storeProductRepository
+        private readonly StoreProductRepository $storeProductRepository,
+        private readonly Security $security
     ) {}
 
     /**
@@ -55,9 +60,15 @@ class StoreProductSubscriber
             throw new NotFoundHttpException('Product not found');
         }
 
-        // Validate store is provided
+        // Validate store is provided or assign from authenticated user
         if (!$storeProduct->getStore()) {
-            throw new BadRequestHttpException('Store is required');
+            /** @var User|null $user */
+            $user = $this->security->getUser();
+            if ($user?->getStore()) {
+                $storeProduct->setStore($user->getStore());
+            } else {
+                throw new BadRequestHttpException('Store is required');
+            }
         }
 
         // Check if store product already exists for this store and product

@@ -81,6 +81,47 @@ App\Entity\Store:
             openapi:
                 summary: 'Batch delete stores (Admin)'
 
+        get_store:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/store'
+            security: 'is_granted("ROLE_STORE")'
+            provider: App\State\Store\StoreProvider
+            normalizationContext:
+                groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read', 'media_object:read']
+            openapi:
+                summary: 'Get current user store profile'
+                description: 'Get the store profile for the authenticated store owner'
+
+        update_store_full:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/store/update'
+            security: 'is_granted("ROLE_STORE")'
+            provider: App\State\Store\StoreProvider
+            inputFormats:
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store:write', 'contact:write', 'location:write']
+            normalizationContext:
+                groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read', 'media_object:read']
+            openapi:
+                summary: 'Update store profile (Full)'
+                description: 'Update the store profile for the authenticated store owner. Use Content-Type: application/ld+json when sending IRIs.'
+
+        update_store_partial:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/store/update'
+            security: 'is_granted("ROLE_STORE")'
+            provider: App\State\Store\StoreProvider
+            inputFormats:
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['store:write', 'contact:write', 'location:write']
+            normalizationContext:
+                groups: ['id:read', 'store:read', 'location:read', 'user:store:read', 'store_setting:read', 'media_object:read']
+            openapi:
+                summary: 'Update store profile (Partial)'
+                description: 'Partially update the store profile for the authenticated store owner. Use Content-Type: application/ld+json when sending IRIs.'
+
     normalizationContext:
         groups: ['id:read', 'store:read', 'location:read', 'user:store:read']
 

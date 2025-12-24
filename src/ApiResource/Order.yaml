@@ -80,7 +80,7 @@ App\Entity\Order:
 
         store_update_order:
             class: ApiPlatform\Metadata\Put
-            uriTemplate: '/store/order/{id}'
+            uriTemplate: '/store/orders/{id}'
             input: App\Dto\StoreUpdateOrderInput
             processor: App\State\Store\StoreUpdateOrderProcessor
             format: 'json'
