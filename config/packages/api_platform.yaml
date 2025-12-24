@@ -2,7 +2,7 @@ api_platform:
     title: Joy Pharma API Platform
     version: 1.0.0
     eager_loading:
-        max_joins: 150  # Increased to handle complex relation chains
+        max_joins: 200  # Increased to handle complex relation chains (reduced with limited serialization groups)
     description: 'Joy-Pharma API'
     formats:
         jsonld: ['application/ld+json']

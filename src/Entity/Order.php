@@ -61,11 +61,11 @@ class Order
     private ?string $notes = null;
 
     #[ORM\Column(type: 'string', length: 20, enumType: OrderStatus::class)]
-    #[Groups(['order:create','order:read','order:write'])]
+    #[Groups(['order:create','order:read','order:write', 'payment:order:read'])]
     private OrderStatus $status;
 
     #[ORM\Column(type: 'string', length: 20, enumType: PriorityType::class)]
-    #[Groups(['order:create','order:read','order:write'])]
+    #[Groups(['order:create','order:read','order:write', 'payment:order:read'])]
     private PriorityType $priority;
 
     /**
@@ -73,28 +73,29 @@ class Order
      * 
      */
     #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'orderParent', cascade: ['persist', 'remove'], orphanRemoval: true)]
-    #[Groups(['order:create','order:read','order:write'])]
+    #[Groups(['order:create','order:read','order:write', 'payment:order:read'])]
     private Collection $items;
 
     #[ORM\Column]
-    #[Groups(['order:read'])]
+    #[Groups(['order:read', 'payment:order:read'])]
     private ?float $totalAmount = 0.0;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['order:read'])]
+    #[Groups(['order:read', 'payment:order:read'])]
     private ?float $storeTotalAmount = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['order:read','order:write'])]
+    #[Groups(['order:read','order:write', 'payment:order:read'])]
     private ?string $reference = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Phone number is required', groups: ['create'])]
-    #[Groups(['order:read','order:write'])]
+    #[Groups(['order:read','order:write', 'payment:order:read'])]
     private ?string $phone = null;
 
     #[ORM\ManyToOne(inversedBy: 'orders', cascade: ['persist', 'remove'])]
     #[Groups(['order:read'])]
+    // Payment exclu du groupe payment:order:read pour éviter la récursion
     private ?Payment $payment = null;
 
     #[ORM\ManyToOne(inversedBy: 'orders')]
