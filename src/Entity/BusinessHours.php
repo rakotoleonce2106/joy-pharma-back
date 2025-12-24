@@ -12,13 +12,13 @@ class BusinessHours
 {
     use EntityIdTrait;
 
-    #[ORM\Column(type: 'time', nullable: true)]
+    #[ORM\Column(type: 'string', length: 10, nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
-    private ?\DateTimeInterface $openTime = null;
+    private ?string $openTime = null;
 
-    #[ORM\Column(type: 'time', nullable: true)]
+    #[ORM\Column(type: 'string', length: 10, nullable: true)]
     #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
-    private ?\DateTimeInterface $closeTime = null;
+    private ?string $closeTime = null;
 
     #[ORM\Column]
     #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
@@ -26,33 +26,19 @@ class BusinessHours
 
 
 
-    public function __construct($openTime = null, $closeTime = null, bool $isClosed = false)
+    public function __construct(?string $openTime = null, ?string $closeTime = null, bool $isClosed = false)
     {
+        $this->openTime = $openTime;
+        $this->closeTime = $closeTime;
         $this->isClosed = $isClosed;
-
-        if (!$isClosed && $openTime && $closeTime) {
-            // Handle string format (for manual creation)
-            if (is_string($openTime)) {
-                $this->openTime = \DateTime::createFromFormat('H:i', $openTime);
-            } elseif ($openTime instanceof \DateTimeInterface) {
-                $this->openTime = $openTime;
-            }
-            
-            // Handle string format (for manual creation)
-            if (is_string($closeTime)) {
-                $this->closeTime = \DateTime::createFromFormat('H:i', $closeTime);
-            } elseif ($closeTime instanceof \DateTimeInterface) {
-                $this->closeTime = $closeTime;
-            }
-        }
     }
 
-    public function getOpenTime(): ?\DateTimeInterface
+    public function getOpenTime(): ?string
     {
         return $this->openTime;
     }
 
-    public function getCloseTime(): ?\DateTimeInterface
+    public function getCloseTime(): ?string
     {
         return $this->closeTime;
     }
@@ -69,14 +55,29 @@ class BusinessHours
         }
 
         $currentTime = $time->format('H:i');
-        $openTime = $this->openTime->format('H:i');
-        $closeTime = $this->closeTime->format('H:i');
+        
+        // Ensure format is HH:mm for comparison
+        $openTime = $this->formatToShortTime($this->openTime);
+        $closeTime = $this->formatToShortTime($this->closeTime);
 
         return $currentTime >= $openTime && $currentTime <= $closeTime;
     }
 
+    private function formatToShortTime(?string $time): ?string
+    {
+        if (!$time) return null;
+        if (preg_match('/^\d{2}:\d{2}$/', $time)) return $time;
+        if (preg_match('/^(\d{2}:\d{2}):\d{2}$/', $time, $matches)) return $matches[1];
+        
+        try {
+            return (new \DateTime($time))->format('H:i');
+        } catch (\Exception $e) {
+            return $time;
+        }
+    }
 
-    public function setOpenTime(?\DateTime $openTime): static
+
+    public function setOpenTime(?string $openTime): static
     {
         $this->openTime = $openTime;
 
@@ -84,7 +85,7 @@ class BusinessHours
     }
 
 
-    public function setCloseTime(?\DateTime $closeTime): static
+    public function setCloseTime(?string $closeTime): static
     {
         $this->closeTime = $closeTime;
 
@@ -110,8 +111,8 @@ class BusinessHours
         }
 
         return sprintf('%s - %s', 
-            $this->openTime->format('H:i'), 
-            $this->closeTime->format('H:i')
+            $this->formatToShortTime($this->openTime), 
+            $this->formatToShortTime($this->closeTime)
         );
     }
 }

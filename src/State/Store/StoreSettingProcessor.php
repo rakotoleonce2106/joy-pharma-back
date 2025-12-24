@@ -112,91 +112,23 @@ class StoreSettingProcessor implements ProcessorInterface
                     $this->entityManager->persist($existingHours);
                 }
                 
-                // Get incoming values directly (API Platform should have already deserialized them)
-                // Note: API Platform might use the constructor which might not set null values correctly
-                // So we need to check if values were actually set by API Platform
+                // Get incoming values directly
                 $incomingOpenTime = $incomingHours->getOpenTime();
                 $incomingCloseTime = $incomingHours->getCloseTime();
                 $incomingIsClosed = $incomingHours->isClosed();
                 
-                // If API Platform used the constructor and isClosed is true, it might not have set openTime/closeTime
-                // So we need to trust the incoming object state - if it has null, that's what we want
-                
-                // Handle time conversion - API Platform might send strings that need conversion
-                // If it's already a DateTime, use it; if string, parse it; if null, keep null
-                $finalOpenTime = null;
-                $finalCloseTime = null;
-                
-                if ($incomingOpenTime !== null) {
-                    if (is_string($incomingOpenTime)) {
-                        // Convert "09:00" or "09:00:00" format to DateTime
-                        try {
-                            $parsedTime = \DateTime::createFromFormat('H:i', $incomingOpenTime);
-                            if ($parsedTime === false) {
-                                $parsedTime = \DateTime::createFromFormat('H:i:s', $incomingOpenTime);
-                            }
-                            if ($parsedTime === false) {
-                                // Try parsing as full datetime string
-                                try {
-                                    $parsedTime = new \DateTime($incomingOpenTime);
-                                } catch (\Exception $e) {
-                                    $parsedTime = null;
-                                }
-                            }
-                            $finalOpenTime = $parsedTime !== false ? $parsedTime : null;
-                        } catch (\Exception $e) {
-                            $finalOpenTime = null;
-                        }
-                    } else {
-                        // Already a DateTime object
-                        $finalOpenTime = $incomingOpenTime;
-                    }
-                }
-                // If null, $finalOpenTime stays null
-                
-                if ($incomingCloseTime !== null) {
-                    if (is_string($incomingCloseTime)) {
-                        // Convert "09:00" or "09:00:00" format to DateTime
-                        try {
-                            $parsedTime = \DateTime::createFromFormat('H:i', $incomingCloseTime);
-                            if ($parsedTime === false) {
-                                $parsedTime = \DateTime::createFromFormat('H:i:s', $incomingCloseTime);
-                            }
-                            if ($parsedTime === false) {
-                                // Try parsing as full datetime string
-                                try {
-                                    $parsedTime = new \DateTime($incomingCloseTime);
-                                } catch (\Exception $e) {
-                                    $parsedTime = null;
-                                }
-                            }
-                            $finalCloseTime = $parsedTime !== false ? $parsedTime : null;
-                        } catch (\Exception $e) {
-                            $finalCloseTime = null;
-                        }
-                    } else {
-                        // Already a DateTime object
-                        $finalCloseTime = $incomingCloseTime;
-                    }
-                }
-                // If null, $finalCloseTime stays null
-                
-                // Always update all properties (including null values) - PUT updates all fields
-                // Set the values explicitly
-                $existingHours->setOpenTime($finalOpenTime);
-                $existingHours->setCloseTime($finalCloseTime);
-                $existingHours->setIsClosed($incomingIsClosed ?? false);
+                // Update properties directly as strings
+                $existingHours->setOpenTime($incomingOpenTime);
+                $existingHours->setCloseTime($incomingCloseTime);
+                $existingHours->setIsClosed($incomingIsClosed);
                 
                 // Force Doctrine UnitOfWork to mark this entity as changed
-                // This ensures Doctrine detects changes to null values
                 $this->entityManager->persist($existingHours);
                 
                 // Force Doctrine to detect changes by calling setter on parent
-                // This ensures Doctrine tracks the relationship change
                 $existing->$setter($existingHours);
                 
                 // Use Doctrine's UnitOfWork to explicitly recompute change set
-                // This forces Doctrine to detect null value changes
                 $unitOfWork = $this->entityManager->getUnitOfWork();
                 $metadata = $this->entityManager->getClassMetadata(BusinessHours::class);
                 $unitOfWork->recomputeSingleEntityChangeSet($metadata, $existingHours);

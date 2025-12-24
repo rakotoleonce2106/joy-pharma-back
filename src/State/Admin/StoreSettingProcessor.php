@@ -79,66 +79,9 @@ class StoreSettingProcessor implements ProcessorInterface
                 $incomingCloseTime = $incomingHours->getCloseTime();
                 $incomingIsClosed = $incomingHours->isClosed();
                 
-                // Handle time conversion - API Platform might send strings that need conversion
-                // If it's already a DateTime, use it; if string, parse it; if null, keep null
-                $finalOpenTime = null;
-                $finalCloseTime = null;
-                
-                if ($incomingOpenTime !== null) {
-                    if (is_string($incomingOpenTime)) {
-                        // Convert "08:00" or "08:00:00" format to DateTime
-                        try {
-                            $parsedTime = \DateTime::createFromFormat('H:i', $incomingOpenTime);
-                            if ($parsedTime === false) {
-                                $parsedTime = \DateTime::createFromFormat('H:i:s', $incomingOpenTime);
-                            }
-                            if ($parsedTime === false) {
-                                // Try parsing as full datetime string
-                                try {
-                                    $parsedTime = new \DateTime($incomingOpenTime);
-                                } catch (\Exception $e) {
-                                    $parsedTime = null;
-                                }
-                            }
-                            $finalOpenTime = $parsedTime !== false ? $parsedTime : null;
-                        } catch (\Exception $e) {
-                            $finalOpenTime = null;
-                        }
-                    } else {
-                        // Already a DateTime object
-                        $finalOpenTime = $incomingOpenTime;
-                    }
-                }
-                
-                if ($incomingCloseTime !== null) {
-                    if (is_string($incomingCloseTime)) {
-                        // Convert "17:00" or "17:00:00" format to DateTime
-                        try {
-                            $parsedTime = \DateTime::createFromFormat('H:i', $incomingCloseTime);
-                            if ($parsedTime === false) {
-                                $parsedTime = \DateTime::createFromFormat('H:i:s', $incomingCloseTime);
-                            }
-                            if ($parsedTime === false) {
-                                // Try parsing as full datetime string
-                                try {
-                                    $parsedTime = new \DateTime($incomingCloseTime);
-                                } catch (\Exception $e) {
-                                    $parsedTime = null;
-                                }
-                            }
-                            $finalCloseTime = $parsedTime !== false ? $parsedTime : null;
-                        } catch (\Exception $e) {
-                            $finalCloseTime = null;
-                        }
-                    } else {
-                        // Already a DateTime object
-                        $finalCloseTime = $incomingCloseTime;
-                    }
-                }
-                
-                // Always update all properties (including null values) - PUT updates all fields
-                $existingHours->setOpenTime($finalOpenTime);
-                $existingHours->setCloseTime($finalCloseTime);
+                // Update properties directly as strings
+                $existingHours->setOpenTime($incomingOpenTime);
+                $existingHours->setCloseTime($incomingCloseTime);
                 $existingHours->setIsClosed($incomingIsClosed ?? false);
                 
                 // Force Doctrine UnitOfWork to mark this entity as changed
