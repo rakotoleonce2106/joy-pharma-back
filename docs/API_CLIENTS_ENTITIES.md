@@ -122,7 +122,7 @@ curl -X POST "https://votre-api.com/order" \
 
 ### Endpoints disponibles
 
-- **POST** `/create-payment-intent` - Crée une intention de paiement (Mvola / MPGS)
+- **POST** `/api/create-payment-intent` - Crée une intention de paiement (Mvola / MPGS)
 - **GET** `/api/verify-payment/{orderId}` - Vérifie le statut d'un paiement pour une commande
 - **GET** `/api/payment/order/{orderId}` - Récupère les infos de paiement par ID commande
 
@@ -131,7 +131,7 @@ curl -X POST "https://votre-api.com/order" \
 Envoyez le montant, la méthode et la référence de la commande (ou son IRI).
 
 ```bash
-curl -X POST "https://votre-api.com/create-payment-intent" \
+curl -X POST "https://votre-api.com/api/create-payment-intent" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -H "Content-Type: application/ld+json" \
   -d '{

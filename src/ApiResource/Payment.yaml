@@ -23,7 +23,7 @@ App\Entity\Payment:
         # List all payments
         admin_get_collection:
             class: ApiPlatform\Metadata\GetCollection
-            uriTemplate: "/api/admin/payments"
+            uriTemplate: "/admin/payments"
             security: "is_granted('ROLE_ADMIN')"
             normalizationContext:
                 groups: ['id:read', 'payment:read', 'order:read']
@@ -33,7 +33,7 @@ App\Entity\Payment:
         # Get specific payment
         admin_get:
             class: ApiPlatform\Metadata\Get
-            uriTemplate: "/api/admin/payments/{id}"
+            uriTemplate: "/admin/payments/{id}"
             security: "is_granted('ROLE_ADMIN')"
             normalizationContext:
                 groups: ['id:read', 'payment:read', 'order:read']
@@ -43,7 +43,7 @@ App\Entity\Payment:
         # Delete payment
         admin_delete:
             class: ApiPlatform\Metadata\Delete
-            uriTemplate: "/api/admin/payments/{id}"
+            uriTemplate: "/admin/payments/{id}"
             security: "is_granted('ROLE_ADMIN')"
             openapi:
                 summary: 'Delete a payment (Admin)'
