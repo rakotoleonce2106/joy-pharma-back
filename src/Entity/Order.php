@@ -151,6 +151,12 @@ class Order
     #[Groups(['order:read'])]
     private ?Rating $rating = null;
 
+    #[Groups(['order:create', 'order:write'])]
+    private ?string $paymentMethod = null;
+
+    #[Groups(['order:create', 'order:write'])]
+    private ?string $promotionCode = null;
+
     public function __construct()
     {
         $this->status = OrderStatus::STATUS_PENDING;
@@ -601,6 +607,27 @@ class Order
             }
         }
         return false;
+    }
+    public function getPaymentMethod(): ?string
+    {
+        return $this->paymentMethod;
+    }
+
+    public function setPaymentMethod(?string $paymentMethod): self
+    {
+        $this->paymentMethod = $paymentMethod;
+        return $this;
+    }
+
+    public function getPromotionCode(): ?string
+    {
+        return $this->promotionCode;
+    }
+
+    public function setPromotionCode(?string $promotionCode): self
+    {
+        $this->promotionCode = $promotionCode;
+        return $this;
     }
 }
 

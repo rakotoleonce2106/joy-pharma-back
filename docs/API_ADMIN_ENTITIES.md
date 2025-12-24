@@ -2206,6 +2206,32 @@ curl -X POST "https://votre-api.com/api/admin/orders" \
 
 ---
 
+---
+
+## 💳 Gestion des Paiements (Payments)
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/payments` - Liste tous les paiements
+- **GET** `/api/admin/payments/{id}` - Détails d'un paiement
+- **DELETE** `/api/admin/payments/{id}` - Supprime un paiement
+
+### Lister les paiements
+
+```bash
+curl -X GET "https://votre-api.com/api/admin/payments" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+### Détails d'un paiement
+
+```bash
+curl -X GET "https://votre-api.com/api/admin/payments/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+---
+
 ## Ressources supplémentaires
 
 - [Documentation API Produits Admin](./API_PRODUCTS_ADMIN.md)

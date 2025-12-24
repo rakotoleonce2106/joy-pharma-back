@@ -28,10 +28,12 @@ App\Entity\Favorite:
         method: 'POST'
         class: ApiPlatform\Metadata\Post
         uriTemplate: '/favorites'
+        inputFormats:
+            jsonld: ['application/ld+json']
+            json: ['application/json']
         normalizationContext:
           groups: ['favorite:read', 'id:read','product:read','image:read','media_object:read']
         processor: App\State\Favorite\FavoriteProcessor
-        input: 'App\Dto\OwnerInput'
         openapi:
             summary: 'Create a favorite'
             description: 'Create a favorite'

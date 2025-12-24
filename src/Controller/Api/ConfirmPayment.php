@@ -13,12 +13,14 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\SerializerInterface;
 
 class ConfirmPayment extends AbstractController
 {
     public function __construct(
         private readonly PaymentService $paymentService,
         private readonly OrderService $orderService,
+        private readonly SerializerInterface $serializer,
         private readonly LoggerInterface $logger
     ) {}
 
@@ -87,24 +89,18 @@ class ConfirmPayment extends AbstractController
                     'resultIndicator' => $resultIndicator
                 ]);
 
-                return new JsonResponse([
-                    'success' => true,
-                    'message' => 'Payment confirmed',
-                    'orderId' => $orderId,
-                    'status' => 'completed'
-                ]);
+                return new JsonResponse($this->serializer->serialize($payment, 'json', [
+                    'groups' => ['id:read', 'payment:read', 'order:read']
+                ]), Response::HTTP_OK, [], true);
             }
 
             // For non-MPGS payments or if resultIndicator not provided
             // Just update status if payment is already completed
             if ($payment->isCompleted()) {
                 $this->updateOrderAfterPayment($order);
-                return new JsonResponse([
-                    'success' => true,
-                    'message' => 'Payment already confirmed',
-                    'orderId' => $orderId,
-                    'status' => 'completed'
-                ]);
+                return new JsonResponse($this->serializer->serialize($payment, 'json', [
+                    'groups' => ['id:read', 'payment:read', 'order:read']
+                ]), Response::HTTP_OK, [], true);
             }
 
             return new JsonResponse([

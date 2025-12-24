@@ -8,12 +8,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\SerializerInterface;
 
 class GetPayment extends AbstractController
 {
     public function __construct(
         private readonly PaymentService $paymentService,
-        private readonly OrderService $orderService
+        private readonly OrderService $orderService,
+        private readonly SerializerInterface $serializer
     ) {}
 
     #[Route('/api/payment/order/{orderId}', methods: ['GET'])]
@@ -35,17 +37,11 @@ class GetPayment extends AbstractController
             ], Response::HTTP_NOT_FOUND);
         }
 
-        return new JsonResponse([
-            'id' => $payment->getId(),
-            'transactionId' => $payment->getTransactionId(),
-            'amount' => $payment->getAmount(),
-            'method' => $payment->getMethod()->value,
-            'status' => $payment->getStatus()->value,
-            'reference' => $payment->getReference(),
-            'createdAt' => $payment->getCreatedAt()?->format('Y-m-d H:i:s'),
-            'processedAt' => $payment->getProcessedAt()?->format('Y-m-d H:i:s'),
-            'orderId' => $orderId
+        $json = $this->serializer->serialize($payment, 'json', [
+            'groups' => ['id:read', 'payment:read', 'order:read']
         ]);
+
+        return new JsonResponse($json, Response::HTTP_OK, [], true);
     }
 
     #[Route('/api/payment/transaction/{transactionId}', methods: ['GET'])]
@@ -59,19 +55,11 @@ class GetPayment extends AbstractController
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $order = $payment->getOrder();
-
-        return new JsonResponse([
-            'id' => $payment->getId(),
-            'transactionId' => $payment->getTransactionId(),
-            'amount' => $payment->getAmount(),
-            'method' => $payment->getMethod()->value,
-            'status' => $payment->getStatus()->value,
-            'reference' => $payment->getReference(),
-            'createdAt' => $payment->getCreatedAt()?->format('Y-m-d H:i:s'),
-            'processedAt' => $payment->getProcessedAt()?->format('Y-m-d H:i:s'),
-            'orderId' => $order?->getReference()
+        $json = $this->serializer->serialize($payment, 'json', [
+            'groups' => ['id:read', 'payment:read', 'order:read']
         ]);
+
+        return new JsonResponse($json, Response::HTTP_OK, [], true);
     }
 }
 

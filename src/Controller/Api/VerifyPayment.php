@@ -11,7 +11,8 @@ use Symfony\Component\Routing\Attribute\Route;
 class VerifyPayment extends AbstractController
 {
     public function __construct(
-        private readonly OrderService $orderService
+        private readonly OrderService $orderService,
+        private readonly SerializerInterface $serializer
     ) {}
 
     #[Route('/api/verify-payment/{orderId}', methods: ['GET'])]
@@ -42,27 +43,19 @@ class VerifyPayment extends AbstractController
             $storedSuccessIndicator = $gatewayData['successIndicator'] ?? null;
 
             if ($storedSuccessIndicator && $resultIndicator !== $storedSuccessIndicator) {
-                return new JsonResponse([
+                 return new JsonResponse([
                     'verified' => false,
-                    'status' => $payment->getStatus()->value,
-                    'orderId' => $orderId,
                     'error' => 'resultIndicator mismatch',
-                    'paymentId' => $payment->getTransactionId(),
-                    'method' => $payment->getMethod()->value
-                ]);
+                    'status' => $payment->getStatus()->value
+                ], Response::HTTP_BAD_REQUEST);
             }
         }
 
-        // Check payment status - verified if completed or processing
-        $isVerified = $payment->isCompleted() || $payment->isProcessing();
-        
-        return new JsonResponse([
-            'verified' => $isVerified,
-            'status' => $payment->getStatus()->value,
-            'orderId' => $orderId,
-            'paymentId' => $payment->getTransactionId(),
-            'method' => $payment->getMethod()->value
+        $json = $this->serializer->serialize($payment, 'json', [
+            'groups' => ['id:read', 'payment:read', 'order:read']
         ]);
+
+        return new JsonResponse($json, Response::HTTP_OK, [], true);
     }
 }
 

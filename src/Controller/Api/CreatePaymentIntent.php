@@ -20,16 +20,21 @@ class CreatePaymentIntent extends AbstractController
     private readonly OrderService $orderService
     ) {}
 
-    public function __invoke(#[MapRequestPayload] Payment $payment): JsonResponse
+    public function __invoke(#[MapRequestPayload(serializationContext: ['groups' => ['payment:create']])] Payment $payment): JsonResponse
     {
         $paymentMethod = $payment->getMethod();
         if (!in_array($paymentMethod, [PaymentMethod::METHODE_MVOLA, PaymentMethod::METHOD_MPGS])) {
             throw new BadRequestHttpException('Invalid payment method. Only "mvola" and "mpgs" are currently supported.');
         }
 
-        $order = $this->orderService->findByReference($payment->getReference());
+        // Try to find order by the linked entity (if passed via IRI) or by reference string
+        $order = $payment->getOrder();
+        if (!$order && $payment->getReference()) {
+            $order = $this->orderService->findByReference($payment->getReference());
+        }
+
         if (!$order) {
-            throw new NotFoundHttpException('Order not found with reference: ' . $payment->getReference());
+            throw new NotFoundHttpException('Order not found. Please provide a valid order IRI or reference.');
         }
 
         $user = $order->getOwner();
@@ -37,6 +42,7 @@ class CreatePaymentIntent extends AbstractController
             throw new NotFoundHttpException('Order owner not found.');
         }
 
+        $payment->setOrder($order);
         $order->setPayment($payment);
         $this->orderService->updateOrder($order);
 

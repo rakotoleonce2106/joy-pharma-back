@@ -10,8 +10,8 @@ App\Entity\User:
             class: ApiPlatform\Metadata\Put
             uriTemplate: "/user/update"
             inputFormats:
-                json: ['application/json']
                 jsonld: ['application/ld+json']
+                json: ['application/json']
             denormalizationContext:
                 groups: ['user:update']
             validationContext:
@@ -27,8 +27,8 @@ App\Entity\User:
             class: ApiPlatform\Metadata\Patch
             uriTemplate: "/user/update"
             inputFormats:
-                json: ['application/json']
                 jsonld: ['application/ld+json']
+                json: ['application/json']
             denormalizationContext:
                 groups: ['user:update']
             normalizationContext:
