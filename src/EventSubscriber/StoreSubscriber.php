@@ -113,7 +113,9 @@ class StoreSubscriber
     }
 
     /**
-     * Persist BusinessHours if they don't have IDs (created in StoreSetting constructor)
+     * Persist BusinessHours if they don't have IDs
+     * Note: All BusinessHours are null by default, so this will only persist
+     * BusinessHours that have been explicitly set
      */
     private function persistBusinessHoursIfNeeded(StoreSetting $setting, PrePersistEventArgs $event): void
     {

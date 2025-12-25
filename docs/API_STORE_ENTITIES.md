@@ -83,7 +83,7 @@ curl -X PATCH "https://votre-api.com/api/store/settings/789" \
     "mondayHours": {
       "openTime": "07:30",
       "closeTime": "18:30",
-      "closed": false
+      "isClosed": false
     }
   }'
 ```

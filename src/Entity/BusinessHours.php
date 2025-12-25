@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Entity\Traits\EntityIdTrait;
 use App\Repository\BusinessHoursRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -12,13 +13,11 @@ class BusinessHours
 {
     use EntityIdTrait;
 
-    #[ORM\Column(type: 'string', length: 10, nullable: true)]
-    #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
-    private ?string $openTime = null;
+    #[ORM\Column(type: Types::TIME, nullable: true)]
+    private ?\DateTimeInterface $openTime = null;
 
-    #[ORM\Column(type: 'string', length: 10, nullable: true)]
-    #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
-    private ?string $closeTime = null;
+    #[ORM\Column(type: Types::TIME, nullable: true)]
+    private ?\DateTimeInterface $closeTime = null;
 
     #[ORM\Column]
     #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
@@ -26,21 +25,71 @@ class BusinessHours
 
 
 
-    public function __construct(?string $openTime = null, ?string $closeTime = null, bool $isClosed = false)
+    public function __construct(string|\DateTimeInterface|null $openTime = null, string|\DateTimeInterface|null $closeTime = null, bool $isClosed = false)
     {
-        $this->openTime = $openTime;
-        $this->closeTime = $closeTime;
+        $this->openTime = $this->parseTime($openTime);
+        $this->closeTime = $this->parseTime($closeTime);
         $this->isClosed = $isClosed;
     }
 
-    public function getOpenTime(): ?string
+    /**
+     * Parse time from string or DateTimeInterface to DateTimeInterface
+     */
+    private function parseTime(string|\DateTimeInterface|null $time): ?\DateTimeInterface
+    {
+        if ($time === null) {
+            return null;
+        }
+
+        if ($time instanceof \DateTimeInterface) {
+            return $time;
+        }
+
+        // Parse string format HH:MM or HH:MM:SS
+        if (preg_match('/^(\d{2}):(\d{2})(?::(\d{2}))?$/', $time, $matches)) {
+            $hour = (int)$matches[1];
+            $minute = (int)$matches[2];
+            $second = isset($matches[3]) ? (int)$matches[3] : 0;
+            
+            $dateTime = new \DateTime();
+            $dateTime->setTime($hour, $minute, $second);
+            return $dateTime;
+        }
+
+        // Try to parse as DateTime
+        try {
+            return new \DateTime($time);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    public function getOpenTime(): ?\DateTimeInterface
     {
         return $this->openTime;
     }
 
-    public function getCloseTime(): ?string
+    /**
+     * Get open time as formatted string (HH:MM) for API serialization
+     */
+    #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
+    public function getOpenTimeFormatted(): ?string
+    {
+        return $this->openTime ? $this->openTime->format('H:i') : null;
+    }
+
+    public function getCloseTime(): ?\DateTimeInterface
     {
         return $this->closeTime;
+    }
+
+    /**
+     * Get close time as formatted string (HH:MM) for API serialization
+     */
+    #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
+    public function getCloseTimeFormatted(): ?string
+    {
+        return $this->closeTime ? $this->closeTime->format('H:i') : null;
     }
 
     public function isClosed(): bool
@@ -55,39 +104,42 @@ class BusinessHours
         }
 
         $currentTime = $time->format('H:i');
-        
-        // Ensure format is HH:mm for comparison
-        $openTime = $this->formatToShortTime($this->openTime);
-        $closeTime = $this->formatToShortTime($this->closeTime);
+        $openTime = $this->openTime->format('H:i');
+        $closeTime = $this->closeTime->format('H:i');
 
         return $currentTime >= $openTime && $currentTime <= $closeTime;
     }
 
-    private function formatToShortTime(?string $time): ?string
+    public function setOpenTime(string|\DateTimeInterface|null $openTime): static
     {
-        if (!$time) return null;
-        if (preg_match('/^\d{2}:\d{2}$/', $time)) return $time;
-        if (preg_match('/^(\d{2}:\d{2}):\d{2}$/', $time, $matches)) return $matches[1];
-        
-        try {
-            return (new \DateTime($time))->format('H:i');
-        } catch (\Exception $e) {
-            return $time;
-        }
-    }
-
-
-    public function setOpenTime(?string $openTime): static
-    {
-        $this->openTime = $openTime;
+        $this->openTime = $this->parseTime($openTime);
 
         return $this;
     }
 
-
-    public function setCloseTime(?string $closeTime): static
+    /**
+     * Set open time from formatted string (HH:MM) for API deserialization
+     */
+    public function setOpenTimeFormatted(?string $openTime): static
     {
-        $this->closeTime = $closeTime;
+        $this->openTime = $this->parseTime($openTime);
+
+        return $this;
+    }
+
+    public function setCloseTime(string|\DateTimeInterface|null $closeTime): static
+    {
+        $this->closeTime = $this->parseTime($closeTime);
+
+        return $this;
+    }
+
+    /**
+     * Set close time from formatted string (HH:MM) for API deserialization
+     */
+    public function setCloseTimeFormatted(?string $closeTime): static
+    {
+        $this->closeTime = $this->parseTime($closeTime);
 
         return $this;
     }
@@ -111,8 +163,8 @@ class BusinessHours
         }
 
         return sprintf('%s - %s', 
-            $this->formatToShortTime($this->openTime), 
-            $this->formatToShortTime($this->closeTime)
+            $this->openTime->format('H:i'), 
+            $this->closeTime->format('H:i')
         );
     }
 }

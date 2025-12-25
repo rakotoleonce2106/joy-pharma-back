@@ -1105,9 +1105,17 @@ async function deleteStoreProduct(storeProductId) {
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
 | `@id` | string | ❌ Non | IRI si BusinessHours existe déjà (ex: `"/api/admin/business-hours/1"`). Omettez pour créer un nouveau. |
-| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). |
-| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). |
+| `openTimeFormatted` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). **En lecture uniquement** - exposé dans les réponses API. |
+| `closeTimeFormatted` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). **En lecture uniquement** - exposé dans les réponses API. |
+| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). **Pour l'écriture** - utilisez ce champ lors de la création/mise à jour. |
+| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). **Pour l'écriture** - utilisez ce champ lors de la création/mise à jour. |
 | `isClosed` | boolean | ❌ Non | Si le magasin est fermé ce jour-là (défaut: `false`) |
+
+**Note technique :** 
+- Les heures sont stockées comme type `TIME` dans la base de données
+- Dans les **réponses API** (GET), les champs sont exposés sous les noms `openTimeFormatted` et `closeTimeFormatted` au format string `"HH:mm"`
+- Pour les **requêtes d'écriture** (POST/PUT/PATCH), utilisez `openTime` et `closeTime` au format string `"HH:mm"`
+- Les deux formats sont acceptés pour maintenir la compatibilité
 
 ### Créer un nouveau paramètre de magasin
 
@@ -1451,9 +1459,17 @@ curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
 
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
-| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). |
-| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). |
+| `openTimeFormatted` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). **En lecture uniquement** - exposé dans les réponses API. |
+| `closeTimeFormatted` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). **En lecture uniquement** - exposé dans les réponses API. |
+| `openTime` | string | ❌ Non | Heure d'ouverture au format `"HH:mm"` (ex: `"08:00"`). **Pour l'écriture** - utilisez ce champ lors de la création/mise à jour. |
+| `closeTime` | string | ❌ Non | Heure de fermeture au format `"HH:mm"` (ex: `"17:00"`). **Pour l'écriture** - utilisez ce champ lors de la création/mise à jour. |
 | `isClosed` | boolean | ❌ Non | Si le magasin est fermé (défaut: `false`) |
+
+**Note technique :** 
+- Les heures sont stockées comme type `TIME` dans la base de données
+- Dans les **réponses API** (GET), les champs sont exposés sous les noms `openTimeFormatted` et `closeTimeFormatted` au format string `"HH:mm"`
+- Pour les **requêtes d'écriture** (POST/PUT/PATCH), utilisez `openTime` et `closeTime` au format string `"HH:mm"`
+- Les deux formats sont acceptés pour maintenir la compatibilité
 
 ### Créer des heures d'ouverture
 
@@ -1604,6 +1620,10 @@ async function deleteBusinessHours(businessHoursId) {
 - **Format requis** : Toutes les opérations POST, PUT et PATCH utilisent uniquement `Content-Type: application/ld+json`
 - Les heures doivent être au format `"HH:mm"` (ex: `"08:00"`, `"17:00"`)
 - Si `isClosed` est `true`, `openTime` et `closeTime` doivent être `null`
+- **Type de données** : Les heures sont stockées comme type `TIME` en base de données mais sérialisées en string `"HH:mm"` pour l'API
+- **Champs API** : 
+  - **Lecture (GET)** : Utilisez `openTimeFormatted` et `closeTimeFormatted` dans les réponses
+  - **Écriture (POST/PUT/PATCH)** : Utilisez `openTime` et `closeTime` dans les requêtes
 - **Attention** : La suppression d'un BusinessHours supprimera également toutes les références dans les StoreSettings qui l'utilisent
 
 ---
