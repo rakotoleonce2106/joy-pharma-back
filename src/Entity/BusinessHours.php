@@ -92,6 +92,7 @@ class BusinessHours
         return $this->closeTime ? $this->closeTime->format('H:i') : null;
     }
 
+    #[Groups(['store_setting:read', 'store_setting:write', 'business_hours:read', 'business_hours:write'])]
     public function isClosed(): bool
     {
         return $this->isClosed;
