@@ -13,10 +13,10 @@ class BusinessHours
 {
     use EntityIdTrait;
 
-    #[ORM\Column(type: Types::TIME, nullable: true)]
+    #[ORM\Column(type: Types::TIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $openTime = null;
 
-    #[ORM\Column(type: Types::TIME, nullable: true)]
+    #[ORM\Column(type: Types::TIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $closeTime = null;
 
     #[ORM\Column]
