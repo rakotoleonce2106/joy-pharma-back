@@ -1,16 +1,20 @@
 # Authentication and Registration APIs
 
-# Customer Registration
-App\Dto\RegisterCustomerInput:
+# Customer Registration - Uses User entity directly
+App\Entity\User:
     operations:
         register_customer:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/register'
-            processor: App\State\Auth\RegisterCustomerProcessor
+            public: true
+            denormalizationContext:
+                groups: ['user:create']
+            validationContext:
+                groups: ['create']
             read: false
             openapi:
                 summary: 'Register as customer'
-                description: 'Register a new customer account and receive JWT token'
+                description: 'Register a new customer account and receive JWT token. Use Content-Type: application/ld+json when sending IRIs (e.g., for image). Upload avatar first using POST /api/media_objects with mapping=user_images, then reference it using IRI.'
                 requestBody:
                     content:
                         application/json:
@@ -20,7 +24,7 @@ App\Dto\RegisterCustomerInput:
                                     email:
                                         type: string
                                         format: email
-                                    password:
+                                    plainPassword:
                                         type: string
                                         minLength: 8
                                     firstName:
@@ -29,9 +33,37 @@ App\Dto\RegisterCustomerInput:
                                         type: string
                                     phone:
                                         type: string
+                                    image:
+                                        type: string
+                                        description: IRI of avatar (e.g., "/api/media_objects/123")
                                 required:
                                     - email
-                                    - password
+                                    - plainPassword
+                                    - firstName
+                                    - lastName
+                                    - phone
+                        application/ld+json:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                    plainPassword:
+                                        type: string
+                                        minLength: 8
+                                    firstName:
+                                        type: string
+                                    lastName:
+                                        type: string
+                                    phone:
+                                        type: string
+                                    image:
+                                        type: string
+                                        description: IRI of avatar (e.g., "/api/media_objects/123")
+                                required:
+                                    - email
+                                    - plainPassword
                                     - firstName
                                     - lastName
                                     - phone
@@ -45,10 +77,14 @@ App\Dto\RegisterCustomerInput:
                                     properties:
                                         token:
                                             type: string
+                                        refresh_token:
+                                            type: string
                                         user:
                                             type: object
                     '409':
                         description: 'Email already exists'
+                    '422':
+                        description: 'Validation error'
 
 # Delivery Person Registration
 App\Dto\RegisterDeliveryInput:
@@ -119,81 +155,3 @@ App\Dto\RegisterDeliveryInput:
                                                     type: object
                     '409':
                         description: 'Email already exists'
-
-# Store Owner Registration
-App\Dto\RegisterStoreInput:
-    operations:
-        register_store:
-            class: ApiPlatform\Metadata\Post
-            uriTemplate: '/register/store'
-            processor: App\State\Auth\RegisterStoreProcessor
-            read: false
-            openapi:
-                summary: 'Register as store owner'
-                description: 'Register a new store owner account and receive JWT token'
-                requestBody:
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    email:
-                                        type: string
-                                        format: email
-                                    password:
-                                        type: string
-                                        minLength: 8
-                                    firstName:
-                                        type: string
-                                    lastName:
-                                        type: string
-                                    phone:
-                                        type: string
-                                    storeName:
-                                        type: string
-                                    storeAddress:
-                                        type: string
-                                    storePhone:
-                                        type: string
-                                    storeEmail:
-                                        type: string
-                                        format: email
-                                    storeDescription:
-                                        type: string
-                                    storeCity:
-                                        type: string
-                                    storeLatitude:
-                                        type: number
-                                        format: float
-                                    storeLongitude:
-                                        type: number
-                                        format: float
-                                required:
-                                    - email
-                                    - password
-                                    - firstName
-                                    - lastName
-                                    - phone
-                                    - storeName
-                                    - storeAddress
-                responses:
-                    '201':
-                        description: 'Store owner registered successfully'
-                        content:
-                            application/json:
-                                schema:
-                                    type: object
-                                    properties:
-                                        token:
-                                            type: string
-                                        user:
-                                            type: object
-                                            properties:
-                                                userType:
-                                                    type: string
-                                                    example: store
-                                                store:
-                                                    type: object
-                    '409':
-                        description: 'Email already exists'
-

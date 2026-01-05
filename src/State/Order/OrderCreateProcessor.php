@@ -34,6 +34,10 @@ class OrderCreateProcessor implements ProcessorInterface
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Order
     {
+        if (!$data instanceof Order) {
+            throw new BadRequestHttpException('Invalid input data type');
+        }
+
         // Get the current authenticated user
         $token = $this->tokenStorage->getToken();
         if (!$token || !$token->getUser() instanceof User) {
@@ -53,50 +57,33 @@ class OrderCreateProcessor implements ProcessorInterface
             throw new BadRequestHttpException('Validation failed: ' . implode(', ', $errorMessages));
         }
 
-        // Check data is OrderInput
-        if (!$data instanceof OrderInput) {
-            throw new BadRequestHttpException('Invalid input data type');
-        }
-
         // Validate items array is not empty
-        if (empty($data->items)) {
+        if ($data->getItems()->isEmpty()) {
             throw new BadRequestHttpException('Order must contain at least one item');
         }
 
         $this->logger->info('Creating new order', [
             'user_id' => $user->getId(),
-            'items_count' => count($data->items),
-            'payment_method' => $data->paymentMethod,
+            'items_count' => $data->getItems()->count(),
+            'payment_method' => $data->getPaymentMethod(),
         ]);
 
         try {
             // Begin transaction
             $this->entityManager->beginTransaction();
 
-            $order = new Order();
+            $order = $data;
             $order->setOwner($user);
-            $order->setPriority($data->priority);
-            $order->setScheduledDate($data->date);
-            $order->setPhone($data->phone);
-            $order->setNotes($data->notes);
-
-            // Create and persist location only if address data is provided
-            if ($data->latitude && $data->longitude && $data->address) {
-                $location = $this->createLocation($data->latitude, $data->longitude, $data->address);
-                $this->entityManager->persist($location);
-                $order->setLocation($location);
-                
-                // Save location to user's saved locations if it doesn't already exist
-                $this->saveLocationToUser($user, $location);
-            }
+            $order->setStatus(OrderStatus::STATUS_PENDING);
+            $order->setCreatedAt(new \DateTime());
 
             // Process order items
-            $totalAmount = $this->processOrderItems($order, $data->items);
+            $totalAmount = $this->processOrderItems($order);
 
             // Apply promotion if provided
             $discountAmount = 0.0;
-            if ($data->promotionCode) {
-                $discountAmount = $this->applyPromotion($order, $data->promotionCode, $totalAmount);
+            if ($order->getPromotionCode()) {
+                $discountAmount = $this->applyPromotion($order, $order->getPromotionCode(), $totalAmount);
             }
 
             $finalAmount = $totalAmount - $discountAmount;
@@ -104,15 +91,32 @@ class OrderCreateProcessor implements ProcessorInterface
             $order->setDiscountAmount($discountAmount);
 
             // Create and persist payment
-            $payment = $this->createPayment($data->paymentMethod, $finalAmount, $order->getReference());
+            $paymentMethod = $order->getPaymentMethod() ?? 'cash';
+            $payment = $this->createPayment($paymentMethod, $finalAmount, $order->getReference() ?? 'TMP-'.time());
             $this->entityManager->persist($payment);
             $order->setPayment($payment);
+
+            // Handle location if embedded/IRI
+            if ($order->getLocation()) {
+                $location = $order->getLocation();
+                if (!$location->getId()) {
+                    $this->entityManager->persist($location);
+                }
+                $this->saveLocationToUser($user, $location);
+            }
 
             // Persist the main order entity
             $this->entityManager->persist($order);
             
             // Flush all changes to database
             $this->entityManager->flush();
+            
+            // After flush, we have the ID, update payment reference if needed
+            if ($payment->getReference() === 'TMP-'.time() || str_starts_with($payment->getReference(), 'TMP-')) {
+                $payment->setReference($order->getReference());
+                $this->entityManager->flush();
+            }
+
             $this->entityManager->commit();
 
             $this->logger->info('Order created successfully', [
@@ -121,12 +125,14 @@ class OrderCreateProcessor implements ProcessorInterface
                 'user_id' => $user->getId(),
                 'total_amount' => $finalAmount,
                 'discount_amount' => $discountAmount,
-                'promotion_code' => $data->promotionCode,
+                'promotion_code' => $order->getPromotionCode(),
             ]);
 
             return $order;
         } catch (\Exception $e) {
-            $this->entityManager->rollback();
+            if ($this->entityManager->getConnection()->isTransactionActive()) {
+                $this->entityManager->rollback();
+            }
             $this->logger->error('Failed to create order', [
                 'user_id' => $user->getId(),
                 'error' => $e->getMessage(),
@@ -174,25 +180,19 @@ class OrderCreateProcessor implements ProcessorInterface
     /**
      * Process order items and calculate total amount
      */
-    private function processOrderItems(Order $order, array $items): float
+    private function processOrderItems(Order $order): float
     {
         $totalAmount = 0.0;
 
-        foreach ($items as $item) {
-            // Validate item structure
-            if (!isset($item->id) || !isset($item->quantity)) {
-                throw new BadRequestHttpException('Invalid item structure: id and quantity are required');
+        foreach ($order->getItems() as $orderItem) {
+            $product = $orderItem->getProduct();
+            if (!$product) {
+                throw new BadRequestHttpException('Product is required for each order item');
             }
 
             // Validate quantity
-            if ($item->quantity <= 0) {
-                throw new BadRequestHttpException(sprintf('Invalid quantity for product ID %d: quantity must be greater than 0', $item->id));
-            }
-
-            // Find product
-            $product = $this->productRepository->find($item->id);
-            if (!$product) {
-                throw new BadRequestHttpException(sprintf('Product not found with ID: %d', $item->id));
+            if ($orderItem->getQuantity() <= 0) {
+                throw new BadRequestHttpException(sprintf('Invalid quantity for product %s: quantity must be greater than 0', $product->getName()));
             }
 
             // Validate product is active
@@ -219,12 +219,8 @@ class OrderCreateProcessor implements ProcessorInterface
                 ]);
             }
 
-            $totalPrice = $productPrice * $item->quantity;
+            $totalPrice = $productPrice * $orderItem->getQuantity();
 
-            // Create order item
-            $orderItem = new OrderItem();
-            $orderItem->setProduct($product);
-            $orderItem->setQuantity($item->quantity);
             $orderItem->setTotalPrice($totalPrice);
             $orderItem->setOrderParent($order);
             
@@ -232,7 +228,6 @@ class OrderCreateProcessor implements ProcessorInterface
             $this->assignStoreToOrderItem($orderItem, $product);
             
             $this->entityManager->persist($orderItem);
-            $order->addItem($orderItem);
             $totalAmount += $totalPrice;
         }
 

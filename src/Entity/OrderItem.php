@@ -28,22 +28,23 @@ class OrderItem
 
     #[ORM\ManyToOne(inversedBy: 'orderItems')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['order:create','order:read'])]
+    #[Groups(['order:create','order:read','order_item:write', 'payment:order:item:read'])]
     private ?Product $product = null;
 
     #[ORM\Column]
-    #[Groups(['order:create','order:read'])]
+    #[Groups(['order:create','order:read','order_item:write', 'payment:order:item:read'])]
     private ?int $quantity = null;
 
     #[ORM\Column]
-    #[Groups(['order:create','order:read'])]
+    #[Groups(['order:create','order:read', 'payment:order:item:read'])]
     private ?float $totalPrice = 0.0;
 
     #[ORM\ManyToOne(inversedBy: 'items')]
     private ?Order $orderParent = null;
 
     #[ORM\ManyToOne]
-    #[Groups(['order:read'])]
+    #[Groups(['order:read','order_item:write'])]
+    // Store exclu du groupe payment:order:item:read pour éviter les jointures excessives
     private ?Store $store = null;
 
     #[ORM\Column(type: 'string', length: 20, enumType: OrderItemStatus::class)]

@@ -3,9 +3,12 @@ App\Entity\Order:
         post_order:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/order"
-            input: App\Dto\OrderInput
+            inputFormats:
+                jsonld: ['application/ld+json']
+                json: ['application/json']
             processor: App\State\Order\OrderCreateProcessor
-            format: 'json'
+            denormalizationContext:
+                groups: ['order:create']
             normalizationContext:
                 groups: ['id:read','order:read','location:read','user:read','product:read','image:read','media_object:read']
             openapi:
@@ -80,7 +83,7 @@ App\Entity\Order:
 
         store_update_order:
             class: ApiPlatform\Metadata\Put
-            uriTemplate: '/store/order/{id}'
+            uriTemplate: '/store/orders/{id}'
             input: App\Dto\StoreUpdateOrderInput
             processor: App\State\Store\StoreUpdateOrderProcessor
             format: 'json'
@@ -249,23 +252,48 @@ App\Entity\Order:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/orders'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\OrderInput
-            processor: App\State\Admin\OrderProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['order:write', 'order_item:write']
+            validationContext:
+                groups: ['create']
             normalizationContext:
                 groups: ['id:read', 'order:read', 'location:read', 'user:read', 'product:read']
             openapi:
                 summary: 'Create new order (Admin)'
+                description: 'Create a new order. Use Content-Type: application/ld+json when sending IRIs for relations (owner, items.product, items.store, location). The reference will be auto-generated if not provided.'
 
         admin_update_order:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/orders/{id}'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\OrderInput
-            processor: App\State\Admin\OrderProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['order:write', 'order_item:write']
             normalizationContext:
                 groups: ['id:read', 'order:read', 'location:read', 'user:read', 'product:read']
             openapi:
-                summary: 'Update order (Admin)'
+                summary: 'Update order (Admin) - Full update'
+                description: 'Update order information. Use Content-Type: application/ld+json when sending IRIs. For partial updates, use PATCH instead.'
+
+        admin_patch_order:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/orders/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['order:write', 'order_item:write']
+            normalizationContext:
+                groups: ['id:read', 'order:read', 'location:read', 'user:read', 'product:read']
+            openapi:
+                summary: 'Update order (Admin) - Partial update'
+                description: 'Partially update order information. Only provide the fields you want to update. Use Content-Type: application/ld+json when sending IRIs.'
 
         admin_delete_order:
             class: ApiPlatform\Metadata\Delete

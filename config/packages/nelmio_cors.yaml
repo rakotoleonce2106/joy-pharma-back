@@ -10,7 +10,8 @@ nelmio_cors:
         forced_allow_origin_value: ~ # Force CORS headers even on errors
     paths:
         '^/api':
-            allow_origin: ['http://localhost:3000', 'https://back-preprod.joy-pharma.com', 'https://www.joy-pharma.com', 'https://joy-pharma.com', 'https://admin.joy-pharma.com', '^https?://(.*\.)?joy-pharma\.com$']
+            origin_regex: true
+            allow_origin: ['http://localhost:3000', 'http://localhost:3001', 'https://back.joy-pharma.com', 'https://back-preprod.joy-pharma.com', 'https://www.joy-pharma.com', 'https://joy-pharma.com', 'https://admin.joy-pharma.com', '^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$', '^https?://(.*\.)?joy-pharma\.com$']
             allow_headers: ['*']
             allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
             max_age: 3600

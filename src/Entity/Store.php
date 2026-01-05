@@ -13,6 +13,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 enum BoutiqueStatus: string
 {
@@ -55,18 +56,19 @@ class Store
     use EntityTimestampTrait;
     
 
+    #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column(length: 255)]
-    #[Groups(['store:read'])]
+    #[Groups(['store:read', 'store:write'])]
     private ?string $name = null;
 
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['store:read'])]
+    #[Groups(['store:read', 'store:write'])]
     private ?string $description = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['store:read'])]
+    #[Groups(['store:read', 'store:write'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $image = null;
 
@@ -76,15 +78,15 @@ class Store
 
 
     #[ORM\OneToOne(inversedBy: 'store', cascade: ['persist', 'remove'])]
-    #[Groups(['store:read'])]
+    #[Groups(['store:read', 'store:write'])]
     private ?ContactInfo $contact = null;
 
     #[ORM\OneToOne(inversedBy: 'store', cascade: ['persist', 'remove'])]
-    #[Groups(['store:read'])]
+    #[Groups(['store:read', 'store:write'])]
     private ?Location $location = null;
 
     #[ORM\OneToOne(cascade: ['persist', 'remove'])]
-    #[Groups(['store:read'])]
+    #[Groups(['store:read', 'store:write'])]
     private ?User $owner = null;
 
     /**

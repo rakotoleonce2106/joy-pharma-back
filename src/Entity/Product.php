@@ -27,12 +27,12 @@ class Product
     use EntityTimestampTrait;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['product:read', 'product:write'])]
+    #[Groups(['product:read', 'product:write', 'payment:product:read'])]
     #[Assert\NotBlank(groups: ['create'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['product:read', 'product:write'])]
+    #[Groups(['product:read', 'product:write', 'payment:product:read'])]
     #[Assert\NotBlank(groups: ['create'])]
     private ?string $code = null;
 
@@ -91,11 +91,11 @@ class Product
     private ?Unit $unit = null;
 
     #[ORM\Column(nullable: true, type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Groups(['product:read', 'product:write'])]
+    #[Groups(['product:read', 'product:write', 'payment:product:read'])]
     private ?float $unitPrice = null;
 
     #[ORM\Column(nullable: true, type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Groups(['product:read', 'product:write'])]
+    #[Groups(['product:read', 'product:write', 'payment:product:read'])]
     private ?float $totalPrice = null;
 
     #[ORM\ManyToOne(cascade: ['persist', 'remove'])]

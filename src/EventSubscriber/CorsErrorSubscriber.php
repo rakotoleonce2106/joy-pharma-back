@@ -15,9 +15,11 @@ class CorsErrorSubscriber implements EventSubscriberInterface
 {
     private const ALLOWED_ORIGINS = [
         'http://localhost:3000',
+        'http://localhost:3001',
         'https://www.joy-pharma.com',
         'https://joy-pharma.com',
         'https://admin.joy-pharma.com',
+        'https://back.joy-pharma.com',
         'https://back-preprod.joy-pharma.com',
     ];
 
@@ -44,7 +46,13 @@ class CorsErrorSubscriber implements EventSubscriberInterface
             return;
         }
 
+        // Always add CORS headers for API routes
         $this->addCorsHeaders($request, $response);
+        
+        // For OPTIONS requests, ensure we return 200
+        if ($request->getMethod() === 'OPTIONS') {
+            $response->setStatusCode(200);
+        }
     }
 
     public function onKernelException(ExceptionEvent $event): void
@@ -60,43 +68,71 @@ class CorsErrorSubscriber implements EventSubscriberInterface
             return;
         }
 
-        // Get the response if it exists
+        // Get the response if it exists, or create one
         $response = $event->getResponse();
-        if ($response) {
-            $this->addCorsHeaders($request, $response);
+        if (!$response) {
+            // If no response exists yet, we'll wait for onKernelResponse
+            // But we can also set the response here to ensure CORS headers are added
+            $response = new \Symfony\Component\HttpFoundation\JsonResponse([
+                'code' => 500,
+                'message' => 'An error occurred.',
+            ], 500);
+            $event->setResponse($response);
         }
+        
+        $this->addCorsHeaders($request, $response);
     }
 
     private function addCorsHeaders($request, $response): void
     {
         $origin = $request->headers->get('Origin');
 
-        // If no Origin header, nothing to do
-        if (!$origin) {
-            return;
-        }
-
-        // Check if CORS headers are already set by NelmioCorsBundle
-        if ($response->headers->has('Access-Control-Allow-Origin')) {
+        // For API routes, always set CORS headers if we have an origin
+        // If no origin, we still set headers for OPTIONS requests (preflight)
+        if (!$origin && $request->getMethod() !== 'OPTIONS') {
             return;
         }
 
         // Determine if origin is allowed
-        $allowedOrigin = $this->getAllowedOrigin($origin);
+        $allowedOrigin = null;
+        if ($origin) {
+            $allowedOrigin = $this->getAllowedOrigin($origin);
+        }
+
+        // For OPTIONS requests (preflight), we need to allow the origin if it's in the request
+        // Otherwise, only proceed if origin is allowed
+        if (!$allowedOrigin && $request->getMethod() !== 'OPTIONS') {
+            return;
+        }
+
+        // For OPTIONS preflight requests, be more permissive - allow the origin if it matches patterns
+        if (!$allowedOrigin && $request->getMethod() === 'OPTIONS' && $origin) {
+            // For preflight, try to allow the origin if it matches our patterns
+            if (preg_match('/^https?:\/\/(localhost|127\.0\.0\.1)(:[0-9]+)?$/', $origin) ||
+                preg_match('/^https?:\/\/(.*\.)?joy-pharma\.com$/', $origin)) {
+                $allowedOrigin = $origin;
+            }
+        }
+
+        // If still no allowed origin, skip (can't set CORS headers)
         if (!$allowedOrigin) {
             return;
         }
 
-        // Add CORS headers
-        $response->headers->set('Access-Control-Allow-Origin', $allowedOrigin);
-        $response->headers->set('Access-Control-Allow-Credentials', 'true');
-        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-        $response->headers->set('Access-Control-Expose-Headers', 'Link');
+        // Always set CORS headers, overwriting any existing ones
+        // IMPORTANT: We use the specific origin, not *, because we use credentials
+        $response->headers->set('Access-Control-Allow-Origin', $allowedOrigin, true);
+        $response->headers->set('Access-Control-Allow-Credentials', 'true', true);
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS', true);
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin', true);
+        $response->headers->set('Access-Control-Expose-Headers', 'Link', true);
+        $response->headers->set('Access-Control-Max-Age', '3600', true);
         
         // Handle preflight requests
         if ($request->getMethod() === 'OPTIONS') {
-            $response->headers->set('Access-Control-Max-Age', '3600');
+            // For preflight requests, return 200 immediately
+            $response->setStatusCode(200);
+            $response->setContent('');
         }
     }
 

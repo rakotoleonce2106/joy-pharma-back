@@ -22,23 +22,45 @@ App\Entity\Form:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/forms'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\FormInput
-            processor: App\State\Admin\FormProcessor
+            denormalizationContext:
+                groups: ['form:write']
+            validationContext:
+                groups: ['create']
             normalizationContext:
                 groups: ['id:read', 'form:read']
             openapi:
                 summary: 'Create new form (Admin)'
+                description: 'Create a new form. Use Content-Type: application/ld+json.'
 
         admin_update_form:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/forms/{id}'
             security: 'is_granted("ROLE_ADMIN")'
-            input: App\Dto\Admin\FormInput
-            processor: App\State\Admin\FormProcessor
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['form:write']
             normalizationContext:
                 groups: ['id:read', 'form:read']
             openapi:
-                summary: 'Update form (Admin)'
+                summary: 'Update form (Admin) - Full update'
+                description: 'Update form information. Use Content-Type: application/ld+json. For partial updates, use PATCH instead.'
+
+        admin_patch_form:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/forms/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['form:write']
+            normalizationContext:
+                groups: ['id:read', 'form:read']
+            openapi:
+                summary: 'Update form (Admin) - Partial update'
+                description: 'Partially update form information. Only provide the fields you want to update. Use Content-Type: application/ld+json.'
 
         admin_delete_form:
             class: ApiPlatform\Metadata\Delete

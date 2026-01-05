@@ -1,0 +1,158 @@
+# Deliverer Specific API Resources
+
+# Profile Management
+App\Entity\User:
+    operations:
+        deliverer_get_profile:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/deliver'
+            security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\User\DelivererProfileProvider
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
+            openapi:
+                summary: 'Get deliverer profile'
+                description: 'Get profile information for the authenticated deliverer'
+
+        deliverer_update_profile:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/deliver/update'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\User\DelivererProfileProcessor
+            denormalizationContext:
+                groups: ['user:update']
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
+            openapi:
+                summary: 'Update deliverer profile (Full)'
+                description: 'Update all profile information. Use Content-Type: application/ld+json for IRIs.'
+
+        deliverer_patch_profile:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/deliver/update'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\User\DelivererProfileProcessor
+            denormalizationContext:
+                groups: ['user:update']
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
+            openapi:
+                summary: 'Update deliverer profile (Partial)'
+                description: 'Update specific profile fields. Use Content-Type: application/ld+json for IRIs.'
+
+# Dashboard Stats
+App\Dto\DashboardStats:
+    operations:
+        deliverer_get_dashboard:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/deliver/statistics'
+            security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\Stats\DashboardProvider
+            read: false
+            openapi:
+                summary: 'Get deliverer dashboard statistics'
+                description: 'Get dashboard stats for delivery person'
+                parameters:
+                    - name: period
+                      in: query
+                      schema:
+                          type: string
+                          enum: [today, week, month, year]
+                          default: today
+
+# Earnings Stats
+App\Dto\EarningsStats:
+    operations:
+        deliverer_get_earnings:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/deliver/earnings'
+            security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\Stats\EarningsProvider
+            read: false
+            openapi:
+                summary: 'Get deliverer earnings statistics'
+                description: 'Get detailed earnings history'
+                parameters:
+                    - name: period
+                      in: query
+                      schema:
+                          type: string
+                          enum: [week, month, year]
+                          default: week
+
+# Invoices
+App\Entity\Invoice:
+    operations:
+        deliverer_get_invoices:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/deliver/invoices'
+            security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\Invoice\InvoiceCollectionProvider
+            normalizationContext:
+                groups: ['invoice:read']
+            openapi:
+                summary: 'Get deliverer invoices list'
+                description: 'Get list of invoices for delivery person'
+
+        deliverer_download_invoice:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/deliver/invoices/{id}/download'
+            security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\Invoice\DownloadInvoiceProvider
+            read: false
+            openapi:
+                summary: 'Download deliverer invoice PDF'
+                description: 'Download invoice as PDF'
+
+# Location Update
+App\Entity\DeliveryLocation:
+    operations:
+        deliverer_update_location:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/deliver/location'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\Location\UpdateLocationProcessor
+            input: App\Dto\UpdateLocationInput
+            openapi:
+                summary: 'Update deliverer location'
+                description: 'Update real-time location'
+
+# Emergency SOS
+App\Entity\EmergencySOS:
+    operations:
+        deliverer_send_sos:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/deliver/emergency/sos'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\Emergency\SOSProcessor
+            input: App\Dto\SOSInput
+            openapi:
+                summary: 'Send deliverer emergency SOS'
+                description: 'Send emergency SOS signal with location'
+
+# Support Ticket
+App\Entity\SupportTicket:
+    operations:
+        deliverer_create_ticket:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/deliver/support/contact'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\Support\ContactProcessor
+            input: App\Dto\SupportTicketInput
+            openapi:
+                summary: 'Contact deliverer support'
+                description: 'Create a support ticket'
+
+# Auth Logout
+App\Dto\LogoutResponse:
+    operations:
+        deliverer_logout:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/deliver/logout'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\Auth\LogoutProcessor
+            read: false
+            input: false
+            openapi:
+                summary: 'Deliverer logout'
+                description: 'Logout delivery person (client should remove token)'

@@ -28,6 +28,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - ⬆️ Mise à jour vers Symfony 7.2
 - ⬆️ Mise à jour vers API Platform 4.1
 - ⬆️ Mise à jour vers PHP 8.3
+- 🕐 **BusinessHours** : Les champs `openTime` et `closeTime` sont maintenant stockés comme type `TIME` en base de données au lieu de `VARCHAR`. L'API expose `openTimeFormatted` et `closeTimeFormatted` en lecture, et accepte `openTime` et `closeTime` en écriture pour maintenir la compatibilité.
 - 📝 README complètement revu et amélioré
 
 ### Configuration Docker

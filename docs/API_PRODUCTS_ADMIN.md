@@ -32,6 +32,37 @@ Authorization: Bearer VOTRE_TOKEN_JWT
 
 ---
 
+## Recherche et filtres
+
+L'endpoint `GET /api/admin/products` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `name` | string | Recherche partielle dans le nom (insensible à la casse) | `?name=paracétamol` |
+| `category` | integer\|array | Filtrer par ID(s) de catégorie. Peut être un ID unique ou un tableau d'IDs | `?category=5` ou `?category[]=5&category[]=6` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10) | `?itemsPerPage=20` |
+
+**Exemples de recherche :**
+
+```bash
+# Rechercher les produits contenant "paracétamol" dans le nom
+curl -X GET "https://votre-api.com/api/admin/products?name=paracétamol" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec filtrage par catégorie
+curl -X GET "https://votre-api.com/api/admin/products?category=5" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec plusieurs filtres et pagination
+curl -X GET "https://votre-api.com/api/admin/products?name=aspirine&category=5&page=1&itemsPerPage=20" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Note :** Pour une recherche avancée avec Elasticsearch (recherche full-text, filtres multiples), utilisez l'endpoint dédié `/api/products/search` (voir [Documentation API de Recherche](./API_SEARCH.md)).
+
+---
+
 ## Structure des données
 
 ### ⚠️ Format des relations (Important)
@@ -1109,11 +1140,13 @@ Le paramètre `mapping` lors de l'upload détermine où le fichier sera stocké 
 | Mapping | Dossier de stockage | Usage recommandé |
 |---------|---------------------|-------------------|
 | `product_images` | `/public/images/products/` | Images de produits (recommandé) |
-| `media_object` | `/public/media/` | Par défaut (générique) |
 | `category_images` | `/public/images/categories/` | Images de catégories |
 | `category_icons` | `/public/icons/categories/` | Icônes SVG de catégories |
 | `brand_images` | `/public/images/brands/` | Images de marques |
 | `manufacturer_images` | `/public/images/manufacturers/` | Images de fabricants |
+| `user_images` | `/public/images/users/` | Avatars d'utilisateurs |
+| `store_images` | `/public/images/stores/` | Photos de magasins |
+| `media_object` | `/public/media/` | Par défaut (générique, documents de livraison, etc.) |
 
 **Pour les produits, utilisez toujours `mapping=product_images`.**
 

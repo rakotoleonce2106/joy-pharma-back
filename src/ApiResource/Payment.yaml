@@ -1,13 +1,49 @@
 App\Entity\Payment:
     operations:
+        # --- Client Operations ---
+
+        # Create payment intent
         create_payment_intent:
             class: ApiPlatform\Metadata\Post
             uriTemplate: "/create-payment-intent"
             controller: App\Controller\Api\CreatePaymentIntent
+            inputFormats:
+                jsonld: ['application/ld+json']
+                json: ['application/json']
             validationContext:
-                groups: ['payment:create' ]
+                groups: ['payment:create']
             normalizationContext:
-                groups: [ 'id:read',"payment:read" ]
+                groups: ['id:read', 'payment:read']
             openapi:
                 summary: 'Create payment intent'
-                description: 'Create payment intent'
+                description: 'Create a payment intent (Mvola or MPGS). Requires order reference.'
+
+        # --- Admin Operations ---
+
+        # List all payments
+        admin_get_collection:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: "/admin/payments"
+            security: "is_granted('ROLE_ADMIN')"
+            normalizationContext:
+                groups: ['id:read', 'payment:read', 'payment:order:read', 'payment:order:item:read', 'payment:product:read']
+            openapi:
+                summary: 'List all payments (Admin)'
+
+        # Get specific payment
+        admin_get:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: "/admin/payments/{id}"
+            security: "is_granted('ROLE_ADMIN')"
+            normalizationContext:
+                groups: ['id:read', 'payment:read', 'payment:order:read', 'payment:order:item:read', 'payment:product:read']
+            openapi:
+                summary: 'Get payment details (Admin)'
+
+        # Delete payment
+        admin_delete:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: "/admin/payments/{id}"
+            security: "is_granted('ROLE_ADMIN')"
+            openapi:
+                summary: 'Delete a payment (Admin)'

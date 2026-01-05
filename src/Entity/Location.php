@@ -8,26 +8,30 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: LocationRepository::class)]
 class Location
 {
     use EntityIdTrait;
     
+    #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['location:read'])]
+    #[Groups(['location:read', 'location:write'])]
     private ?string $address = null;
 
+    #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column]
-    #[Groups(['location:read'])]
+    #[Groups(['location:read', 'location:write'])]
     private ?float $latitude = null;
 
+    #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column]
-    #[Groups(['location:read'])]
+    #[Groups(['location:read', 'location:write'])]
     private ?float $longitude = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['location:read'])]
+    #[Groups(['location:read', 'location:write'])]
     private ?string $city = null;
 
     #[ORM\Column(length: 255, nullable: true)]

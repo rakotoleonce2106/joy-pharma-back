@@ -10,8 +10,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 trait EntityStatusTrait
 {
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => true])]
-    #[Groups(['status:read'])]
-    #[Assert\Type(type: 'bool', groups: ['admin:write'])]
+    #[Groups(['status:read', 'user:read', 'user:create', 'user:update'])]
+    #[Assert\Type(type: 'bool', groups: ['admin:write', 'create', 'update'])]
     private bool $active = true;
 
     public function getActive(): bool

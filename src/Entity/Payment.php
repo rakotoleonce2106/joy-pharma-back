@@ -70,6 +70,7 @@ class Payment
 
     #[ORM\OneToOne(inversedBy: 'payment', cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['payment:read', 'payment:create', 'payment:order:read'])]
     private ?Order $order = null;
 
 

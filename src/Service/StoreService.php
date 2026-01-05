@@ -36,7 +36,8 @@ readonly class StoreService
     private function persistBusinessHoursIfNeeded(StoreSetting $setting): void
     {
         // Persist any BusinessHours that haven't been persisted yet
-        // (created in StoreSetting constructor)
+        // Note: All BusinessHours are null by default, so this will only persist
+        // BusinessHours that have been explicitly set
         $methods = [
             'getMondayHours',
             'getTuesdayHours',

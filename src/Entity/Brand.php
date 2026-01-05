@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiProperty;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityTimestampTrait;
@@ -10,21 +11,25 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 
 #[ORM\Entity(repositoryClass: BrandRepository::class)]
+#[ApiFilter(SearchFilter::class, properties: ['name' => 'ipartial'])]
 class Brand
 {
     use EntityIdTrait;
     use EntityTimestampTrait;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['brand:read','product:read'])]
+    #[Groups(['brand:read', 'brand:write', 'product:read'])]
+    #[Assert\NotBlank(groups: ['create'])]
     private ?string $name = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['brand:read','product:read'])]
+    #[Groups(['brand:read', 'brand:write', 'product:read'])]
     #[ApiProperty(types: ['https://schema.org/image'])]
     private ?MediaObject $image = null;
 
