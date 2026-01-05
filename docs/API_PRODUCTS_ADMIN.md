@@ -95,10 +95,11 @@ API Platform désérialise automatiquement les IRIs en entités. C'est le même 
 | `totalPrice` | float | ❌ Non | Prix total |
 | `quantity` | float | ❌ Non | Quantité |
 | `stock` | int | ❌ Non | Stock disponible |
-| `currency` | string | ❌ Non | Code devise (ex: "MGA", "EUR") |
 | `isActive` | boolean | ❌ Non | Statut actif/inactif (défaut: `true`) |
 | `variants` | array | ❌ Non | Variantes du produit (structure libre) |
 | `images` | array<string> | ❌ Non | Tableau d'IRIs d'images (ex: `["/api/media_objects/123"]`) |
+
+**Note importante :** Le champ `currency` a été retiré des produits. Pour récupérer les devises disponibles, utilisez l'endpoint public `/api/currencies` (voir [Documentation API Devises](./API_ADMIN_ENTITIES.md#-devises-currencies)).
 
 ---
 
@@ -258,7 +259,6 @@ curl -X POST "https://votre-api.com/api/admin/products" \
     "totalPrice": 50000.00,
     "quantity": 20,
     "stock": 150,
-    "currency": "MGA",
     "isActive": true,
     "variants": {
       "dosage": "500mg",
@@ -293,7 +293,6 @@ async function createProduct(productData, imageIris) {
       totalPrice: productData.totalPrice,
       quantity: productData.quantity,
       stock: productData.stock,
-      currency: productData.currency,
       isActive: productData.isActive,
       variants: productData.variants,
       images: imageIris // Tableau d'IRIs
@@ -322,7 +321,6 @@ const product = await createProduct({
   totalPrice: 50000.00,
   quantity: 20,
   stock: 150,
-  currency: 'MGA',
   isActive: true,
   variants: { dosage: '500mg', packaging: 'boîte de 20' }
 }, ['/api/media_objects/123', '/api/media_objects/124']);
@@ -358,7 +356,6 @@ const product = await createProduct({
   "totalPrice": 50000.00,
   "quantity": 20,
   "stock": 150,
-  "currency": {...},
   "isActive": true,
   "variants": {
     "dosage": "500mg",
@@ -456,7 +453,6 @@ Tous les champs suivants peuvent être modifiés avec PUT ou PATCH. Avec **PUT**
 | `totalPrice` | float | Prix total | `50000.00` |
 | `quantity` | float | Quantité | `20` |
 | `stock` | int | Stock disponible | `150` |
-| `currency` | string | Code devise (ex: "MGA", "EUR") | `"MGA"` |
 | `isActive` | boolean | Statut actif/inactif | `true` ou `false` |
 | `variants` | object | Variantes du produit (structure libre) | `{"dosage": "500mg", "packaging": "boîte de 20"}` |
 | `images` | array<string> | Tableau d'IRIs d'images | `["/api/media_objects/123", "/api/media_objects/124"]` |
@@ -480,7 +476,6 @@ curl -X PUT "https://votre-api.com/api/admin/products/42" \
     "totalPrice": 84000.00,
     "quantity": 30,
     "stock": 200,
-    "currency": "MGA",
     "isActive": true,
     "variants": {
       "dosage": "500mg",
@@ -514,7 +509,6 @@ curl -X PATCH "https://votre-api.com/api/admin/products/42" \
     "totalPrice": 84000.00,
     "quantity": 30,
     "stock": 200,
-    "currency": "MGA",
     "isActive": true,
     "variants": {
       "dosage": "500mg",
@@ -601,8 +595,7 @@ curl -X PATCH "https://votre-api.com/api/admin/products/42" \
     "unitPrice": 3000.00,
     "totalPrice": 60000.00,
     "quantity": 20,
-    "stock": 250,
-    "currency": "MGA"
+    "stock": 250
   }'
 ```
 
@@ -659,7 +652,6 @@ curl -X PUT "https://votre-api.com/api/admin/products/42" \
     "totalPrice": 84000.00,
     "quantity": 30,
     "stock": 200,
-    "currency": "MGA",
     "isActive": true,
     "variants": {
       "dosage": "500mg",
@@ -987,7 +979,6 @@ curl -X POST "https://votre-api.com/api/admin/products" \
     "totalPrice": 70000.00,
     "quantity": 20,
     "stock": 100,
-    "currency": "MGA",
     "isActive": true,
     "variants": {
       "dosage": "400mg",
@@ -1026,7 +1017,6 @@ curl -X PUT "https://votre-api.com/api/admin/products/42" \
     "totalPrice": 50000.00,
     "quantity": 20,
     "stock": 300,
-    "currency": "MGA",
     "isActive": true,
     "variants": {},
     "images": [

@@ -605,12 +605,13 @@ curl -X PATCH "https://votre-api.com/api/admin/units/1" \
 
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
-| `isoCode` | string | ✅ Oui (create) | Code ISO de la devise (3 caractères, unique) (ex: "MGA", "EUR", "USD") |
+| `isoCode` | string | ❌ Non | Code ISO de la devise (3 caractères, unique si fourni) (ex: "MGA", "EUR", "USD"). Peut être `null`. |
 | `label` | string | ✅ Oui (create) | Nom complet de la devise (ex: "Ariary", "Euro", "US Dollar") |
 | `symbol` | string | ✅ Oui (create) | Symbole de la devise (ex: "Ar", "€", "$") |
 
 ### Créer une devise
 
+**Exemple avec ISO code :**
 ```bash
 curl -X POST "https://votre-api.com/api/admin/currencies" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
@@ -619,6 +620,17 @@ curl -X POST "https://votre-api.com/api/admin/currencies" \
     "isoCode": "MGA",
     "label": "Ariary",
     "symbol": "Ar"
+  }'
+```
+
+**Exemple sans ISO code (isoCode est optionnel) :**
+```bash
+curl -X POST "https://votre-api.com/api/admin/currencies" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "label": "Devise personnalisée",
+    "symbol": "¤"
   }'
 ```
 
@@ -717,9 +729,33 @@ await updateCurrency(1, {
 
 ### Récupérer les devises (Public)
 
+**Les endpoints publics sont accessibles sans authentification** - utilisez-les dans vos applications frontend pour afficher les devises disponibles.
+
 ```bash
 # Liste toutes les devises (endpoint public, pas besoin d'authentification)
 curl -X GET "https://votre-api.com/api/currencies"
+
+# Réponse exemple :
+# {
+#   "hydra:member": [
+#     {
+#       "@id": "/api/currencies/1",
+#       "@type": "Currency",
+#       "id": 1,
+#       "isoCode": "MGA",
+#       "label": "Ariary",
+#       "symbol": "Ar"
+#     },
+#     {
+#       "@id": "/api/currencies/2",
+#       "@type": "Currency",
+#       "id": 2,
+#       "isoCode": null,
+#       "label": "Devise personnalisée",
+#       "symbol": "¤"
+#     }
+#   ]
+# }
 
 # Récupérer une devise par ID (endpoint public)
 curl -X GET "https://votre-api.com/api/currencies/1"
@@ -727,17 +763,24 @@ curl -X GET "https://votre-api.com/api/currencies/1"
 
 **Exemple avec JavaScript :**
 ```javascript
-// Récupérer toutes les devises (public)
+// Récupérer toutes les devises (public - pas besoin d'authentification)
 async function getCurrencies() {
   const response = await fetch('/api/currencies');
-  return await response.json();
+  const data = await response.json();
+  return data['hydra:member'] || data; // Retourne le tableau de devises
 }
 
-// Récupérer une devise par ID (public)
+// Récupérer une devise par ID (public - pas besoin d'authentification)
 async function getCurrency(currencyId) {
   const response = await fetch(`/api/currencies/${currencyId}`);
   return await response.json();
 }
+
+// Exemple d'utilisation dans une application
+const currencies = await getCurrencies();
+currencies.forEach(currency => {
+  console.log(`${currency.label} (${currency.symbol}) - ISO: ${currency.isoCode || 'N/A'}`);
+});
 ```
 
 ### Supprimer une devise
@@ -799,13 +842,13 @@ curl -X POST "https://votre-api.com/api/admin/currencies" \
 ```
 
 **Notes importantes :**
-- Le `isoCode` doit être unique et contenir exactement 3 caractères (format ISO 4217)
-- Le `label` représente le nom complet de la devise
-- Le `symbol` est le symbole utilisé pour afficher la devise (ex: "Ar", "€", "$")
-- Les endpoints publics (`/api/currencies`) sont accessibles sans authentification
+- Le `isoCode` est **optionnel** (peut être `null`). S'il est fourni, il doit être unique et contenir exactement 3 caractères (format ISO 4217)
+- Le `label` représente le nom complet de la devise (requis)
+- Le `symbol` est le symbole utilisé pour afficher la devise (ex: "Ar", "€", "$") (requis)
+- Les endpoints publics (`/api/currencies`) sont accessibles **sans authentification** - utilisez-les pour récupérer la liste des devises disponibles
 - Les endpoints admin (`/api/admin/currencies`) nécessitent le rôle `ROLE_ADMIN`
 - Lors d'une mise à jour partielle (PATCH), seuls les champs fournis seront modifiés
-- Le code ISO ne peut pas être modifié après la création (contrainte unique)
+- Si un `isoCode` est fourni, il doit être unique. Plusieurs devises peuvent avoir `isoCode` à `null`
 
 ---
 
