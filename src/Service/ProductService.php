@@ -108,19 +108,20 @@ readonly class  ProductService
             }
         }
 
-        // Handle Image
         // Handle Price
         if (!empty($productData['price']) && is_array($productData['price'])) {
 
-            // Quantity: e.g. "15 pc(s)" or "20 pc(s)"
+            // Quantity: e.g. "10 pc(s)", "6 ml", etc.
             if (!empty($productData['price']['quantity'])) {
-                $quantityString = trim($productData['price']['quantity']);
+                // Remove non-breaking spaces and other special spaces
+                $quantityString = preg_replace('/[\s\x{00A0}\x{202F}]+/u', ' ', trim($productData['price']['quantity']));
                 
-                // Skip invalid values like "N/A", "n/a", "-", etc.
                 if (!$this->isInvalidPriceValue($quantityString)) {
-                    // Try to extract quantity and unit: "15 pc(s)" -> quantity=15, unit="pc(s)"
-                    if (preg_match('/^(\d+(?:[.,]\d+)?)\s*(.+)$/u', $quantityString, $matches)) {
-                        $quantity = (float) str_replace(',', '.', $matches[1]);
+                    // Improved regex: Handles "10 pc(s)", "6 ml", "1,5 kg", etc.
+                    // u flag for unicode, i for case-insensitive
+                    if (preg_match('/^([\d\s,.]+)\s*(.+)$/ui', $quantityString, $matches)) {
+                        $quantityValue = str_replace([',', ' '], ['.', ''], trim($matches[1]));
+                        $quantity = (float) $quantityValue;
                         $extractedUnitLabel = trim($matches[2]);
                         
                         if ($quantity > 0 && !empty($extractedUnitLabel) && !$this->isInvalidPriceValue($extractedUnitLabel)) {
@@ -134,36 +135,30 @@ readonly class  ProductService
                 }
             }
 
-            // Unit Price: e.g. "0,57 € / 1 pc(s)" - also use as fallback for unit extraction
+            // Unit Price: e.g. "0,29 € / 1 pc(s)"
             if (!empty($productData['price']['unitPrice'])) {
-                $unitPriceString = trim($productData['price']['unitPrice']);
+                $unitPriceString = preg_replace('/[\s\x{00A0}\x{202F}]+/u', ' ', trim($productData['price']['unitPrice']));
                 
                 if (!$this->isInvalidPriceValue($unitPriceString)) {
-                    // Pattern: "0,57 € / 1 pc(s)" or "0.57 € / 1 pc(s)"
-                    if (preg_match('/([\d,.\s]+)\s*€\s*\/\s*(\d+)\s*(.+)/u', $unitPriceString, $matches)) {
-                        // Extract unit price value (handle comma, space, and non-breaking space)
-                        $unitPriceValue = str_replace([',', ' ', ' '], ['.', '', ''], $matches[1]);
+                    // Pattern: "value € / denom unit"
+                    if (preg_match('/([\d\s,.]+)\s*€\s*\/\s*([\d\s,.]+)\s*(.+)/ui', $unitPriceString, $matches)) {
+                        $unitPriceValue = str_replace([',', ' '], ['.', ''], trim($matches[1]));
                         $unitPrice = (float) $unitPriceValue;
                         
                         if ($unitPrice > 0) {
                             $product->setUnitPrice($unitPrice);
                         }
                         
-                        // Fallback: If unit was not extracted from quantity, try from unitPrice
+                        // Fallback for unit/quantity if not yet set
                         if ($product->getUnit() === null) {
-                            $unitFromPrice = trim($matches[3]);
-                            if (!empty($unitFromPrice) && !$this->isInvalidPriceValue($unitFromPrice)) {
-                                $unit = $this->unitService->getOrCreateUnit($unitFromPrice);
+                            $unitLabelFromPrice = trim($matches[3]);
+                            if (!empty($unitLabelFromPrice) && !$this->isInvalidPriceValue($unitLabelFromPrice)) {
+                                $unit = $this->unitService->getOrCreateUnit($unitLabelFromPrice);
                                 $product->setUnit($unit);
-                                error_log(sprintf('[ProductService] Unit extracted from unitPrice (fallback): "%s" -> unit="%s"', 
-                                    $unitPriceString, $unitFromPrice));
                                 
-                                // Also try to set quantity from unitPrice denominator if not set
                                 if ($product->getQuantity() === null || $product->getQuantity() === 0.0) {
-                                    $qtyFromPrice = (int) $matches[2];
-                                    if ($qtyFromPrice > 0) {
-                                        $product->setQuantity((float) $qtyFromPrice);
-                                    }
+                                    $qtyFromPriceValue = str_replace([',', ' '], ['.', ''], trim($matches[2]));
+                                    $product->setQuantity((float) $qtyFromPriceValue);
                                 }
                             }
                         }
@@ -171,24 +166,14 @@ readonly class  ProductService
                 }
             }
             
-            // Log warning if no unit was extracted after all attempts
-            if ($product->getUnit() === null) {
-                error_log(sprintf('[ProductService] WARNING: No unit extracted for product "%s". quantity="%s", unitPrice="%s"',
-                    $productData['title'] ?? 'unknown',
-                    $productData['price']['quantity'] ?? 'null',
-                    $productData['price']['unitPrice'] ?? 'null'
-                ));
-            }
-
-            // Total Price: e.g. "€ 1,99" or "€ 8,49"
+            // Total Price: e.g. "€ 2,89"
             if (!empty($productData['price']['totalPrice'])) {
-                $totalPriceString = trim($productData['price']['totalPrice']);
+                $totalPriceString = preg_replace('/[\s\x{00A0}\x{202F}]+/u', ' ', trim($productData['price']['totalPrice']));
                 
                 if (!$this->isInvalidPriceValue($totalPriceString)) {
-                    // Pattern: "€ 8,49" or "€8.49" or "8,49 €"
-                    if (preg_match('/€\s*([\d,.\s]+)/u', $totalPriceString, $matches) ||
-                        preg_match('/([\d,.\s]+)\s*€/u', $totalPriceString, $matches)) {
-                        $totalPriceValue = str_replace([',', ' ', ' '], ['.', '', ''], $matches[1]);
+                    if (preg_match('/€\s*([\d\s,.]+)/ui', $totalPriceString, $matches) ||
+                        preg_match('/([\d\s,.]+)\s*€/ui', $totalPriceString, $matches)) {
+                        $totalPriceValue = str_replace([',', ' '], ['.', ''], trim($matches[1]));
                         $totalPrice = (float) $totalPriceValue;
                         
                         if ($totalPrice > 0) {

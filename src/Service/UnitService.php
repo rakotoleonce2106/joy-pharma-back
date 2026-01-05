@@ -17,11 +17,11 @@ readonly class UnitService
     ) {
     }
 
-    public function getOrCreateUnit(String $label): ?Unit
+    public function getOrCreateUnit(string $label): ?Unit
     {
         $unit = $this->unitRepository->findOneBy(['label' => $label]);
         if ($unit) {
-            return null;
+            return $unit;
         }
         $unit = new Unit();
         $unit->setLabel($label);
