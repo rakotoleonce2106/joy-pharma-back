@@ -56,6 +56,7 @@ readonly class  ProductService
         $product->setDescription($productData['description']);
 
         $product->setIsActive(true);
+        $product->setStock(1);
 
         // Handle Categories
         if (array_key_exists('categories', $productData) && $productData['categories']) {
