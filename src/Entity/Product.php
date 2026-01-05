@@ -98,10 +98,6 @@ class Product
     #[Groups(['product:read', 'product:write', 'payment:product:read'])]
     private ?float $totalPrice = null;
 
-    #[ORM\ManyToOne(cascade: ['persist', 'remove'])]
-    #[Groups(['product:read', 'product:write'])]
-    private ?Currency $currency = null;
-
     #[ORM\Column(nullable: true)]
     #[Groups(['product:read', 'product:write'])]
     private ?int $stock = null;
@@ -366,18 +362,6 @@ class Product
     public function setQuantity(?int $quantity): static
     {
         $this->quantity = $quantity;
-
-        return $this;
-    }
-
-    public function getCurrency(): ?Currency
-    {
-        return $this->currency;
-    }
-
-    public function setCurrency(?Currency $currency): static
-    {
-        $this->currency = $currency;
 
         return $this;
     }

@@ -85,13 +85,6 @@ class ProductElasticsearchService
                 'totalPrice' => ['type' => 'float'],
                 'quantity' => ['type' => 'integer'],
                 'stock' => ['type' => 'integer'],
-                'currency' => [
-                    'type' => 'nested',
-                    'properties' => [
-                        'id' => ['type' => 'integer'],
-                        'label' => ['type' => 'keyword']
-                    ]
-                ],
                 'createdAt' => ['type' => 'date'],
                 'updatedAt' => ['type' => 'date'],
                 // Champ vectoriel pour recherche KNN (optionnel, pour usage futur)
@@ -524,14 +517,6 @@ class ProductElasticsearchService
             $document['categories'][] = [
                 'id' => $category->getId(),
                 'name' => $category->getName()
-            ];
-        }
-
-        // Add currency
-        if ($product->getCurrency()) {
-            $document['currency'] = [
-                'id' => $product->getCurrency()->getId(),
-                'label' => $product->getCurrency()->getLabel()
             ];
         }
 

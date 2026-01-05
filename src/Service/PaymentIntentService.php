@@ -39,7 +39,7 @@ readonly class PaymentIntentService
                 // For other payment methods, get currency from database
                 $currency = $this->currencyService->getCurrency();
                 if ($currency) {
-                    $currencyLabel = $currency->getLabel() ?? 'USD';
+                    $currencyLabel = $currency->getIsoCode() ?? 'USD';
                 }
             }
             

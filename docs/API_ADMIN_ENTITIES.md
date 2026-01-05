@@ -1,8 +1,8 @@
-# Documentation API : Gestion des Entités Admin (Category, Brand, Manufacturer, Form, Unit)
+# Documentation API : Gestion des Entités Admin (Category, Brand, Manufacturer, Form, Unit, Currency)
 
 ## Vue d'ensemble
 
-Cette documentation explique comment créer, mettre à jour et gérer les entités administratives (Catégories, Marques, Fabricants, Formes, Unités) via l'API Admin, incluant l'upload d'images et d'icônes.
+Cette documentation explique comment créer, mettre à jour et gérer les entités administratives (Catégories, Marques, Fabricants, Formes, Unités, Devises) via l'API Admin, incluant l'upload d'images et d'icônes.
 
 ## Authentification
 
@@ -588,6 +588,227 @@ curl -X PATCH "https://votre-api.com/api/admin/units/1" \
 
 ---
 
+## 💰 Devises (Currencies)
+
+### Endpoints disponibles
+
+- **GET** `/api/currencies` - Liste toutes les devises (public)
+- **GET** `/api/currencies/{id}` - Récupère une devise par son ID (public)
+- **GET** `/api/admin/currencies` - Liste toutes les devises (Admin)
+- **GET** `/api/admin/currencies/{id}` - Récupère une devise par son ID (Admin)
+- **POST** `/api/admin/currencies` - Crée une nouvelle devise (Admin)
+- **PUT** `/api/admin/currencies/{id}` - Met à jour une devise existante (mise à jour complète) (Admin)
+- **PATCH** `/api/admin/currencies/{id}` - Met à jour une devise existante (mise à jour partielle) (Admin)
+- **DELETE** `/api/admin/currencies/{id}` - Supprime une devise (Admin)
+
+### Structure des données
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `isoCode` | string | ✅ Oui (create) | Code ISO de la devise (3 caractères, unique) (ex: "MGA", "EUR", "USD") |
+| `label` | string | ✅ Oui (create) | Nom complet de la devise (ex: "Ariary", "Euro", "US Dollar") |
+| `symbol` | string | ✅ Oui (create) | Symbole de la devise (ex: "Ar", "€", "$") |
+
+### Créer une devise
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/currencies" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "isoCode": "MGA",
+    "label": "Ariary",
+    "symbol": "Ar"
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function createCurrency(currencyData) {
+  const response = await fetch('/api/admin/currencies', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      isoCode: currencyData.isoCode,
+      label: currencyData.label,
+      symbol: currencyData.symbol
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la création de la devise');
+  }
+  
+  return await response.json();
+}
+
+// Exemple d'utilisation
+await createCurrency({
+  isoCode: 'MGA',
+  label: 'Ariary',
+  symbol: 'Ar'
+});
+```
+
+### Mettre à jour une devise
+
+#### Mise à jour complète (PUT)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/currencies/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "isoCode": "MGA",
+    "label": "Ariary malgache",
+    "symbol": "Ar"
+  }'
+```
+
+#### Mise à jour partielle (PATCH)
+
+```bash
+# Mettre à jour uniquement le nom
+curl -X PATCH "https://votre-api.com/api/admin/currencies/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "label": "Ariary malgache"
+  }'
+
+# Mettre à jour uniquement le symbole
+curl -X PATCH "https://votre-api.com/api/admin/currencies/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "symbol": "Ar."
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function updateCurrency(currencyId, updates) {
+  const response = await fetch(`/api/admin/currencies/${currencyId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(updates)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la mise à jour de la devise');
+  }
+  
+  return await response.json();
+}
+
+// Exemple d'utilisation
+await updateCurrency(1, {
+  label: 'Ariary malgache'
+});
+```
+
+### Récupérer les devises (Public)
+
+```bash
+# Liste toutes les devises (endpoint public, pas besoin d'authentification)
+curl -X GET "https://votre-api.com/api/currencies"
+
+# Récupérer une devise par ID (endpoint public)
+curl -X GET "https://votre-api.com/api/currencies/1"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+// Récupérer toutes les devises (public)
+async function getCurrencies() {
+  const response = await fetch('/api/currencies');
+  return await response.json();
+}
+
+// Récupérer une devise par ID (public)
+async function getCurrency(currencyId) {
+  const response = await fetch(`/api/currencies/${currencyId}`);
+  return await response.json();
+}
+```
+
+### Supprimer une devise
+
+```bash
+curl -X DELETE "https://votre-api.com/api/admin/currencies/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function deleteCurrency(currencyId) {
+  const response = await fetch(`/api/admin/currencies/${currencyId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la suppression de la devise');
+  }
+  
+  return response.status === 204 ? null : await response.json();
+}
+```
+
+### Exemples de devises courantes
+
+```bash
+# Créer plusieurs devises courantes
+curl -X POST "https://votre-api.com/api/admin/currencies" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "isoCode": "MGA",
+    "label": "Ariary",
+    "symbol": "Ar"
+  }'
+
+curl -X POST "https://votre-api.com/api/admin/currencies" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "isoCode": "EUR",
+    "label": "Euro",
+    "symbol": "€"
+  }'
+
+curl -X POST "https://votre-api.com/api/admin/currencies" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "isoCode": "USD",
+    "label": "US Dollar",
+    "symbol": "$"
+  }'
+```
+
+**Notes importantes :**
+- Le `isoCode` doit être unique et contenir exactement 3 caractères (format ISO 4217)
+- Le `label` représente le nom complet de la devise
+- Le `symbol` est le symbole utilisé pour afficher la devise (ex: "Ar", "€", "$")
+- Les endpoints publics (`/api/currencies`) sont accessibles sans authentification
+- Les endpoints admin (`/api/admin/currencies`) nécessitent le rôle `ROLE_ADMIN`
+- Lors d'une mise à jour partielle (PATCH), seuls les champs fournis seront modifiés
+- Le code ISO ne peut pas être modifié après la création (contrainte unique)
+
+---
+
 ## 👤 Utilisateurs (Users)
 
 ### Endpoints disponibles
@@ -938,7 +1159,7 @@ L'image est automatiquement mappée avec `store_images`, et l'ancienne image est
 
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
-| `product` | string | ✅ Oui (create) | IRI du produit (ex: `"/api/products/1"`) |
+| `product` | string | ✅ Oui (create) | IRI du produit (ex: `"/api/product/1"` ou `"/api/admin/products/1"`) |
 | `store` | string | ✅ Oui (create) | IRI du magasin (ex: `"/api/admin/stores/1"`) |
 | `price` | float | ✅ Oui (create) | Prix de vente (doit être > 0) |
 | `stock` | integer | ✅ Oui (create) | Quantité en stock (doit être >= 0) |
@@ -949,11 +1170,17 @@ L'image est automatiquement mappée avec `store_images`, et l'ancienne image est
 #### Étape 1 : Récupérer les IRIs du produit et du magasin
 
 ```bash
-# Récupérer un produit
-curl -X GET "https://votre-api.com/api/products/1" \
+# Récupérer un produit (endpoint public)
+curl -X GET "https://votre-api.com/api/product/1" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 
-# Réponse: { "@id": "/api/products/1", "id": 1, ... }
+# Réponse: { "@id": "/api/product/1", "id": 1, ... }
+
+# Ou utiliser l'endpoint admin
+curl -X GET "https://votre-api.com/api/admin/products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Réponse: { "@id": "/api/admin/products/1", "id": 1, ... }
 
 # Récupérer un magasin
 curl -X GET "https://votre-api.com/api/admin/stores/1" \
@@ -969,13 +1196,15 @@ curl -X POST "https://votre-api.com/api/admin/store-products" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -H "Content-Type: application/ld+json" \
   -d '{
-    "product": "/api/products/1",
+    "product": "/api/product/1",
     "store": "/api/admin/stores/1",
     "price": 15000.00,
     "stock": 50,
     "unitPrice": 15000.00
   }'
 ```
+
+**Note importante :** L'IRI du produit doit utiliser `/api/product/{id}` (singulier) ou `/api/admin/products/{id}` (pluriel pour l'endpoint admin). Ne pas utiliser `/api/products/{id}` qui n'existe pas.
 
 **Exemple avec JavaScript :**
 ```javascript
@@ -987,7 +1216,7 @@ async function createStoreProduct(productId, storeId, price, stock, unitPrice = 
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
-      product: `/api/products/${productId}`,
+      product: `/api/product/${productId}`, // Utiliser /api/product/ (singulier) ou /api/admin/products/
       store: `/api/admin/stores/${storeId}`,
       price: price,
       stock: stock,
@@ -1013,7 +1242,7 @@ curl -X PUT "https://votre-api.com/api/admin/store-products/1" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -H "Content-Type: application/ld+json" \
   -d '{
-    "product": "/api/products/2",
+    "product": "/api/product/2",
     "store": "/api/admin/stores/1",
     "price": 18000.00,
     "stock": 75,
@@ -1712,7 +1941,7 @@ curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
 **Structure de OrderItem :**
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
-| `product` | string | ✅ Oui | IRI du produit (ex: `"/api/products/1"`) |
+| `product` | string | ✅ Oui | IRI du produit (ex: `"/api/product/1"` ou `"/api/admin/products/1"`) |
 | `quantity` | integer | ✅ Oui | Quantité (doit être > 0) |
 | `store` | string | ❌ Non | IRI du magasin (ex: `"/api/admin/stores/1"`) |
 
@@ -1741,11 +1970,17 @@ curl -X GET "https://votre-api.com/api/admin/users/1" \
 
 # Réponse: { "@id": "/api/admin/users/1", "id": 1, ... }
 
-# Récupérer des produits
-curl -X GET "https://votre-api.com/api/products/1" \
+# Récupérer des produits (endpoint public)
+curl -X GET "https://votre-api.com/api/product/1" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 
-# Réponse: { "@id": "/api/products/1", "id": 1, ... }
+# Réponse: { "@id": "/api/product/1", "id": 1, ... }
+
+# Ou utiliser l'endpoint admin
+curl -X GET "https://votre-api.com/api/admin/products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Réponse: { "@id": "/api/admin/products/1", "id": 1, ... }
 ```
 
 #### Étape 2 : Créer la commande
@@ -1769,12 +2004,12 @@ curl -X POST "https://votre-api.com/api/admin/orders" \
     },
     "items": [
       {
-        "product": "/api/products/1",
+        "product": "/api/product/1",
         "quantity": 2,
         "store": "/api/admin/stores/1"
       },
       {
-        "product": "/api/products/2",
+        "product": "/api/product/2",
         "quantity": 1
       }
     ]
@@ -1805,7 +2040,7 @@ async function createOrder(orderData) {
         city: orderData.location.city || null
       } : null,
       items: orderData.items.map(item => ({
-        product: `/api/products/${item.productId}`,
+        product: `/api/product/${item.productId}`, // Utiliser /api/product/ (singulier) ou /api/admin/products/
         quantity: item.quantity,
         store: item.storeId ? `/api/admin/stores/${item.storeId}` : null
       }))
@@ -1845,7 +2080,7 @@ curl -X PUT "https://votre-api.com/api/admin/orders/1" \
     },
     "items": [
       {
-        "product": "/api/products/2",
+        "product": "/api/product/2",
         "quantity": 3,
         "store": "/api/admin/stores/1"
       }
@@ -1880,7 +2115,7 @@ curl -X PATCH "https://votre-api.com/api/admin/orders/1" \
   -d '{
     "items": [
       {
-        "product": "/api/products/3",
+        "product": "/api/product/3",
         "quantity": 5,
         "store": "/api/admin/stores/2"
       }
@@ -2118,17 +2353,17 @@ curl -X POST "https://votre-api.com/api/admin/orders" \
     },
     "items": [
       {
-        "product": "/api/products/1",
+        "product": "/api/product/1",
         "quantity": 2,
         "store": "/api/admin/stores/1"
       },
       {
-        "product": "/api/products/2",
+        "product": "/api/product/2",
         "quantity": 1,
         "store": "/api/admin/stores/1"
       },
       {
-        "product": "/api/products/3",
+        "product": "/api/product/3",
         "quantity": 3
       }
     ]
@@ -2178,6 +2413,16 @@ curl -X POST "https://votre-api.com/api/admin/orders" \
 - `PUT /api/admin/units/{id}` - Mettre à jour une unité (complète)
 - `PATCH /api/admin/units/{id}` - Mettre à jour une unité (partielle)
 - `DELETE /api/admin/units/{id}` - Supprimer une unité
+
+### Devises
+- `GET /api/currencies` - Liste des devises (public)
+- `GET /api/currencies/{id}` - Détails d'une devise (public)
+- `GET /api/admin/currencies` - Liste des devises (Admin)
+- `GET /api/admin/currencies/{id}` - Détails d'une devise (Admin)
+- `POST /api/admin/currencies` - Créer une devise (Admin)
+- `PUT /api/admin/currencies/{id}` - Mettre à jour une devise (complète) (Admin)
+- `PATCH /api/admin/currencies/{id}` - Mettre à jour une devise (partielle) (Admin)
+- `DELETE /api/admin/currencies/{id}` - Supprimer une devise (Admin)
 
 ### Utilisateurs
 - `GET /api/admin/users` - Liste des utilisateurs

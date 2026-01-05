@@ -4,7 +4,6 @@ namespace App\Service;
 
 
 use App\Entity\Category;
-use App\Entity\Currency;
 use App\Entity\MediaObject;
 use App\Entity\Price;
 use App\Entity\Product;
@@ -27,7 +26,6 @@ readonly class  ProductService
         private BrandService           $brandService,
         private ManufacturerService    $manufacturerService,
         private UnitService            $unitService,
-        private CurrencyService           $currencyService,
     ) {}
 
     public function createProduct(Product $product): void
@@ -179,8 +177,6 @@ readonly class  ProductService
                         
                         if ($totalPrice > 0) {
                             $product->setTotalPrice($totalPrice);
-                            $currency = $this->currencyService->getOrCreateCurrency('€');
-                            $product->setCurrency($currency);
                         }
                     }
                 }
