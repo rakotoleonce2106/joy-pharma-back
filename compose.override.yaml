@@ -1,5 +1,7 @@
 ---
 # Development environment override
+# En local: utilise ./public/ pour les images, icons, media, uploads
+# (monté via ./:/app, donc ./public/ est accessible dans /app/public/)
 services:
   php:
     build:

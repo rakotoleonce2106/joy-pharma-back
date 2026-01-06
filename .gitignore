@@ -44,6 +44,10 @@
 
 ###> Docker ###
 /docker-compose.override.yml
+/compose.override.yaml
+/compose.prod.yaml
+/deploy.sh
+/deploy.*.sh
 ###< Docker ###
 
 ###> Data persistante (images, uploads) ###

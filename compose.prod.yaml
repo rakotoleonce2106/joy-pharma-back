@@ -9,7 +9,8 @@ services:
       # Monter le fichier .env dans le conteneur
       - ./.env:/app/.env:ro
       # 📁 VOLUMES - Images et uploads persistants
-      # Stockés dans ./data/ (dossier du projet, ignoré par Git)
+      # En production: utilise ./data/ (dossier du projet, ignoré par Git)
+      # En local: utilise ./public/ (via compose.override.yaml)
       - ./data/images:/app/public/images:rw
       - ./data/icons:/app/public/icons:rw
       - ./data/media:/app/public/media:rw
