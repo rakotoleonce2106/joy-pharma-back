@@ -10,6 +10,8 @@
         "ext-ctype": "*",
         "ext-iconv": "*",
         "api-platform/doctrine-orm": "^4.1.28",
+        "api-platform/metadata": "^4.1.28",
+        "api-platform/serializer": "~4.1.28",
         "api-platform/symfony": "^4.1.28",
         "dahromy/mvola-bundle": "^1.1",
         "doctrine/annotations": "^2.0.2",
@@ -97,7 +99,8 @@
         ]
     },
     "conflict": {
-        "symfony/symfony": "*"
+        "symfony/symfony": "*",
+        "api-platform/serializer": ">=4.2.0"
     },
     "extra": {
         "symfony": {
