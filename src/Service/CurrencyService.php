@@ -20,22 +20,34 @@ readonly class CurrencyService
     {
     }
 
-    public function getOrCreateCurrency(String $label): ?Currency
+    public function getOrCreateCurrency(string $isoCode, string $label, string $symbol): ?Currency
     {
-        $currency = $this->currencyRepository->findOneBy(['label' => $label]);
+        $currency = $this->currencyRepository->findOneBy(['isoCode' => $isoCode]);
         if ($currency) {
-            return null;
+            return $currency;
         }
         $currency = new Currency();
+        $currency->setIsoCode($isoCode);
         $currency->setLabel($label);
+        $currency->setSymbol($symbol);
         $this->manager->persist($currency);
+        $this->manager->flush();
         return $currency;
     }
 
     public function getCurrency(): ?Currency
     {
-        return $this->currencyRepository->findOneBy(['label' => 'Ar']);
+        return $this->currencyRepository->findOneBy(['symbol' => 'Ar']);
+    }
 
+    public function getCurrencyByIsoCode(string $isoCode): ?Currency
+    {
+        return $this->currencyRepository->findOneBy(['isoCode' => $isoCode]);
+    }
+
+    public function getCurrencyBySymbol(string $symbol): ?Currency
+    {
+        return $this->currencyRepository->findOneBy(['symbol' => $symbol]);
     }
 
 
@@ -81,7 +93,8 @@ readonly class CurrencyService
         'HKD' => 400,
         'SGD' => 50,
         'MYR' => 200,
-        'Ar' => 20000, // Assuming 1 Ar = 100 centimes and minimum is around 0.50 EUR
+        'MGA' => 20000, // Ariary - Assuming 1 Ar = 100 centimes and minimum is around 0.50 EUR
+        'Ar' => 20000, // Legacy support for symbol-based lookup
     ];
 
     private const DEFAULT_MINIMUM_AMOUNT = 50;

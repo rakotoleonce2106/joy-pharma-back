@@ -1,0 +1,92 @@
+App\Entity\Currency:
+    operations:
+        get_currencies:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/currencies'
+            normalizationContext:
+                groups: ['id:read', 'currency:read']
+            openapi:
+                summary: 'List all currencies'
+                description: 'Get all available currencies'
+
+        get_currency:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/currencies/{id}'
+            normalizationContext:
+                groups: ['id:read', 'currency:read']
+            openapi:
+                summary: 'Get currency by ID'
+                description: 'Get a currency by ID'
+
+        admin_get_currencies:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/currencies'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'currency:read']
+            openapi:
+                summary: 'List all currencies (Admin)'
+
+        admin_get_currency:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/currencies/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'currency:read']
+            openapi:
+                summary: 'Get currency by ID (Admin)'
+
+        admin_create_currency:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/currencies'
+            security: 'is_granted("ROLE_ADMIN")'
+            denormalizationContext:
+                groups: ['currency:write']
+            validationContext:
+                groups: ['create']
+            normalizationContext:
+                groups: ['id:read', 'currency:read']
+            openapi:
+                summary: 'Create new currency (Admin)'
+                description: 'Create a new currency. Use Content-Type: application/ld+json.'
+
+        admin_update_currency:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/currencies/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['currency:write']
+            normalizationContext:
+                groups: ['id:read', 'currency:read']
+            openapi:
+                summary: 'Update currency (Admin) - Full update'
+                description: 'Update currency information. Use Content-Type: application/ld+json. For partial updates, use PATCH instead.'
+
+        admin_patch_currency:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/currencies/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['currency:write']
+            normalizationContext:
+                groups: ['id:read', 'currency:read']
+            openapi:
+                summary: 'Update currency (Admin) - Partial update'
+                description: 'Partially update currency information. Only provide the fields you want to update. Use Content-Type: application/ld+json.'
+
+        admin_delete_currency:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/currencies/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete currency (Admin)'
+
+    normalizationContext:
+        groups: ['id:read', 'currency:read']
+

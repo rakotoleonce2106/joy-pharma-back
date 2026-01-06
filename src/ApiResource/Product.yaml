@@ -18,7 +18,6 @@ App\Entity\Product:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/products'
-            provider: 'App\State\Product\ProductsProvider'
             normalizationContext:
                 groups:  ['id:read','product:read','image:read','media_object:read','unit:read','form:read']
             format: 'json'
