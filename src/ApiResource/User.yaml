@@ -1,5 +1,158 @@
 App\Entity\User:
     operations:
+        register_customer:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/register'
+            public: true
+            denormalizationContext:
+                groups: ['user:create']
+            validationContext:
+                groups: ['create']
+            read: false
+            openapi:
+                summary: 'Register as customer'
+                description: 'Register a new customer account and receive JWT token. Use Content-Type: application/ld+json when sending IRIs (e.g., for image). Upload avatar first using POST /api/media_objects with mapping=user_images, then reference it using IRI.'
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                    plainPassword:
+                                        type: string
+                                        minLength: 8
+                                    firstName:
+                                        type: string
+                                    lastName:
+                                        type: string
+                                    phone:
+                                        type: string
+                                    image:
+                                        type: string
+                                        description: IRI of avatar (e.g., "/api/media_objects/123")
+                                required:
+                                    - email
+                                    - plainPassword
+                                    - firstName
+                                    - lastName
+                                    - phone
+                        application/ld+json:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                    plainPassword:
+                                        type: string
+                                        minLength: 8
+                                    firstName:
+                                        type: string
+                                    lastName:
+                                        type: string
+                                    phone:
+                                        type: string
+                                    image:
+                                        type: string
+                                        description: IRI of avatar (e.g., "/api/media_objects/123")
+                                required:
+                                    - email
+                                    - plainPassword
+                                    - firstName
+                                    - lastName
+                                    - phone
+                responses:
+                    '201':
+                        description: 'Customer registered successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        token:
+                                            type: string
+                                        refresh_token:
+                                            type: string
+                                        user:
+                                            type: object
+                    '409':
+                        description: 'Email already exists'
+                    '422':
+                        description: 'Validation error'
+
+        register_delivery:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/register/delivery'
+            input: 'App\Dto\RegisterDeliveryInput'
+            processor: App\State\Auth\RegisterDeliveryProcessor
+            read: false
+            input_formats:
+                multipart: [ 'multipart/form-data' ]
+            openapi:
+                summary: 'Register as delivery person'
+                description: 'Register a new delivery person account and receive JWT token'
+                requestBody:
+                    content:
+                        multipart/form-data:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                    password:
+                                        type: string
+                                        minLength: 8
+                                    firstName:
+                                        type: string
+                                    lastName:
+                                        type: string
+                                    phone:
+                                        type: string
+                                    vehicleType:
+                                        type: string
+                                        enum: [bike, motorcycle, car, van]
+                                    vehiclePlate:
+                                        type: string
+                                    residenceDocument:
+                                        type: string
+                                        format: binary
+                                    vehicleDocument:
+                                        type: string
+                                        format: binary
+                                required:
+                                    - email
+                                    - password
+                                    - firstName
+                                    - lastName
+                                    - phone
+                                    - vehicleType
+                responses:
+                    '201':
+                        description: 'Delivery person registered successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        token:
+                                            type: string
+                                        refresh_token:
+                                            type: string
+                                        user:
+                                            type: object
+                                            properties:
+                                                userType:
+                                                    type: string
+                                                    example: delivery
+                                                delivery:
+                                                    type: object
+                    '409':
+                        description: 'Email already exists'
+
         get_collection:
             class: ApiPlatform\Metadata\GetCollection
             openapi:
