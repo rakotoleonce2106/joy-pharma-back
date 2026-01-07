@@ -258,16 +258,16 @@ curl -X POST "https://votre-api.com/api/favorites" \
 ### Endpoints disponibles
 
 - **GET** `/api/orders` - Liste l'historique de mes commandes
-- **GET** `/api/order/{id}` - Détail d'une commande
-- **POST** `/api/order` - Crée une nouvelle commande
-- **POST** `/api/order/simulate` - Simule une commande (calcul des remises, etc.)
+- **GET** `/api/orders/{id}` - Détail d'une commande
+- **POST** `/api/orders` - Crée une nouvelle commande
+- **POST** `/api/orders/simulate` - Simule une commande (calcul des remises, etc.)
 
 ### Créer une commande
 
 Envoyez les détails de la commande avec les IRIs des produits.
 
 ```bash
-curl -X POST "https://votre-api.com/api/order" \
+curl -X POST "https://votre-api.com/api/orders" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -H "Content-Type: application/ld+json" \
   -d '{

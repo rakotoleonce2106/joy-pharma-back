@@ -3,7 +3,7 @@ App\Entity\Category:
         get_category:
             method: 'GET'
             class: ApiPlatform\Metadata\Get
-            uriTemplate: '/category/{id}'
+            uriTemplate: '/categories/{id}'
             normalizationContext:
                 groups: ['category:read','image:read','media_object:read']
             openapi:
@@ -18,7 +18,7 @@ App\Entity\Category:
         get_categories:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
-            uriTemplate: '/category'
+            uriTemplate: '/categories'
             provider: App\State\Product\CategoryProvider
             normalizationContext:
                 groups: ['id:read','category:read','image:read','media_object:read']

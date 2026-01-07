@@ -22,7 +22,7 @@ final class StoreProductDenormalizer implements DenormalizerInterface, Denormali
             // Handle both integer and string productId
             $productId = $data['productId'];
             if (is_numeric($productId)) {
-                $data['product'] = '/api/product/' . (int) $productId;
+                $data['product'] = '/api/products/' . (int) $productId;
             }
             unset($data['productId']);
         }

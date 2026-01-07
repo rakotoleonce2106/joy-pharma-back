@@ -3,7 +3,7 @@ App\Entity\Brand:
         get_brand:
             method: 'GET'
             class: ApiPlatform\Metadata\Get
-            uriTemplate: '/brand/{id}'
+            uriTemplate: '/brands/{id}'
             normalizationContext:
                 groups: ['id:read','brand:read','image:read','media_object:read']
             openapi:
@@ -17,7 +17,7 @@ App\Entity\Brand:
         get_brands:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
-            uriTemplate: '/brand'
+            uriTemplate: '/brands'
             normalizationContext:
                 groups: ['id:read','brand:read','image:read','media_object:read']
             openapi:

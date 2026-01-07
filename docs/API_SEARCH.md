@@ -251,8 +251,8 @@ GET /api/products?category[]=5&category[]=10
 Filtrer les catégories par parent :
 
 ```
-GET /api/category?parent=null
-GET /api/category?parent=5
+GET /api/categories?parent=null
+GET /api/categories?parent=5
 ```
 
 - `parent=null` : Retourne les catégories racines (sans parent)

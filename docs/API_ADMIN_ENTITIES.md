@@ -1202,7 +1202,7 @@ L'image est automatiquement mappée avec `store_images`, et l'ancienne image est
 
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
-| `product` | string | ✅ Oui (create) | IRI du produit (ex: `"/api/product/1"` ou `"/api/admin/products/1"`) |
+| `product` | string | ✅ Oui (create) | IRI du produit (ex: `"/api/products/1"` ou `"/api/admin/products/1"`) |
 | `store` | string | ✅ Oui (create) | IRI du magasin (ex: `"/api/admin/stores/1"`) |
 | `price` | float | ✅ Oui (create) | Prix de vente (doit être > 0) |
 | `stock` | integer | ✅ Oui (create) | Quantité en stock (doit être >= 0) |
@@ -1214,10 +1214,10 @@ L'image est automatiquement mappée avec `store_images`, et l'ancienne image est
 
 ```bash
 # Récupérer un produit (endpoint public)
-curl -X GET "https://votre-api.com/api/product/1" \
+curl -X GET "https://votre-api.com/api/products/1" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 
-# Réponse: { "@id": "/api/product/1", "id": 1, ... }
+# Réponse: { "@id": "/api/products/1", "id": 1, ... }
 
 # Ou utiliser l'endpoint admin
 curl -X GET "https://votre-api.com/api/admin/products/1" \
@@ -1239,7 +1239,7 @@ curl -X POST "https://votre-api.com/api/admin/store-products" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -H "Content-Type: application/ld+json" \
   -d '{
-    "product": "/api/product/1",
+    "product": "/api/products/1",
     "store": "/api/admin/stores/1",
     "price": 15000.00,
     "stock": 50,
@@ -1247,7 +1247,7 @@ curl -X POST "https://votre-api.com/api/admin/store-products" \
   }'
 ```
 
-**Note importante :** L'IRI du produit doit utiliser `/api/product/{id}` (singulier) ou `/api/admin/products/{id}` (pluriel pour l'endpoint admin). Ne pas utiliser `/api/products/{id}` qui n'existe pas.
+**Note importante :** L'IRI du produit doit utiliser `/api/products/{id}` ou `/api/admin/products/{id}` pour l'endpoint admin.
 
 **Exemple avec JavaScript :**
 ```javascript
@@ -1259,7 +1259,7 @@ async function createStoreProduct(productId, storeId, price, stock, unitPrice = 
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
-      product: `/api/product/${productId}`, // Utiliser /api/product/ (singulier) ou /api/admin/products/
+      product: `/api/products/${productId}`, // Utiliser /api/products/ ou /api/admin/products/
       store: `/api/admin/stores/${storeId}`,
       price: price,
       stock: stock,
@@ -1285,7 +1285,7 @@ curl -X PUT "https://votre-api.com/api/admin/store-products/1" \
   -H "Authorization: Bearer VOTRE_TOKEN" \
   -H "Content-Type: application/ld+json" \
   -d '{
-    "product": "/api/product/2",
+    "product": "/api/products/2",
     "store": "/api/admin/stores/1",
     "price": 18000.00,
     "stock": 75,
@@ -1984,7 +1984,7 @@ curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
 **Structure de OrderItem :**
 | Champ | Type | Requis | Description |
 |-------|------|--------|-------------|
-| `product` | string | ✅ Oui | IRI du produit (ex: `"/api/product/1"` ou `"/api/admin/products/1"`) |
+| `product` | string | ✅ Oui | IRI du produit (ex: `"/api/products/1"` ou `"/api/admin/products/1"`) |
 | `quantity` | integer | ✅ Oui | Quantité (doit être > 0) |
 | `store` | string | ❌ Non | IRI du magasin (ex: `"/api/admin/stores/1"`) |
 
@@ -2014,10 +2014,10 @@ curl -X GET "https://votre-api.com/api/admin/users/1" \
 # Réponse: { "@id": "/api/admin/users/1", "id": 1, ... }
 
 # Récupérer des produits (endpoint public)
-curl -X GET "https://votre-api.com/api/product/1" \
+curl -X GET "https://votre-api.com/api/products/1" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 
-# Réponse: { "@id": "/api/product/1", "id": 1, ... }
+# Réponse: { "@id": "/api/products/1", "id": 1, ... }
 
 # Ou utiliser l'endpoint admin
 curl -X GET "https://votre-api.com/api/admin/products/1" \
@@ -2047,12 +2047,12 @@ curl -X POST "https://votre-api.com/api/admin/orders" \
     },
     "items": [
       {
-        "product": "/api/product/1",
+        "product": "/api/products/1",
         "quantity": 2,
         "store": "/api/admin/stores/1"
       },
       {
-        "product": "/api/product/2",
+        "product": "/api/products/2",
         "quantity": 1
       }
     ]
@@ -2083,7 +2083,7 @@ async function createOrder(orderData) {
         city: orderData.location.city || null
       } : null,
       items: orderData.items.map(item => ({
-        product: `/api/product/${item.productId}`, // Utiliser /api/product/ (singulier) ou /api/admin/products/
+        product: `/api/products/${item.productId}`, // Utiliser /api/products/ ou /api/admin/products/
         quantity: item.quantity,
         store: item.storeId ? `/api/admin/stores/${item.storeId}` : null
       }))
@@ -2123,7 +2123,7 @@ curl -X PUT "https://votre-api.com/api/admin/orders/1" \
     },
     "items": [
       {
-        "product": "/api/product/2",
+        "product": "/api/products/2",
         "quantity": 3,
         "store": "/api/admin/stores/1"
       }
@@ -2158,7 +2158,7 @@ curl -X PATCH "https://votre-api.com/api/admin/orders/1" \
   -d '{
     "items": [
       {
-        "product": "/api/product/3",
+        "product": "/api/products/3",
         "quantity": 5,
         "store": "/api/admin/stores/2"
       }
@@ -2396,17 +2396,17 @@ curl -X POST "https://votre-api.com/api/admin/orders" \
     },
     "items": [
       {
-        "product": "/api/product/1",
+        "product": "/api/products/1",
         "quantity": 2,
         "store": "/api/admin/stores/1"
       },
       {
-        "product": "/api/product/2",
+        "product": "/api/products/2",
         "quantity": 1,
         "store": "/api/admin/stores/1"
       },
       {
-        "product": "/api/product/3",
+        "product": "/api/products/3",
         "quantity": 3
       }
     ]

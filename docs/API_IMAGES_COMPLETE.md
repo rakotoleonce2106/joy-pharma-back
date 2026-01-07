@@ -122,8 +122,8 @@ const imageIri = mediaObject['@id']; // "/api/media_objects/123"
 - `svg` → `category_icons`
 
 **Endpoints :**
-- `GET /api/category` - Liste des catégories
-- `GET /api/category/{id}` - Détails d'une catégorie
+- `GET /api/categories` - Liste des catégories
+- `GET /api/categories/{id}` - Détails d'une catégorie
 - `POST /api/admin/categories` - Créer (Admin)
 - `PUT /api/admin/categories/{id}` - Mettre à jour (Admin)
 - `DELETE /api/admin/categories/{id}` - Supprimer (Admin)
@@ -140,7 +140,7 @@ const imageIri = mediaObject['@id']; // "/api/media_objects/123"
 
 **Endpoints :**
 - `GET /api/products` - Liste des produits
-- `GET /api/product/{id}` - Détails d'un produit
+- `GET /api/products/{id}` - Détails d'un produit
 - `GET /api/products/search` - Recherche de produits
 - `POST /api/admin/products` - Créer (Admin)
 - `PUT /api/admin/products/{id}` - Mettre à jour (Admin)
@@ -157,8 +157,8 @@ const imageIri = mediaObject['@id']; // "/api/media_objects/123"
 - `image` → `brand_images`
 
 **Endpoints :**
-- `GET /api/brand` - Liste des marques
-- `GET /api/brand/{id}` - Détails d'une marque
+- `GET /api/brands` - Liste des marques
+- `GET /api/brands/{id}` - Détails d'une marque
 - `POST /api/admin/brands` - Créer (Admin)
 - `PUT /api/admin/brands/{id}` - Mettre à jour (Admin)
 - `DELETE /api/admin/brands/{id}` - Supprimer (Admin)

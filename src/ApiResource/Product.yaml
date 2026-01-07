@@ -3,7 +3,7 @@ App\Entity\Product:
         get_product:
             method: 'GET'
             class: ApiPlatform\Metadata\Get
-            uriTemplate: '/product/{id}'
+            uriTemplate: '/products/{id}'
             normalizationContext:
                 groups: ['id:read','product:read','image:read','media_object:read','unit:read','form:read']
             openapi:

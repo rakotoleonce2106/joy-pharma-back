@@ -104,7 +104,7 @@ App\Entity\StoreProduct:
                 groups: ['id:read','store-product:read','product:read','image:read','media_object:read','store:read','location:read','user:store:read','store_setting:read']
             openapi:
                 summary: 'Create store product (Admin)'
-                description: 'Create a new store product. Use Content-Type: application/ld+json when sending IRIs. Product and Store must be provided as IRIs (e.g., "/api/product/1" or "/api/admin/products/1", "/api/admin/stores/1").'
+                description: 'Create a new store product. Use Content-Type: application/ld+json when sending IRIs. Product and Store must be provided as IRIs (e.g., "/api/products/1" or "/api/admin/products/1", "/api/admin/stores/1").'
 
         admin_update_store_product:
             class: ApiPlatform\Metadata\Put
