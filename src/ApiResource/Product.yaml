@@ -44,7 +44,7 @@ App\Entity\Product:
                       required: false
                       schema:
                           type: integer
-                          default: 20
+                          default: 10
                           maximum: 50
                     - name: 'perPage'
                       in: 'query'
