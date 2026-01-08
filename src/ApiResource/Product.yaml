@@ -58,7 +58,7 @@ App\Entity\Product:
         get_products_suggestion:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
-            uriTemplate: '/products/suggestion'
+            uriTemplate: '/products-suggestion'
             provider: 'App\State\Product\SuggestionProductsProvider'
             normalizationContext:
                 groups:  ['id:read','category:read','product:read','image:read','media_object:read','unit:read','form:read']
