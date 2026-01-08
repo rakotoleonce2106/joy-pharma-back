@@ -16,13 +16,12 @@ class SuggestionProductsProvider implements ProviderInterface
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): array|object|null
     {
-        // $user = $this->security->getUser();
+        // Extract pagination parameters from context
+        $page = max(1, (int) ($context['filters']['page'] ?? 1));
+        $limit = min(50, max(1, (int) ($context['filters']['itemsPerPage'] ?? $context['filters']['perPage'] ?? 10)));
 
-        // if (!$user instanceof User) {
-        //     return [];
-        // }
-        
-        // find all product randomly
-        return $this->productRepository->findTopSells();
+        // For suggestions, we return a fixed number of products regardless of pagination
+        // The pagination parameters are accepted but we always return the same top products
+        return $this->productRepository->findTopSells($limit);
     }
 }

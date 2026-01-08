@@ -20,7 +20,9 @@ class ProductRepository extends ServiceEntityRepository
     public function findTopSells(int $limit = 10): array
     {
         return $this->createQueryBuilder('p')
-            ->orderBy('p.quantity', 'ASC')
+            ->where('p.isActive = :isActive')
+            ->setParameter('isActive', true)
+            ->orderBy('p.quantity', 'DESC') // Tri par quantité descendante pour les "top sells"
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
