@@ -17,27 +17,16 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
-    public function findRandomProducts(int $limit = 10): array
+    public function findRecentProducts(int $limit = 10): array
     {
         return $this->createQueryBuilder('p')
-            ->where('p.isActive = :isActive')
-            ->setParameter('isActive', true)
-            ->orderBy('RAND()') // Produits aléatoires
+            ->orderBy('p.createdAt', 'DESC') // Produits les plus récents (nouveautés)
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }
 
-    public function findTopSells(int $limit = 10): array
-    {
-        return $this->createQueryBuilder('p')
-            ->where('p.isActive = :isActive')
-            ->setParameter('isActive', true)
-            ->orderBy('p.quantity', 'DESC') // Tri par quantité descendante pour les "top sells"
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
-    }
+
 
 
     public function findByCategory(int $id, int $limit = 10): array

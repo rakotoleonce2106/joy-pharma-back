@@ -20,7 +20,7 @@ class SuggestionProductsProvider implements ProviderInterface
         $page = max(1, (int) ($context['filters']['page'] ?? 1));
         $limit = min(50, max(1, (int) ($context['filters']['itemsPerPage'] ?? $context['filters']['perPage'] ?? 10)));
 
-        // Return random active products for suggestions
-        return $this->productRepository->findRandomProducts($limit);
+        // Return recent active products (nouveautés) for suggestions
+        return $this->productRepository->findRecentProducts($limit);
     }
 }
