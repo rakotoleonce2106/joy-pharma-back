@@ -20,8 +20,7 @@ class SuggestionProductsProvider implements ProviderInterface
         $page = max(1, (int) ($context['filters']['page'] ?? 1));
         $limit = min(50, max(1, (int) ($context['filters']['itemsPerPage'] ?? $context['filters']['perPage'] ?? 10)));
 
-        // For suggestions, we return a fixed number of products regardless of pagination
-        // The pagination parameters are accepted but we always return the same top products
-        return $this->productRepository->findTopSells($limit);
+        // Return random active products for suggestions
+        return $this->productRepository->findRandomProducts($limit);
     }
 }
