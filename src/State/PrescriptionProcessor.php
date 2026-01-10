@@ -26,18 +26,9 @@ final class PrescriptionProcessor implements ProcessorInterface
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
     {
-        // Pour les opérations normales sur Prescription, on laisse le comportement par défaut
-        if ($data instanceof Prescription) {
-            // Création ou mise à jour normale d'une prescription
-            $this->entityManager->persist($data);
-            $this->entityManager->flush();
-
-            return $data;
-        }
 
         // Pour les uploads de fichiers de prescription, on traite différemment
         $request = $this->requestStack->getCurrentRequest();
-        dd($request);
 
         if ($request && $request->files->has('file')) {
             $file = $request->files->get('file');
@@ -48,7 +39,6 @@ final class PrescriptionProcessor implements ProcessorInterface
 
                 // Étape 2: Récupérer l'utilisateur authentifié via Security
                 $user = $this->security->getUser();
-                dd($user);
 
                 if (!$user instanceof UserInterface) {
                     throw new AccessDeniedException('Authentication required to upload prescriptions');
