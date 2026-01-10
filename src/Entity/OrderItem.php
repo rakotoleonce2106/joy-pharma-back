@@ -63,6 +63,11 @@ class OrderItem
     #[Groups(['order:read'])]
     private ?Product $suggestedProduct = null;
 
+    #[ORM\ManyToOne(targetEntity: Prescription::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['order:read', 'order:create'])]
+    private ?Prescription $prescription = null;
+
     #[ORM\Column(nullable: true)]
     #[Groups(['order:read'])]
     private ?float $storePrice = null;
@@ -266,6 +271,17 @@ class OrderItem
     public function setSuggestedProduct(?Product $suggestedProduct): static
     {
         $this->suggestedProduct = $suggestedProduct;
+        return $this;
+    }
+
+    public function getPrescription(): ?Prescription
+    {
+        return $this->prescription;
+    }
+
+    public function setPrescription(?Prescription $prescription): static
+    {
+        $this->prescription = $prescription;
         return $this;
     }
 

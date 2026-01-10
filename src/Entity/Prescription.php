@@ -81,9 +81,17 @@ class Prescription
     #[Groups(['prescription:read', 'prescription:write'])]
     private Collection $products;
 
+    /**
+     * @var Collection<int, OrderItem>
+     */
+    #[ORM\OneToMany(targetEntity: OrderItem::class, mappedBy: 'prescription')]
+    #[Groups(['prescription:read'])]
+    private Collection $orderItems;
+
     public function __construct()
     {
         $this->products = new ArrayCollection();
+        $this->orderItems = new ArrayCollection();
     }
 
     public function getTitle(): ?string
@@ -154,6 +162,36 @@ class Prescription
     public function removeProduct(Product $product): static
     {
         $this->products->removeElement($product);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, OrderItem>
+     */
+    public function getOrderItems(): Collection
+    {
+        return $this->orderItems;
+    }
+
+    public function addOrderItem(OrderItem $orderItem): static
+    {
+        if (!$this->orderItems->contains($orderItem)) {
+            $this->orderItems->add($orderItem);
+            $orderItem->setPrescription($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOrderItem(OrderItem $orderItem): static
+    {
+        if ($this->orderItems->removeElement($orderItem)) {
+            // set the owning side to null (unless already changed)
+            if ($orderItem->getPrescription() === $this) {
+                $orderItem->setPrescription(null);
+            }
+        }
 
         return $this;
     }

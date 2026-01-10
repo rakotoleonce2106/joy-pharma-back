@@ -1987,6 +1987,7 @@ curl -X PATCH "https://votre-api.com/api/admin/store-settings/1" \
 | `product` | string | ✅ Oui | IRI du produit (ex: `"/api/products/1"` ou `"/api/admin/products/1"`) |
 | `quantity` | integer | ✅ Oui | Quantité (doit être > 0) |
 | `store` | string | ❌ Non | IRI du magasin (ex: `"/api/admin/stores/1"`) |
+| `prescription` | string | ❌ Non | IRI de la prescription médicale (ex: `"/api/admin/prescriptions/1"`) |
 
 **Structure de Location (si fournie comme objet) :**
 | Champ | Type | Requis | Description |
@@ -2699,6 +2700,13 @@ curl -X DELETE "https://votre-api.com/api/admin/prescriptions/1" \
 - **Type :** ManyToMany
 - **Requis :** Non
 - **Format :** Array d'IRIs (`["/api/products/{id1}", "/api/products/{id2}"]`)
+
+#### Articles de commande (OrderItems)
+- **Type :** OneToMany
+- **Requis :** Non
+- **Description :** Articles de commande liés à cette prescription médicale
+- **Accès :** Lecture seule (rempli automatiquement lors des commandes)
+- **Note :** Permet de tracer quels médicaments commandés sont issus d'une prescription médicale
 
 ### Sécurité
 
