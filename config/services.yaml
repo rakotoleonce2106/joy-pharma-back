@@ -119,6 +119,10 @@ services:
         arguments:
             $logger: '@logger'
 
+    App\Service\OCRService:
+        arguments:
+            $ocrApiUrl: '%env(OCR_API_URL)%'
+
     App\State\PrescriptionProcessor:
         arguments:
             $security: '@security.helper'

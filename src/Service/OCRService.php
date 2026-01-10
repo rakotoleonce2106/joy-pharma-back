@@ -8,12 +8,14 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 readonly class OCRService
 {
-    private const OCR_API_URL = 'http://lwww.joypharma.com/transcribe';
+    private string $ocrApiUrl;
 
     public function __construct(
         private HttpClientInterface $httpClient,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        string $ocrApiUrl = null
     ) {
+        $this->ocrApiUrl = $ocrApiUrl ?? $_ENV['OCR_API_URL'] ?? 'https://lwww.joy-pharma.com/transcribe';
     }
 
     /**
@@ -51,7 +53,7 @@ readonly class OCRService
             $body .= $fileContent . $eol;
             $body .= '--' . $boundary . '--' . $eol;
 
-            $response = $this->httpClient->request('POST', self::OCR_API_URL, [
+            $response = $this->httpClient->request('POST', $this->ocrApiUrl, [
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
