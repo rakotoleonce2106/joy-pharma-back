@@ -13,6 +13,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 final class PrescriptionProcessor implements ProcessorInterface
 {
@@ -47,6 +48,7 @@ final class PrescriptionProcessor implements ProcessorInterface
 
                 // Étape 2: Récupérer l'utilisateur authentifié via Security
                 $user = $this->security->getUser();
+                dd($user, $prescriptionData);
 
                 if (!$user instanceof UserInterface) {
                     throw new AccessDeniedException('Authentication required to upload prescriptions');
