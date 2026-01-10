@@ -65,6 +65,7 @@ App\Entity\Prescription:
             method: 'POST'
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/prescriptions/upload'
+            security: 'is_granted("IS_AUTHENTICATED_FULLY")'
             inputFormats:
                 multipart: ['multipart/form-data']
             outputFormats:

@@ -31,10 +31,15 @@ class PrescriptionService
      */
     public function processPrescriptionFile(UploadedFile $file): Prescription
     {
+        // Vérifier que l'utilisateur est authentifié avant toute opération
+        if (!$this->security->getUser()) {
+            throw new AccessDeniedException('Authentication required to upload prescriptions');
+        }
+
         // Récupérer l'utilisateur connecté
         $user = $this->security->getUser();
         if (!$user instanceof UserInterface) {
-            throw new AccessDeniedException('User must be authenticated to upload prescriptions');
+            throw new AccessDeniedException('Invalid user authentication');
         }
 
         $this->logger->info('Processing prescription file', [
