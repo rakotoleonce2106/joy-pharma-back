@@ -54,7 +54,7 @@ App\Entity\Product:
                           type: integer
                           default: 20
                           maximum: 50
-
+                
         get_products_suggestion:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection
