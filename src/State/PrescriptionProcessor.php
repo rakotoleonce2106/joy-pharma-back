@@ -37,6 +37,7 @@ final class PrescriptionProcessor implements ProcessorInterface
 
         // Pour les uploads de fichiers de prescription, on traite différemment
         $request = $this->requestStack->getCurrentRequest();
+        dd($request);
 
         if ($request && $request->files->has('file')) {
             $file = $request->files->get('file');
@@ -47,7 +48,7 @@ final class PrescriptionProcessor implements ProcessorInterface
 
                 // Étape 2: Récupérer l'utilisateur authentifié via Security
                 $user = $this->security->getUser();
-                dd($user, $prescriptionData);
+                dd($user);
 
                 if (!$user instanceof UserInterface) {
                     throw new AccessDeniedException('Authentication required to upload prescriptions');
