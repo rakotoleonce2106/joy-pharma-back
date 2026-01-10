@@ -8,14 +8,9 @@ use App\Entity\Product;
 use App\Entity\User;
 use App\Repository\PrescriptionRepository;
 use App\Repository\ProductRepository;
-use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 class PrescriptionService
@@ -24,52 +19,17 @@ class PrescriptionService
         private readonly EntityManagerInterface $entityManager,
         private readonly PrescriptionRepository $prescriptionRepository,
         private readonly ProductRepository $productRepository,
-        private readonly UserRepository $userRepository,
         private readonly OCRService $ocrService,
-        private readonly LoggerInterface $logger,
-        private readonly Security $security,
-        private readonly RequestStack $requestStack,
-        private readonly JWTTokenManagerInterface $jwtManager
+        private readonly LoggerInterface $logger
     ) {}
 
     /**
-     * Traite un fichier de prescription uploadé et crée une entité Prescription
+     * Traite un fichier de prescription uploadé et retourne les données extraites (sans créer de Prescription)
      */
-    public function processPrescriptionFile(UploadedFile $file): Prescription
+    public function processPrescriptionFile(UploadedFile $file): array
     {
-        // Essayer de récupérer l'utilisateur via le service Security
-        $user = $this->security->getUser();
-
-        // Debug: Log de l'état de sécurité
-        $this->logger->info('PrescriptionService: Checking authentication', [
-            'has_token_storage' => $this->security->getToken() ? 'yes' : 'no',
-            'user_from_security' => $user ? 'yes' : 'no',
-            'user_class' => $user ? get_class($user) : 'null',
-            'user_id' => $user ? $user->getId() : 'null'
-        ]);
-
-        // Si l'utilisateur n'est pas disponible via Security, essayer via JWT
-        if (!$user) {
-            $user = $this->getUserFromJWT();
-        }
-
-        // Vérifier que l'utilisateur est authentifié
-        if (!$user) {
-            $this->logger->error('PrescriptionService: No authenticated user found via Security or JWT');
-            throw new AccessDeniedException('Authentication required to upload prescriptions');
-        }
-
-        // Vérifier que c'est bien une instance UserInterface
-        if (!$user instanceof UserInterface) {
-            $this->logger->error('PrescriptionService: User is not instance of UserInterface', [
-                'user_class' => get_class($user)
-            ]);
-            throw new AccessDeniedException('Invalid user authentication');
-        }
-
-        $this->logger->info('Processing prescription file', [
+        $this->logger->info('Processing prescription file for data extraction', [
             'filename' => $file->getClientOriginalName(),
-            'user_id' => $user->getId(),
             'size' => $file->getSize()
         ]);
 
@@ -86,42 +46,72 @@ class PrescriptionService
                 $foundProducts = $this->productRepository->searchByNames($productTitles, 10);
             }
 
-            // Étape 4: Créer l'entité Prescription
-            $prescription = new Prescription();
-            $prescription->setTitle($this->generatePrescriptionTitle($ocrData));
-            $prescription->setUser($user);
-
-            // Ajouter les notes avec les données OCR
+            // Étape 4: Générer le titre et les notes
+            $title = $this->generatePrescriptionTitle($ocrData);
             $notes = $this->generatePrescriptionNotes($ocrData, $productTitles, $foundProducts);
-            $prescription->setNotes($notes);
 
-            // Étape 5: Ajouter les produits trouvés
-            foreach ($foundProducts as $product) {
-                $prescription->addProduct($product);
-            }
-
-            // Étape 6: Sauvegarder en base
-            $this->entityManager->persist($prescription);
-            $this->entityManager->flush();
-
-            $this->logger->info('Prescription created successfully', [
-                'prescription_id' => $prescription->getId(),
-                'user_id' => $user->getId(),
+            $this->logger->info('Prescription data extracted successfully', [
+                'title' => $title,
                 'products_found' => count($foundProducts),
                 'products_searched' => count($productTitles)
             ]);
 
-            return $prescription;
+            return [
+                'title' => $title,
+                'notes' => $notes,
+                'products' => $foundProducts,
+                'ocrData' => $ocrData,
+                'productTitles' => $productTitles
+            ];
 
         } catch (\Exception $e) {
             $this->logger->error('Error processing prescription file', [
                 'error' => $e->getMessage(),
-                'user_id' => $user->getId(),
                 'filename' => $file->getClientOriginalName()
             ]);
 
             throw $e;
         }
+    }
+
+    /**
+     * Crée une Prescription à partir des données extraites
+     */
+    public function createPrescriptionFromData(array $prescriptionData, UserInterface $user, ?MediaObject $mediaObject = null): Prescription
+    {
+        $this->logger->info('Creating prescription from extracted data', [
+            'user_id' => $user->getId(),
+            'title' => $prescriptionData['title'],
+            'products_count' => count($prescriptionData['products'])
+        ]);
+
+        // Créer l'entité Prescription
+        $prescription = new Prescription();
+        $prescription->setTitle($prescriptionData['title']);
+        $prescription->setUser($user);
+        $prescription->setNotes($prescriptionData['notes']);
+
+        // Associer le fichier si fourni
+        if ($mediaObject) {
+            $prescription->setPrescriptionFile($mediaObject);
+        }
+
+        // Ajouter les produits trouvés
+        foreach ($prescriptionData['products'] as $product) {
+            $prescription->addProduct($product);
+        }
+
+        // Sauvegarder en base
+        $this->entityManager->persist($prescription);
+        $this->entityManager->flush();
+
+        $this->logger->info('Prescription created successfully', [
+            'prescription_id' => $prescription->getId(),
+            'user_id' => $user->getId(),
+            'products_count' => count($prescriptionData['products'])
+        ]);
+
+        return $prescription;
     }
 
     /**
@@ -176,46 +166,5 @@ class PrescriptionService
         }
 
         return implode("\n", $notes);
-    }
-
-    /**
-     * Récupère l'utilisateur depuis le token JWT si Security ne fonctionne pas
-     */
-    private function getUserFromJWT(): ?UserInterface
-    {
-        try {
-            $request = $this->requestStack->getCurrentRequest();
-            if (!$request) {
-                return null;
-            }
-
-            $authHeader = $request->headers->get('Authorization');
-            if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
-                return null;
-            }
-
-            $token = substr($authHeader, 7); // Remove 'Bearer ' prefix
-
-            // Décoder le token pour récupérer l'email
-            $payload = $this->jwtManager->decode($token);
-            if (!isset($payload['username'])) {
-                return null;
-            }
-
-            // Récupérer l'utilisateur depuis la base de données
-            $user = $this->userRepository->findOneBy(['email' => $payload['username']]);
-
-            $this->logger->info('PrescriptionService: User retrieved from JWT', [
-                'user_id' => $user ? $user->getId() : 'null',
-                'email' => $payload['username']
-            ]);
-
-            return $user;
-        } catch (\Exception $e) {
-            $this->logger->error('PrescriptionService: Error retrieving user from JWT', [
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
     }
 }

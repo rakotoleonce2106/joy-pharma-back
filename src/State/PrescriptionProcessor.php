@@ -7,6 +7,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Entity\MediaObject;
 use App\Entity\Prescription;
 use App\Service\PrescriptionService;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -38,14 +39,17 @@ final class PrescriptionProcessor implements ProcessorInterface
             $file = $request->files->get('file');
 
             if ($file instanceof UploadedFile && $this->isPrescriptionFile($file)) {
-                // Debug: Vérifier l'utilisateur dans le contexte du processor
-                $request = $this->requestStack->getCurrentRequest();
-                $this->entityManager->getConnection()->getConfiguration()->setSQLLogger(null); // Disable SQL logging for debug
+                // Étape 1: Extraire les données de la prescription (sans créer l'entité)
+                $prescriptionData = $this->prescriptionService->processPrescriptionFile($file);
 
-                // Traiter le fichier et créer la prescription (utilisateur récupéré automatiquement)
-                $prescription = $this->prescriptionService->processPrescriptionFile($file);
+                // Étape 2: Récupérer l'utilisateur (devrait être défini par ApiPlatform)
+                $user = $request->getAttribute('user') ?? $context['request']->getAttribute('user') ?? null;
 
-                // Créer le MediaObject pour le fichier
+                if (!$user || !$user instanceof UserInterface) {
+                    throw new \RuntimeException('User must be authenticated to upload prescriptions');
+                }
+
+                // Étape 3: Créer le MediaObject pour le fichier
                 $mediaObject = new MediaObject();
                 $mediaObject->setFile($file);
                 $mediaObject->setMapping('prescription_files');
@@ -53,8 +57,8 @@ final class PrescriptionProcessor implements ProcessorInterface
                 // Upload via le processor MediaObject
                 $uploadedMediaObject = $this->mediaObjectProcessor->process($mediaObject, $operation, $uriVariables, $context);
 
-                // Associer le fichier à la prescription
-                $this->prescriptionService->associateFileToPrescription($prescription, $uploadedMediaObject);
+                // Étape 4: Créer la prescription avec les données extraites, l'utilisateur et le fichier
+                $prescription = $this->prescriptionService->createPrescriptionFromData($prescriptionData, $user, $uploadedMediaObject);
 
                 return $prescription;
             }
