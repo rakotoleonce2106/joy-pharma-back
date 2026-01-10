@@ -88,7 +88,7 @@ services:
         class: App\Service\DoctrineDeprecationFilterHandler
         arguments:
             - 'php://stderr'
-            - !php/const Monolog\Level::Debug
+            - 100  # Monolog\Level::Debug
             - true
         calls:
             - setFormatter: ['@monolog.formatter.json']
@@ -118,9 +118,6 @@ services:
     App\Service\PrescriptionService:
         arguments:
             $logger: '@logger'
-            $security: '@security.helper'
-            $requestStack: '@request_stack'
-            $jwtManager: '@lexik_jwt_authentication.jwt_manager'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
