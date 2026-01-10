@@ -8,11 +8,8 @@ use App\Entity\MediaObject;
 use App\Entity\Prescription;
 use App\Service\PrescriptionService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
-use Symfony\Component\Security\Core\User\UserInterface;
 
 final class PrescriptionProcessor implements ProcessorInterface
 {
@@ -20,8 +17,7 @@ final class PrescriptionProcessor implements ProcessorInterface
         private readonly ProcessorInterface $mediaObjectProcessor,
         private readonly PrescriptionService $prescriptionService,
         private readonly EntityManagerInterface $entityManager,
-        private readonly RequestStack $requestStack,
-        private readonly Security $security
+        private readonly RequestStack $requestStack
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
@@ -42,15 +38,8 @@ final class PrescriptionProcessor implements ProcessorInterface
             $file = $request->files->get('file');
 
             if ($file instanceof UploadedFile && $this->isPrescriptionFile($file)) {
-                // Récupérer l'utilisateur actuel depuis le service Security
-                $user = $this->security->getUser();
-
-                if (!$user instanceof UserInterface) {
-                    throw new AccessDeniedException('User must be authenticated to upload prescriptions');
-                }
-
-                // Traiter le fichier et créer la prescription
-                $prescription = $this->prescriptionService->processPrescriptionFile($file, $user);
+                // Traiter le fichier et créer la prescription (utilisateur récupéré automatiquement)
+                $prescription = $this->prescriptionService->processPrescriptionFile($file);
 
                 // Créer le MediaObject pour le fichier
                 $mediaObject = new MediaObject();

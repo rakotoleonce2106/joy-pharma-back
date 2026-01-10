@@ -10,7 +10,9 @@ use App\Repository\PrescriptionRepository;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 class PrescriptionService
@@ -20,14 +22,21 @@ class PrescriptionService
         private readonly PrescriptionRepository $prescriptionRepository,
         private readonly ProductRepository $productRepository,
         private readonly OCRService $ocrService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly Security $security
     ) {}
 
     /**
      * Traite un fichier de prescription uploadé et crée une entité Prescription
      */
-    public function processPrescriptionFile(UploadedFile $file, UserInterface $user): Prescription
+    public function processPrescriptionFile(UploadedFile $file): Prescription
     {
+        // Récupérer l'utilisateur connecté
+        $user = $this->security->getUser();
+        if (!$user instanceof UserInterface) {
+            throw new AccessDeniedException('User must be authenticated to upload prescriptions');
+        }
+
         $this->logger->info('Processing prescription file', [
             'filename' => $file->getClientOriginalName(),
             'user_id' => $user->getId(),
