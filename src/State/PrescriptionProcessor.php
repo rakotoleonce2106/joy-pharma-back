@@ -9,8 +9,11 @@ use App\Entity\Prescription;
 use App\Service\PrescriptionService;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 final class PrescriptionProcessor implements ProcessorInterface
 {
@@ -18,7 +21,8 @@ final class PrescriptionProcessor implements ProcessorInterface
         private readonly ProcessorInterface $mediaObjectProcessor,
         private readonly PrescriptionService $prescriptionService,
         private readonly EntityManagerInterface $entityManager,
-        private readonly RequestStack $requestStack
+        private readonly RequestStack $requestStack,
+        private readonly Security $security
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
@@ -42,11 +46,11 @@ final class PrescriptionProcessor implements ProcessorInterface
                 // Étape 1: Extraire les données de la prescription (sans créer l'entité)
                 $prescriptionData = $this->prescriptionService->processPrescriptionFile($file);
 
-                // Étape 2: Récupérer l'utilisateur (devrait être défini par ApiPlatform)
-                $user = $request->getAttribute('user') ?? $context['request']->getAttribute('user') ?? null;
+                // Étape 2: Récupérer l'utilisateur authentifié via Security
+                $user = $this->security->getUser();
 
-                if (!$user || !$user instanceof UserInterface) {
-                    throw new \RuntimeException('User must be authenticated to upload prescriptions');
+                if (!$user instanceof UserInterface) {
+                    throw new AccessDeniedException('Authentication required to upload prescriptions');
                 }
 
                 // Étape 3: Créer le MediaObject pour le fichier
