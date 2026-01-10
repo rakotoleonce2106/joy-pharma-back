@@ -55,7 +55,7 @@ class Prescription
 
     #[ORM\Column(length: 255)]
     #[Groups(['prescription:read', 'prescription:write'])]
-    #[Assert\NotBlank]
+    #[Assert\NotBlank(groups: ['create', 'update'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -65,7 +65,7 @@ class Prescription
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['prescription:read', 'prescription:write'])]
-    #[Assert\NotNull]
+    #[Assert\NotNull(groups: ['create', 'update'])]
     private ?User $user = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]

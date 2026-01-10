@@ -53,7 +53,7 @@ App\Entity\Prescription:
             denormalizationContext:
                 groups: ['prescription:write']
             validationContext:
-                groups: ['create']
+                groups: ['create', 'Default']
             normalizationContext:
                 groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
             processor: 'App\State\PrescriptionProcessor'
@@ -73,7 +73,7 @@ App\Entity\Prescription:
             normalizationContext:
                 groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
             validationContext:
-                groups: []  # Désactiver la validation pour cet endpoint car la prescription est créée dans le processor
+                groups: ['upload']  # Groupe qui n'existe pas, donc pas de validation
             processor: 'App\State\PrescriptionProcessor'
             openapi:
                 summary: 'Upload and process prescription file'
