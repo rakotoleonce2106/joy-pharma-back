@@ -38,6 +38,10 @@ final class PrescriptionProcessor implements ProcessorInterface
             $file = $request->files->get('file');
 
             if ($file instanceof UploadedFile && $this->isPrescriptionFile($file)) {
+                // Debug: Vérifier l'utilisateur dans le contexte du processor
+                $request = $this->requestStack->getCurrentRequest();
+                $this->entityManager->getConnection()->getConfiguration()->setSQLLogger(null); // Disable SQL logging for debug
+
                 // Traiter le fichier et créer la prescription (utilisateur récupéré automatiquement)
                 $prescription = $this->prescriptionService->processPrescriptionFile($file);
 

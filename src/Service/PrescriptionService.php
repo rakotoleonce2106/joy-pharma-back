@@ -8,10 +8,13 @@ use App\Entity\Product;
 use App\Entity\User;
 use App\Repository\PrescriptionRepository;
 use App\Repository\ProductRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -21,9 +24,12 @@ class PrescriptionService
         private readonly EntityManagerInterface $entityManager,
         private readonly PrescriptionRepository $prescriptionRepository,
         private readonly ProductRepository $productRepository,
+        private readonly UserRepository $userRepository,
         private readonly OCRService $ocrService,
         private readonly LoggerInterface $logger,
-        private readonly Security $security
+        private readonly Security $security,
+        private readonly RequestStack $requestStack,
+        private readonly JWTTokenManagerInterface $jwtManager
     ) {}
 
     /**
@@ -31,14 +37,33 @@ class PrescriptionService
      */
     public function processPrescriptionFile(UploadedFile $file): Prescription
     {
-        // Vérifier que l'utilisateur est authentifié avant toute opération
-        if (!$this->security->getUser()) {
+        // Essayer de récupérer l'utilisateur via le service Security
+        $user = $this->security->getUser();
+
+        // Debug: Log de l'état de sécurité
+        $this->logger->info('PrescriptionService: Checking authentication', [
+            'has_token_storage' => $this->security->getToken() ? 'yes' : 'no',
+            'user_from_security' => $user ? 'yes' : 'no',
+            'user_class' => $user ? get_class($user) : 'null',
+            'user_id' => $user ? $user->getId() : 'null'
+        ]);
+
+        // Si l'utilisateur n'est pas disponible via Security, essayer via JWT
+        if (!$user) {
+            $user = $this->getUserFromJWT();
+        }
+
+        // Vérifier que l'utilisateur est authentifié
+        if (!$user) {
+            $this->logger->error('PrescriptionService: No authenticated user found via Security or JWT');
             throw new AccessDeniedException('Authentication required to upload prescriptions');
         }
 
-        // Récupérer l'utilisateur connecté
-        $user = $this->security->getUser();
+        // Vérifier que c'est bien une instance UserInterface
         if (!$user instanceof UserInterface) {
+            $this->logger->error('PrescriptionService: User is not instance of UserInterface', [
+                'user_class' => get_class($user)
+            ]);
             throw new AccessDeniedException('Invalid user authentication');
         }
 
@@ -151,5 +176,46 @@ class PrescriptionService
         }
 
         return implode("\n", $notes);
+    }
+
+    /**
+     * Récupère l'utilisateur depuis le token JWT si Security ne fonctionne pas
+     */
+    private function getUserFromJWT(): ?UserInterface
+    {
+        try {
+            $request = $this->requestStack->getCurrentRequest();
+            if (!$request) {
+                return null;
+            }
+
+            $authHeader = $request->headers->get('Authorization');
+            if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+                return null;
+            }
+
+            $token = substr($authHeader, 7); // Remove 'Bearer ' prefix
+
+            // Décoder le token pour récupérer l'email
+            $payload = $this->jwtManager->decode($token);
+            if (!isset($payload['username'])) {
+                return null;
+            }
+
+            // Récupérer l'utilisateur depuis la base de données
+            $user = $this->userRepository->findOneBy(['email' => $payload['username']]);
+
+            $this->logger->info('PrescriptionService: User retrieved from JWT', [
+                'user_id' => $user ? $user->getId() : 'null',
+                'email' => $payload['username']
+            ]);
+
+            return $user;
+        } catch (\Exception $e) {
+            $this->logger->error('PrescriptionService: Error retrieving user from JWT', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 }
