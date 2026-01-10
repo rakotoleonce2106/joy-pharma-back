@@ -331,3 +331,4 @@ Cet endpoint retourne le détail du paiement au format JSON-LD.
 curl -X GET "https://votre-api.com/api/verify-payment/ORD-2025-ABCDEF" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 ```
+

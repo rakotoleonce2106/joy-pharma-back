@@ -2540,6 +2540,190 @@ curl -X GET "https://votre-api.com/api/admin/payments/1" \
 
 ---
 
+## 💊 Prescriptions (Prescriptions)
+
+### Vue d'ensemble
+
+La gestion administrative des prescriptions permet aux administrateurs de consulter, modifier et supprimer toutes les prescriptions des utilisateurs, y compris celles créées automatiquement via OCR.
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/prescriptions` - Liste toutes les prescriptions
+- **GET** `/api/admin/prescriptions/{id}` - Récupère une prescription par son ID
+- **POST** `/api/admin/prescriptions` - Crée une nouvelle prescription manuellement
+- **PUT** `/api/admin/prescriptions/{id}` - Met à jour une prescription existante (mise à jour complète)
+- **PATCH** `/api/admin/prescriptions/{id}` - Met à jour une prescription existante (mise à jour partielle)
+- **DELETE** `/api/admin/prescriptions/{id}` - Supprime une prescription
+
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/prescriptions` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `user` | integer | Filtrer par ID utilisateur | `?user=123` |
+| `title` | string | Recherche partielle dans le titre | `?title=ordonnance` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10, max: 50) | `?itemsPerPage=25` |
+
+### Lister toutes les prescriptions
+
+```bash
+curl -X GET "https://votre-api.com/api/admin/prescriptions" \
+  -H "Authorization: Bearer VOTRE_TOKEN_ADMIN" \
+  -H "Accept: application/ld+json"
+```
+
+**Réponse JSON-LD :**
+
+```json
+{
+  "@context": "/api/contexts/Prescription",
+  "@id": "/api/admin/prescriptions",
+  "@type": "hydra:Collection",
+  "hydra:member": [
+    {
+      "@id": "/api/admin/prescriptions/1",
+      "@type": "Prescription",
+      "id": 1,
+      "title": "Ordonnance - Patient Dupont - 15/01/2026",
+      "notes": "Patient: Dupont Jean\nDate: 15/01/2026\nTotal: 45000 Ar\nProduits recherchés: 3\nProduits trouvés: 2",
+      "user": {
+        "@id": "/api/users/123",
+        "@type": "User",
+        "id": 123,
+        "firstName": "Jean",
+        "lastName": "Dupont",
+        "email": "jean.dupont@example.com"
+      },
+      "prescriptionFile": {
+        "@id": "/api/media_objects/456",
+        "@type": "MediaObject",
+        "id": 456,
+        "filePath": "prescription_files/ordonnance_123.jpg",
+        "contentUrl": "/media/prescription_files/ordonnance_123.jpg"
+      },
+      "products": [
+        {
+          "@id": "/api/products/101",
+          "@type": "Product",
+          "id": 101,
+          "name": "Aspirine 500mg",
+          "code": "ASP500"
+        },
+        {
+          "@id": "/api/products/202",
+          "@type": "Product",
+          "id": 202,
+          "name": "Doliprane 1000mg",
+          "code": "DOL1000"
+        }
+      ]
+    }
+  ],
+  "hydra:totalItems": 1
+}
+```
+
+### Consulter une prescription spécifique
+
+```bash
+curl -X GET "https://votre-api.com/api/admin/prescriptions/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN_ADMIN" \
+  -H "Accept: application/ld+json"
+```
+
+### Créer une prescription manuellement
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/prescriptions" \
+  -H "Authorization: Bearer VOTRE_TOKEN_ADMIN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "title": "Ordonnance manuelle admin",
+    "notes": "Créée par un administrateur",
+    "user": "/api/users/123",
+    "prescriptionFile": "/api/media_objects/456",
+    "products": ["/api/products/101", "/api/products/202"]
+  }'
+```
+
+### Modifier une prescription (mise à jour complète)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/prescriptions/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN_ADMIN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "title": "Titre modifié par admin",
+    "notes": "Notes modifiées",
+    "user": "/api/users/123",
+    "prescriptionFile": "/api/media_objects/456",
+    "products": ["/api/products/101"]
+  }'
+```
+
+### Modifier une prescription (mise à jour partielle)
+
+```bash
+curl -X PATCH "https://votre-api.com/api/admin/prescriptions/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN_ADMIN" \
+  -H "Content-Type: application/merge-patch+json" \
+  -d '{
+    "title": "Nouveau titre",
+    "notes": "Nouvelles notes"
+  }'
+```
+
+### Supprimer une prescription
+
+```bash
+curl -X DELETE "https://votre-api.com/api/admin/prescriptions/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN_ADMIN"
+```
+
+### Gestion des relations
+
+#### Utilisateur (User)
+- **Type :** ManyToOne
+- **Requis :** Oui
+- **Format :** IRI (`"/api/users/{id}"`)
+
+#### Fichier de prescription (MediaObject)
+- **Type :** ManyToOne
+- **Requis :** Non
+- **Format :** IRI (`"/api/media_objects/{id}"`)
+- **Note :** Upload préalable requis via `POST /api/media_objects`
+
+#### Produits (Products)
+- **Type :** ManyToMany
+- **Requis :** Non
+- **Format :** Array d'IRIs (`["/api/products/{id1}", "/api/products/{id2}"]`)
+
+### Sécurité
+
+- **Authentification :** Token JWT avec rôle `ROLE_ADMIN` requis
+- **Accès :** Accès complet à toutes les prescriptions de tous les utilisateurs
+- **Audit :** Toutes les modifications sont tracées
+
+### Statistiques et métadonnées
+
+Les prescriptions contiennent des métadonnées importantes :
+- **Informations OCR :** Données extraites automatiquement (patient, date, montant)
+- **Statistiques :** Nombre de produits recherchés/trouvés
+- **Historique :** Dates de création et modification
+- **Relations :** Liens vers utilisateur, fichier et produits
+
+### Bonnes pratiques
+
+1. **Vérification :** Toujours vérifier les données OCR avant validation
+2. **Cohérence :** Maintenir la cohérence entre fichier et données extraites
+3. **Audit :** Documenter les modifications administratives
+4. **Performance :** Utiliser la pagination pour les grandes listes
+5. **Sécurité :** Ne pas exposer d'informations sensibles
+
+---
+
 ## Ressources supplémentaires
 
 - [Documentation API Produits Admin](./API_PRODUCTS_ADMIN.md)

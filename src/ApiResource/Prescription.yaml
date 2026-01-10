@@ -1,0 +1,166 @@
+App\Entity\Prescription:
+    operations:
+        get_prescription:
+            method: 'GET'
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/prescriptions/{id}'
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            openapi:
+                summary: 'Get a prescription'
+                description: 'Get a prescription by id'
+                parameters:
+                    - name: 'id'
+                      in: 'path'
+                      description: 'The id of the prescription'
+
+        get_prescriptions:
+            method: 'GET'
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/prescriptions'
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            openapi:
+                summary: 'Get all prescriptions'
+                description: 'Get all prescriptions with pagination'
+                parameters:
+                    - name: 'page'
+                      in: 'query'
+                      description: 'Page number'
+                      required: false
+                      schema:
+                          type: integer
+                          default: 1
+                    - name: 'itemsPerPage'
+                      in: 'query'
+                      description: 'Items per page'
+                      required: false
+                      schema:
+                          type: integer
+                          default: 10
+                          maximum: 50
+                    - name: 'user'
+                      in: 'query'
+                      description: 'Filter by user ID'
+                      required: false
+                      schema:
+                          type: integer
+
+        create_prescription:
+            method: 'POST'
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/prescriptions'
+            denormalizationContext:
+                groups: ['prescription:write']
+            validationContext:
+                groups: ['create']
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            processor: 'App\State\PrescriptionProcessor'
+            openapi:
+                summary: 'Create new prescription'
+                description: 'Create a new prescription with file and products. Upload prescription file first using POST /api/media_objects, then reference it using IRI array (e.g., ["/api/media_objects/123"]). API Platform handles JSON-LD automatically.'
+
+        upload_prescription:
+            method: 'POST'
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/prescriptions/upload'
+            inputFormats:
+                multipart: ['multipart/form-data']
+            outputFormats:
+                jsonld: ['application/ld+json']
+                json: ['application/json']
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            processor: 'App\State\PrescriptionProcessor'
+            openapi:
+                summary: 'Upload and process prescription file'
+                description: 'Upload a prescription image file, automatically extract data using OCR, find matching products, and create a prescription entity. The response includes the created prescription with extracted data and found products.'
+                requestBody:
+                    content:
+                        multipart/form-data:
+                            schema:
+                                type: object
+                                properties:
+                                    file:
+                                        type: string
+                                        format: binary
+                                        description: 'Prescription image file (JPEG, PNG, GIF, WebP)'
+                                required:
+                                    - file
+                                    
+        # Admin specific endpoints
+        admin_get_prescriptions:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/admin/prescriptions'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            openapi:
+                summary: 'List all prescriptions (Admin)'
+                description: 'Get paginated list of all prescriptions with filtering capabilities'
+
+        admin_get_prescription:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/admin/prescriptions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            openapi:
+                summary: 'Get prescription by ID (Admin)'
+                description: 'Get detailed information about a specific prescription'
+
+        admin_create_prescription:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/prescriptions'
+            security: 'is_granted("ROLE_ADMIN")'
+            denormalizationContext:
+                groups: ['prescription:write']
+            validationContext:
+                groups: ['create']
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            openapi:
+                summary: 'Create new prescription (Admin)'
+                description: 'Create a new prescription with all its properties, relations and file. Upload prescription file first using POST /api/media_objects, then reference it using IRI.'
+
+        admin_update_prescription:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/admin/prescriptions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['prescription:write']
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            openapi:
+                summary: 'Update prescription (Admin) - Full update'
+                description: 'Update prescription information with all fields. Upload prescription file first using POST /api/media_objects, then reference it using IRI.'
+
+        admin_patch_prescription:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/admin/prescriptions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            inputFormats:
+                json: ['application/json']
+                jsonld: ['application/ld+json']
+            denormalizationContext:
+                groups: ['prescription:write']
+            normalizationContext:
+                groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            openapi:
+                summary: 'Update prescription (Admin) - Partial update'
+                description: 'Partially update prescription information. Only provide the fields you want to update.'
+
+        admin_delete_prescription:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/admin/prescriptions/{id}'
+            security: 'is_granted("ROLE_ADMIN")'
+            openapi:
+                summary: 'Delete prescription (Admin)'
+                description: 'Permanently delete a prescription'
+
+    normalizationContext:
+        groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
