@@ -72,6 +72,8 @@ App\Entity\Prescription:
                 json: ['application/json']
             normalizationContext:
                 groups: ['id:read', 'prescription:read', 'user:read', 'media_object:read', 'product:read']
+            validationContext:
+                groups: []  # Désactiver la validation pour cet endpoint car la prescription est créée dans le processor
             processor: 'App\State\PrescriptionProcessor'
             openapi:
                 summary: 'Upload and process prescription file'
