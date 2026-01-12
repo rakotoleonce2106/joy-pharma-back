@@ -14,10 +14,12 @@ use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\ExistsFilter;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 #[ApiFilter(SearchFilter::class, properties: ['parent' => 'exact', 'name' => 'ipartial'])]
+#[ApiFilter(OrderFilter::class, properties: ['createdAt' => 'ASC'])]
 class Category
 {
     use EntityIdTrait;
