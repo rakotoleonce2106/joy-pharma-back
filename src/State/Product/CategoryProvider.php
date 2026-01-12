@@ -19,6 +19,9 @@ class CategoryProvider implements ProviderInterface
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): array|object|null
     {
+        $filters = $context['filters'] ?? [];
+        $order = $filters['order'] ?? ['createdAt' => 'ASC'];
+
         $user = $this->security->getUser();
 
         // Skip store-specific logic for admin users
@@ -34,12 +37,15 @@ class CategoryProvider implements ProviderInterface
                     ->where('c.parent IN (:parentIds)')
                     ->setParameter('parentIds', $parentIds);
 
+                foreach ($order as $field => $direction) {
+                    $qb->addOrderBy('c.' . $field, strtoupper($direction));
+                }
+
                 $categories = $qb->getQuery()->getResult();
 
                 return $categories;
             }
         }
-        $filters = $context['filters'] ?? [];
 
         if (array_key_exists('parent', $filters)) {
             $parentValue = $filters['parent'];
@@ -50,18 +56,18 @@ class CategoryProvider implements ProviderInterface
                 $parentValue === '' || 
                 $parentValue === 'null' ||
                 (is_string($parentValue) && strtolower(trim($parentValue)) === 'null')) {
-                return $this->categoryRepository->findBy(['parent' => null]);
+                return $this->categoryRepository->findBy(['parent' => null], $order);
             }
 
             // Parent avec ID spécifique
             if (is_numeric($parentValue)) {
-                return $this->categoryRepository->findBy(['parent' => (int)$parentValue]);
+                return $this->categoryRepository->findBy(['parent' => (int)$parentValue], $order);
             }
 
             // Valeur invalide
             throw new \InvalidArgumentException('Invalid parent filter value. Use a numeric ID or null.');
         }
 
-        return $this->categoryRepository->findAll();
+        return $this->categoryRepository->findBy([], $order);
     }
 }
