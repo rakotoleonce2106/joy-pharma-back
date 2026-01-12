@@ -85,7 +85,7 @@ class Store
     #[Groups(['store:read', 'store:write'])]
     private ?Location $location = null;
 
-    #[ORM\OneToOne(cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(cascade: ['persist'])]
     #[Groups(['store:read', 'store:write'])]
     private ?User $owner = null;
 
