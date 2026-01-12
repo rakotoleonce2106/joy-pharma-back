@@ -7,6 +7,7 @@ App\Entity\Order:
                 jsonld: ['application/ld+json']
                 json: ['application/json']
             processor: App\State\Order\OrderCreateProcessor
+            validate: false
             denormalizationContext:
                 groups: ['order:create']
             normalizationContext:

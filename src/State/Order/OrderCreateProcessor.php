@@ -47,8 +47,11 @@ class OrderCreateProcessor implements ProcessorInterface
         /** @var User $user */
         $user = $token->getUser();
 
+        $order = $data;
+        $order->setOwner($user);
+
         // Validate input data first
-        $errors = $this->validator->validate($data);
+        $errors = $this->validator->validate($order);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
@@ -72,8 +75,6 @@ class OrderCreateProcessor implements ProcessorInterface
             // Begin transaction
             $this->entityManager->beginTransaction();
 
-            $order = $data;
-            $order->setOwner($user);
             $order->setStatus(OrderStatus::STATUS_PENDING);
             $order->setCreatedAt(new \DateTime());
 
