@@ -137,6 +137,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[MaxDepth(1)]
     private Collection $locations;
 
+    /**
+     * @var Collection<int, DeviceToken>
+     */
+    #[ORM\OneToMany(targetEntity: DeviceToken::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $deviceTokens;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -147,6 +153,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->deliverySchedules = new ArrayCollection();
         $this->invoices = new ArrayCollection();
         $this->locations = new ArrayCollection();
+        $this->deviceTokens = new ArrayCollection();
     }
 
     public function getEmail(): ?string
@@ -571,6 +578,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeLocation(Location $location): static
     {
         $this->locations->removeElement($location);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, DeviceToken>
+     */
+    public function getDeviceTokens(): Collection
+    {
+        return $this->deviceTokens;
+    }
+
+    public function addDeviceToken(DeviceToken $deviceToken): static
+    {
+        if (!$this->deviceTokens->contains($deviceToken)) {
+            $this->deviceTokens->add($deviceToken);
+            $deviceToken->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeDeviceToken(DeviceToken $deviceToken): static
+    {
+        if ($this->deviceTokens->removeElement($deviceToken)) {
+            if ($deviceToken->getUser() === $this) {
+                $deviceToken->setUser(null);
+            }
+        }
 
         return $this;
     }

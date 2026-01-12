@@ -10,12 +10,13 @@ use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Service pour gérer les notifications (push, email, in-app) via n8n
+ * Service pour gérer les notifications (push, email, in-app) via n8n et Firebase
  */
 readonly class NotificationService
 {
     public function __construct(
         private N8nService $n8nService,
+        private FirebasePushService $firebasePushService,
         private NotificationRepository $notificationRepository,
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger
@@ -51,9 +52,9 @@ readonly class NotificationService
 
         $this->notificationRepository->save($notification, true);
 
-        // Envoyer la notification push si l'utilisateur a un token FCM
+        // Envoyer la notification push à tous les appareils de l'utilisateur
         $sendPush = $options['sendPush'] ?? true;
-        if ($sendPush && $user->getFcmToken()) {
+        if ($sendPush) {
             $this->sendPushNotification($user, $title, $message, $data);
         }
 
@@ -67,29 +68,26 @@ readonly class NotificationService
     }
 
     /**
-     * Envoie une notification push à un utilisateur
+     * Envoie une notification push à un utilisateur (tous ses appareils)
      *
      * @param User $user L'utilisateur destinataire
      * @param string $title Le titre
      * @param string $body Le corps
      * @param array $data Données supplémentaires
-     * @return bool
+     * @return array Résultat avec le nombre de succès/échecs
      */
-    public function sendPushNotification(User $user, string $title, string $body, array $data = []): bool
+    public function sendPushNotification(User $user, string $title, string $body, array $data = []): array
     {
-        if (!$user->getFcmToken()) {
-            $this->logger->warning('Cannot send push notification: user has no FCM token', [
-                'user_id' => $user->getId()
+        $result = $this->firebasePushService->sendToUser($user, $title, $body, $data);
+
+        if (!$result['success'] && $result['success_count'] === 0) {
+            $this->logger->warning('Push notification failed for user', [
+                'user_id' => $user->getId(),
+                'result' => $result,
             ]);
-            return false;
         }
 
-        return $this->n8nService->sendPushNotification(
-            $user->getFcmToken(),
-            $title,
-            $body,
-            $data
-        );
+        return $result;
     }
 
     /**

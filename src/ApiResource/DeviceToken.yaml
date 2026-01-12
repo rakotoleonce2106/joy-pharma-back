@@ -1,0 +1,247 @@
+App\Entity\DeviceToken:
+    operations:
+        # Register device token (for push notifications)
+        register_token:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/device-tokens/register'
+            security: 'is_granted("ROLE_USER")'
+            input: App\Dto\RegisterDeviceTokenInput
+            processor: App\State\DeviceToken\RegisterDeviceTokenProcessor
+            read: false
+            output: false
+            openapi:
+                summary: 'Register FCM device token'
+                description: |
+                    Register or update an FCM device token for push notifications.
+                    This endpoint should be called:
+                    - After user login with the FCM token from Firebase SDK
+                    - When the FCM token is refreshed (onTokenRefresh callback)
+                    - On app startup to ensure token is current
+                    
+                    The token is automatically associated with the authenticated user.
+                    If the same token was previously registered to another user, ownership is transferred.
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    fcmToken:
+                                        type: string
+                                        description: 'FCM registration token from Firebase Cloud Messaging SDK'
+                                        example: 'dGVzdF9mY21fdG9rZW5fZXhhbXBsZV8xMjM0NTY3ODkw...'
+                                    platform:
+                                        type: string
+                                        enum: [ios, android, web]
+                                        description: 'Device platform'
+                                        example: 'android'
+                                    deviceName:
+                                        type: string
+                                        description: 'Optional device name for identification'
+                                        example: 'iPhone 15 Pro'
+                                    appVersion:
+                                        type: string
+                                        description: 'Optional app version'
+                                        example: '1.0.0'
+                                required:
+                                    - fcmToken
+                responses:
+                    '200':
+                        description: 'Token registered successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        success:
+                                            type: boolean
+                                        message:
+                                            type: string
+                                        deviceToken:
+                                            type: object
+                                            properties:
+                                                id:
+                                                    type: integer
+                                                platform:
+                                                    type: string
+                                                deviceName:
+                                                    type: string
+                                                isActive:
+                                                    type: boolean
+                                                createdAt:
+                                                    type: string
+                                                    format: date-time
+                    '401':
+                        description: 'Unauthorized - authentication required'
+                    '422':
+                        description: 'Validation error - invalid FCM token format'
+
+        # Unregister device token (on logout or device removal)
+        unregister_token:
+            class: ApiPlatform\Metadata\Delete
+            uriTemplate: '/device-tokens/unregister'
+            security: 'is_granted("ROLE_USER")'
+            input: App\Dto\UnregisterDeviceTokenInput
+            processor: App\State\DeviceToken\UnregisterDeviceTokenProcessor
+            read: false
+            output: false
+            openapi:
+                summary: 'Unregister FCM device token'
+                description: |
+                    Unregister an FCM device token. Call this endpoint:
+                    - On user logout to stop receiving push notifications on this device
+                    - When user disables push notifications in app settings
+                    - When uninstalling the app (if possible)
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    fcmToken:
+                                        type: string
+                                        description: 'FCM token to unregister'
+                                required:
+                                    - fcmToken
+                responses:
+                    '200':
+                        description: 'Token unregistered successfully'
+                    '404':
+                        description: 'Token not found or does not belong to user'
+
+        # Get user's registered devices
+        get_devices:
+            class: ApiPlatform\Metadata\GetCollection
+            uriTemplate: '/device-tokens'
+            security: 'is_granted("ROLE_USER")'
+            provider: App\State\DeviceToken\DeviceTokenCollectionProvider
+            openapi:
+                summary: 'List registered devices'
+                description: 'Get list of devices registered for push notifications for the current user'
+                responses:
+                    '200':
+                        description: 'List of registered devices'
+                        content:
+                            application/json:
+                                schema:
+                                    type: array
+                                    items:
+                                        type: object
+                                        properties:
+                                            id:
+                                                type: integer
+                                            platform:
+                                                type: string
+                                            deviceName:
+                                                type: string
+                                            appVersion:
+                                                type: string
+                                            isActive:
+                                                type: boolean
+                                            lastUsedAt:
+                                                type: string
+                                                format: date-time
+                                            createdAt:
+                                                type: string
+                                                format: date-time
+
+        # Admin: Send push notification
+        admin_send_push:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/admin/push-notifications/send'
+            security: 'is_granted("ROLE_ADMIN")'
+            input: App\Dto\SendPushNotificationInput
+            processor: App\State\DeviceToken\SendPushNotificationProcessor
+            read: false
+            output: false
+            openapi:
+                summary: 'Send push notification (Admin)'
+                description: |
+                    Send push notifications to users. Supports multiple targeting modes:
+                    - single_user: Send to one specific user
+                    - multiple_users: Send to multiple specific users
+                    - topic: Send to a FCM topic (users subscribed to that topic)
+                    - broadcast: Send to all registered devices
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    type:
+                                        type: string
+                                        enum: [single_user, multiple_users, topic, broadcast]
+                                        description: 'Notification targeting type'
+                                    userId:
+                                        type: integer
+                                        description: 'User ID (for single_user type)'
+                                    userIds:
+                                        type: array
+                                        items:
+                                            type: integer
+                                        description: 'User IDs (for multiple_users type)'
+                                    topic:
+                                        type: string
+                                        description: 'Topic name (for topic type)'
+                                    title:
+                                        type: string
+                                        description: 'Notification title'
+                                    body:
+                                        type: string
+                                        description: 'Notification body'
+                                    data:
+                                        type: object
+                                        description: 'Additional data payload'
+                                    createInAppNotification:
+                                        type: boolean
+                                        default: true
+                                        description: 'Also create in-app notification'
+                                required:
+                                    - type
+                                    - title
+                                    - body
+                            examples:
+                                single_user:
+                                    summary: 'Send to single user'
+                                    value:
+                                        type: single_user
+                                        userId: 1
+                                        title: 'Your order is ready!'
+                                        body: 'Order #12345 has been prepared for pickup'
+                                        data:
+                                            orderId: '12345'
+                                            screen: 'order_details'
+                                broadcast:
+                                    summary: 'Send to all users'
+                                    value:
+                                        type: broadcast
+                                        title: 'Flash Sale! 🔥'
+                                        body: '50% off on all products for the next 2 hours'
+                                        data:
+                                            screen: 'promotions'
+                responses:
+                    '200':
+                        description: 'Notification sent successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        success:
+                                            type: boolean
+                                        type:
+                                            type: string
+                                        push_result:
+                                            type: object
+                                            properties:
+                                                success_count:
+                                                    type: integer
+                                                failure_count:
+                                                    type: integer
+                    '400':
+                        description: 'Bad request - invalid parameters'
+                    '404':
+                        description: 'User not found'
+
+    normalizationContext:
+        groups: ['device_token:read']

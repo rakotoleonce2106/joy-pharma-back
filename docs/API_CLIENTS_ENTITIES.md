@@ -305,11 +305,11 @@ curl -X GET "https://votre-api.com/api/products/search?q=paracetamol&category=3&
 L'API permet de naviguer dans l'arborescence des catégories :
 
 ```bash
-# Récupérer uniquement les catégories racines (sans parent)
-curl -X GET "https://votre-api.com/api/categories?parent=null"
+# Récupérer uniquement les catégories racines (sans parent), triées par ordre croissant
+curl -X GET "https://votre-api.com/api/categories?parent=null&order[createdAt]=asc"
 
 # Récupérer les sous-catégories d'une catégorie spécifique
-curl -X GET "https://votre-api.com/api/categories?parent=5"
+curl -X GET "https://votre-api.com/api/categories?parent=5&order[createdAt]=asc"
 ```
 
 ---
