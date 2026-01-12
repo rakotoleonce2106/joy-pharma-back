@@ -228,6 +228,90 @@ curl -X POST "https://votre-api.com/api/user/update-password" \
 | `phone` | string | Numéro de téléphone | Non |
 | `image` | IRI | Avatar (ex: `/api/media_objects/123`) | Non |
 
+## 📦 Produits (Products)
+
+### Endpoints disponibles
+
+- **GET** `/api/products` - Liste tous les produits (paginée)
+- **GET** `/api/products/{id}` - Détail d'un produit par son ID
+- **GET** `/api/products/search` - Recherche avancée de produits (via Elasticsearch)
+- **GET** `/api/products-suggestion` - Suggestions de produits pour la page d'accueil
+
+### Liste des produits (Filtrage par catégorie)
+
+```bash
+curl -X GET "https://votre-api.com/api/products?category=5&page=1&perPage=20"
+```
+
+### Détail d'un produit
+
+```bash
+curl -X GET "https://votre-api.com/api/products/12"
+```
+
+**Réponse :**
+
+```json
+{
+  "@context": "/api/contexts/Product",
+  "@id": "/api/products/12",
+  "@type": "Product",
+  "id": 12,
+  "name": "Doliprane 1000mg",
+  "code": "DOL1000",
+  "description": "Médicament utilisé pour le traitement symptomatique des douleurs...",
+  "images": [
+    {
+      "@id": "/api/media_objects/45",
+      "contentUrl": "/media/products/doliprane.jpg"
+    }
+  ],
+  "form": {
+    "@id": "/api/forms/2",
+    "name": "Comprimé"
+  },
+  "unit": {
+    "@id": "/api/units/1",
+    "name": "Boîte"
+  },
+  "unitPrice": 3500,
+  "totalPrice": 3500,
+  "isActive": true,
+  "stock": 150
+}
+```
+
+### Recherche de produits
+
+```bash
+# Recherche par nom ou mot-clé
+curl -X GET "https://votre-api.com/api/products/search?q=aspirine"
+
+# Recherche avec filtres combinés
+curl -X GET "https://votre-api.com/api/products/search?q=paracetamol&category=3&brand=10&page=1"
+```
+
+---
+
+## 📂 Catégories (Categories)
+
+### Endpoints disponibles
+
+- **GET** `/api/categories` - Liste toutes les catégories
+- **GET** `/api/categories/{id}` - Détail d'une catégorie par son ID
+
+### Filtrer les catégories parentes/enfants
+
+L'API permet de naviguer dans l'arborescence des catégories :
+
+```bash
+# Récupérer uniquement les catégories racines (sans parent)
+curl -X GET "https://votre-api.com/api/categories?parent=null"
+
+# Récupérer les sous-catégories d'une catégorie spécifique
+curl -X GET "https://votre-api.com/api/categories?parent=5"
+```
+
 ---
 
 ## ❤️ Favoris (Favorites)
@@ -294,6 +378,42 @@ curl -X POST "https://votre-api.com/api/orders" \
 ```
 
 **Note :** Le champ `paymentMethod` accepte par exemple "cash" ou "mobile_money". Le champ `location` peut être un objet (création d'une nouvelle adresse) ou une IRI d'une adresse existante.
+
+## 💶 Devises (Currencies)
+
+### Endpoints disponibles
+
+- **GET** `/api/currencies` - Liste toutes les devises disponibles
+- **GET** `/api/currencies/{id}` - Récupère une devise par son ID
+
+### Liste des devises
+
+```bash
+curl -X GET "https://votre-api.com/api/currencies"
+```
+
+**Réponse :**
+
+```json
+[
+  {
+    "@id": "/api/currencies/1",
+    "@type": "Currency",
+    "id": 1,
+    "isoCode": "MGA",
+    "label": "Ariary",
+    "symbol": "Ar"
+  },
+  {
+    "@id": "/api/currencies/2",
+    "@type": "Currency",
+    "id": 2,
+    "isoCode": "EUR",
+    "label": "Euro",
+    "symbol": "€"
+  }
+]
+```
 
 ---
 
