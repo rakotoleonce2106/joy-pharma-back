@@ -20,15 +20,29 @@ trait EntityTimestampTrait
         return $this->createdAt;
     }
 
+    public function setCreatedAt(?\DateTimeInterface $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
     #[ORM\PrePersist]
     public function setCreatedAtValue(): void
     {
-        $this->createdAt = new \DateTime('now');
+        if ($this->createdAt === null) {
+            $this->createdAt = new \DateTime('now');
+        }
     }
 
     public function getUpdatedAt(): ?\DateTimeInterface
     {
         return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeInterface $updatedAt): self
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
     }
 
     #[ORM\PrePersist]
