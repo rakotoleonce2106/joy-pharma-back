@@ -284,18 +284,14 @@ class Order
         return $this->priority;
     }
 
-    public function setPriority(String $priority): self
+    public function setPriority(PriorityType|string $priority): self
     {
-        switch ($priority) {
-            case 'urgent':
-                $priority = PriorityType::PRIORITY_URGENT;
-                break;
-            case 'standard':
-                $priority = PriorityType::PRIORITY_STANDARD;
-                break;
-            case 'planified':
-                $priority = PriorityType::PRIORITY_PLANIFIED;
-                break;
+        if (is_string($priority)) {
+            try {
+                $priority = PriorityType::from($priority);
+            } catch (\ValueError $e) {
+                throw new \InvalidArgumentException('Invalid priority: ' . $priority);
+            }
         }
         $this->priority = $priority;
         $this->updatedAt = new \DateTime();

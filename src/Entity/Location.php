@@ -17,17 +17,17 @@ class Location
     
     #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['location:read', 'location:write'])]
+    #[Groups(['location:read', 'location:write', 'order:create', 'order:write'])]
     private ?string $address = null;
 
     #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column]
-    #[Groups(['location:read', 'location:write'])]
+    #[Groups(['location:read', 'location:write', 'order:create', 'order:write'])]
     private ?float $latitude = null;
 
     #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column]
-    #[Groups(['location:read', 'location:write'])]
+    #[Groups(['location:read', 'location:write', 'order:create', 'order:write'])]
     private ?float $longitude = null;
 
     #[ORM\Column(length: 255, nullable: true)]
