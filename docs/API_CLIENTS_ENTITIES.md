@@ -332,3 +332,104 @@ curl -X GET "https://votre-api.com/api/verify-payment/ORD-2025-ABCDEF" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 ```
 
+
+---
+
+## 💊 Prescriptions (Prescriptions)
+
+### Vue d'ensemble
+
+**Note importante :** La gestion des prescriptions médicales est actuellement réservée aux administrateurs pour des raisons de conformité médicale et de sécurité. Les utilisateurs finaux peuvent soumettre des demandes de prescription via d'autres moyens (application mobile, support client).
+
+### Upload de prescription (Administrateur uniquement)
+
+Si vous êtes un administrateur, vous pouvez utiliser l'endpoint suivant pour traiter automatiquement une image d'ordonnance :
+
+```bash
+curl -X POST "https://votre-api.com/api/prescriptions/upload" \
+  -H "Authorization: Bearer VOTRE_TOKEN_ADMIN" \
+  -H "Accept: application/ld+json" \
+  -F "file=@ordonnance.jpg"
+```
+
+**Formats d'image acceptés :** JPEG, PNG, GIF, WebP
+
+**Taille maximale :** 10MB
+
+**Fonctionnalités automatiques :**
+- Extraction automatique des données (patient, médicaments, montant)
+- Recherche des produits correspondants dans le catalogue
+- Création d'une entité Prescription avec association des produits trouvés
+
+**Réponse JSON-LD :**
+
+```json
+{
+  "@context": "/api/contexts/Prescription",
+  "@id": "/api/prescriptions/123",
+  "@type": "Prescription",
+  "id": 123,
+  "title": "Ordonnance - Patient Dupont - 15/01/2026",
+  "notes": "Patient: Dupont Jean\nDate: 15/01/2026\nTotal: 45000 Ar\nProduits recherchés: 3\nProduits trouvés: 2\nNoms extraits: Aspirine, Doliprane, Ibuprofene",
+  "user": "/api/users/456",
+  "prescriptionFile": "/api/media_objects/789",
+  "products": [
+    {
+      "@id": "/api/products/101",
+      "@type": "Product",
+      "id": 101,
+      "name": "Aspirine 500mg",
+      "code": "ASP500",
+      "price": 2500
+    },
+    {
+      "@id": "/api/products/202",
+      "@type": "Product",
+      "id": 202,
+      "name": "Doliprane 1000mg",
+      "code": "DOL1000",
+      "price": 3500
+    }
+  ]
+}
+```
+
+### Gestion des prescriptions (Administrateur uniquement)
+
+Une fois créée, une prescription peut être associée aux articles de commande pour tracer les médicaments prescrits médicalement.
+
+#### Associer une prescription à une commande
+
+Lors de la création d'une commande, vous pouvez lier un article à une prescription existante :
+
+```bash
+curl -X POST "https://votre-api.com/api/orders" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "items": [
+      {
+        "product": "/api/products/101",
+        "quantity": 2,
+        "prescription": "/api/admin/prescriptions/123"
+      }
+    ],
+    "phone": "+261341234567",
+    "paymentMethod": "cash"
+  }'
+```
+
+### Sécurité et confidentialité
+
+- **Accès restreint :** Seuls les administrateurs peuvent gérer les prescriptions
+- **Données sensibles :** Les informations médicales sont strictement confidentielles
+- **Traçabilité :** Toutes les actions sur les prescriptions sont enregistrées
+- **Conformité :** Respect des réglementations médicales locales
+
+### Support utilisateur
+
+Pour toute question concernant les prescriptions médicales ou les ordonnances, contactez le support client ou utilisez l'application mobile dédiée.
+
+---
+
+**Note :** Cette section décrit les fonctionnalités disponibles. Les prescriptions étant un domaine médical sensible, leur gestion est déléguée aux professionnels de santé et administrateurs autorisés uniquement.
