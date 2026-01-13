@@ -24,7 +24,11 @@ class UserProvider implements ProviderInterface
 
         // Apply role filter if provided
         if ($role) {
-            $users = $this->userRepository->findByRole($role);
+            if ($role === 'ROLE_USER') {
+                $users = $this->userRepository->findCustomersForDataTable();
+            } else {
+                $users = $this->userRepository->findByRole($role);
+            }
             $ids = array_map(fn($u) => $u->getId(), $users);
             if (!empty($ids)) {
                 $queryBuilder->where('u.id IN (:roleIds)')
