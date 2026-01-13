@@ -34,8 +34,8 @@ class RegisterCustomerSubscriber implements EventSubscriberInterface
     {
         $request = $event->getRequest();
         
-        // Only handle POST /api/register endpoint
-        if ($request->getMethod() !== 'POST' || $request->getPathInfo() !== '/api/register') {
+        // We look for the operation name defined in the User resource
+        if ($request->attributes->get('_api_operation_name') !== 'register_customer') {
             return;
         }
 
@@ -49,13 +49,7 @@ class RegisterCustomerSubscriber implements EventSubscriberInterface
         // Generate JWT token
         $jwtResponse = $this->authenticationSuccessHandler->handleAuthenticationSuccess($result);
         
-        // Extract token data from the response
-        $responseData = json_decode($jwtResponse->getContent(), true);
-
-        // Set the transformed response
-        $event->setControllerResult($responseData);
-
-
+        // Set the response directly to stop propagation and bypass the serializer
+        $event->setResponse($jwtResponse);
     }
 }
-

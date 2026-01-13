@@ -149,11 +149,8 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         // Generate JWT token
         $jwtResponse = $this->authenticationSuccessHandler->handleAuthenticationSuccess($user);
         
-        // Extract token data from the response
-        $responseData = json_decode($jwtResponse->getContent(), true);
-
-        // Return response with token and user data (like login)
-        return $responseData;
+        // Return the JWT response directly
+        return $jwtResponse;
         } catch (ConflictHttpException | BadRequestHttpException $e) {
             // Re-throw HTTP exceptions as-is
             throw $e;
