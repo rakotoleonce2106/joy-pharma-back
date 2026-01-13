@@ -156,24 +156,7 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         return [
             'token' => $responseData['token'] ?? null,
             'refresh_token' => $responseData['refresh_token'] ?? null,
-            'user' => $responseData['user'] ?? [
-                'id' => $user->getId(),
-                'email' => $user->getEmail(),
-                'firstName' => $user->getFirstName(),
-                'lastName' => $user->getLastName(),
-                'phone' => $user->getPhone(),
-                'roles' => $user->getRoles(),
-                'userType' => 'delivery',
-                'isActive' => $user->getActive(),
-                'delivery' => $delivery ? [
-                    'vehicleType' => $delivery->getVehicleType(),
-                    'vehiclePlate' => $delivery->getVehiclePlate(),
-                    'isOnline' => $delivery->getIsOnline(),
-                    'totalDeliveries' => $delivery->getTotalDeliveries(),
-                    'averageRating' => $delivery->getAverageRating(),
-                    'totalEarnings' => $delivery->getTotalEarnings(),
-                ] : null
-            ]
+            'user' => $responseData['user'] ?? null,
         ];
         } catch (ConflictHttpException | BadRequestHttpException $e) {
             // Re-throw HTTP exceptions as-is
