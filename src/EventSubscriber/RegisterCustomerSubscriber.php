@@ -52,15 +52,10 @@ class RegisterCustomerSubscriber implements EventSubscriberInterface
         // Extract token data from the response
         $responseData = json_decode($jwtResponse->getContent(), true);
 
-        // Transform response to include token and user data
-        $transformedResponse = [
-            'token' => $responseData['token'] ?? null,
-            'refresh_token' => $responseData['refresh_token'] ?? null,
-            'user' => $responseData['user'] ?? null,
-        ];
-
         // Set the transformed response
-        $event->setControllerResult($transformedResponse);
+        $event->setControllerResult($responseData);
+
+
     }
 }
 

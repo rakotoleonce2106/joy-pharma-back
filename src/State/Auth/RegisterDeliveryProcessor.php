@@ -153,11 +153,7 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         $responseData = json_decode($jwtResponse->getContent(), true);
 
         // Return response with token and user data (like login)
-        return [
-            'token' => $responseData['token'] ?? null,
-            'refresh_token' => $responseData['refresh_token'] ?? null,
-            'user' => $responseData['user'] ?? null,
-        ];
+        return $responseData;
         } catch (ConflictHttpException | BadRequestHttpException $e) {
             // Re-throw HTTP exceptions as-is
             throw $e;
