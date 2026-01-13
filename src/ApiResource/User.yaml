@@ -8,6 +8,7 @@ App\Entity\User:
                 groups: ['user:create']
             validationContext:
                 groups: ['create']
+            processor: App\State\Auth\RegisterCustomerProcessor
             read: false
             openapi:
                 summary: 'Register as customer'
