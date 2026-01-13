@@ -56,16 +56,7 @@ class RegisterCustomerSubscriber implements EventSubscriberInterface
         $transformedResponse = [
             'token' => $responseData['token'] ?? null,
             'refresh_token' => $responseData['refresh_token'] ?? null,
-            'user' => $responseData['user'] ?? [
-                'id' => $result->getId(),
-                'email' => $result->getEmail(),
-                'firstName' => $result->getFirstName(),
-                'lastName' => $result->getLastName(),
-                'phone' => $result->getPhone(),
-                'roles' => $result->getRoles(),
-                'userType' => 'customer',
-                'isActive' => $result->getActive(),
-            ]
+            'user' => $responseData['user'] ?? null,
         ];
 
         // Set the transformed response
