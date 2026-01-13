@@ -43,6 +43,7 @@ class OrderItem
     private ?Order $orderParent = null;
 
     #[ORM\ManyToOne]
+    #[ORM\JoinColumn(onDelete: 'SET NULL')]
     #[Groups(['order:read','order_item:write'])]
     // Store exclu du groupe payment:order:item:read pour éviter les jointures excessives
     private ?Store $store = null;

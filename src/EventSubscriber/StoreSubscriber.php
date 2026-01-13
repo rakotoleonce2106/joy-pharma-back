@@ -7,15 +7,15 @@ use App\Entity\MediaObject;
 use App\Entity\Store;
 use App\Entity\StoreSetting;
 use App\Entity\User;
-use App\Repository\StoreRepository;
+use App\Entity\OrderItem;
+use App\Entity\QrScanLog;
 use App\Service\MediaObjectService;
-use App\Service\StoreService;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener;
+use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Event\PostUpdateEventArgs;
 use Doctrine\ORM\Events;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 /**
  * EventSubscriber for Store entity lifecycle events
@@ -24,10 +24,12 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
  * - Image mapping (store_images)
  * - Owner-Store relationship
  * - Old image cleanup
+ * - Cleanup of related entities (OrderItem, QrScanLog) on deletion
  */
 #[AsEntityListener(event: Events::prePersist, method: 'prePersist', entity: Store::class)]
 #[AsEntityListener(event: Events::preUpdate, method: 'preUpdate', entity: Store::class)]
 #[AsEntityListener(event: Events::postUpdate, method: 'postUpdate', entity: Store::class)]
+#[AsEntityListener(event: Events::preRemove, method: 'preRemove', entity: Store::class)]
 class StoreSubscriber
 {
     private ?int $previousImageId = null;
@@ -35,6 +37,26 @@ class StoreSubscriber
     public function __construct(
         private readonly MediaObjectService $mediaObjectService
     ) {}
+
+    /**
+     * Handle cleanup before removal
+     */
+    public function preRemove(Store $store, LifecycleEventArgs $event): void
+    {
+        $em = $event->getObjectManager();
+
+        // 1. Unlink OrderItems (set store to null)
+        $orderItems = $em->getRepository(OrderItem::class)->findBy(['store' => $store]);
+        foreach ($orderItems as $item) {
+            $item->setStore(null);
+        }
+
+        // 2. Unlink QrScanLogs
+        $logs = $em->getRepository(QrScanLog::class)->findBy(['store' => $store]);
+        foreach ($logs as $log) {
+            $log->setStore(null);
+        }
+    }
 
     /**
      * Initialize StoreSetting and handle owner relationship before persisting (create)

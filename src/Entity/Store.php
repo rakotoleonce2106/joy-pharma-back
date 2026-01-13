@@ -101,7 +101,7 @@ class Store
     /**
      * @var Collection<int, StoreProduct>
      */
-    #[ORM\OneToMany(targetEntity: StoreProduct::class, mappedBy: 'store')]
+    #[ORM\OneToMany(targetEntity: StoreProduct::class, mappedBy: 'store', cascade: ['remove'])]
     private Collection $storeProducts;
 
     #[ORM\ManyToOne(inversedBy: 'store')]

@@ -23,7 +23,7 @@ class QrScanLog
     private ?User $agent = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: true)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['qr_scan_log:read'])]
     private ?Store $store = null; // For store pickup scans
 
