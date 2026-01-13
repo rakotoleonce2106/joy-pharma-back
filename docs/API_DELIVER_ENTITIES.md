@@ -4,6 +4,62 @@
 
 Cette documentation explique comment gérer le profil, les statistiques, les factures et les actions en temps réel (localisation, SOS) pour les livreurs via l'API Deliverer.
 
+## 🔐 Inscription (Register)
+
+Pour devenir un livreur, vous devez vous inscrire via l'endpoint dédié. Cet endpoint accepte du `multipart/form-data` car il nécessite l'envoi de documents justificatifs.
+
+- **POST** `/api/register/delivery`
+
+### Exemple d'inscription
+
+```bash
+curl -X POST "https://votre-api.com/api/register/delivery" \
+  -F "email=livreur@example.com" \
+  -F "password=MotDePasseSecret123" \
+  -F "firstName=Jean" \
+  -F "lastName=Livreur" \
+  -F "phone=+261340000000" \
+  -F "vehicleType=motorcycle" \
+  -F "vehiclePlate=1234 TAB" \
+  -F "residenceDocument=@justificatif_domicile.pdf" \
+  -F "vehicleDocument=@carte_grise.pdf"
+```
+
+**Paramètres requis :**
+- `email`, `password`, `firstName`, `lastName`, `phone`
+- `vehicleType` : un parmi `bike`, `motorcycle`, `car`, `van`
+- `residenceDocument` : Fichier (PDF, Image)
+- `vehicleDocument` : Fichier (PDF, Image)
+
+**Réponse :**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "def50200...",
+  "user": {
+    "id": 10,
+    "email": "livreur@example.com",
+    "firstName": "Jean",
+    "lastName": "Livreur",
+    "phone": "+261340000000",
+    "roles": ["ROLE_DELIVER"],
+    "userType": "delivery",
+    "isActive": false,
+    "delivery": {
+      "vehicleType": "motorcycle",
+      "vehiclePlate": "1234 TAB",
+      "isOnline": false,
+      "totalDeliveries": 0,
+      "averageRating": 0,
+      "totalEarnings": 0
+    }
+  }
+}
+```
+
+> **Note :** Les comptes livreurs sont créés avec `isActive: false` par défaut et nécessitent une validation par l'administrateur avant de pouvoir se connecter.
+
 ## Authentification
 
 Tous les endpoints livreur nécessitent une authentification avec le rôle `ROLE_DELIVER`. Utilisez un token JWT dans l'en-tête `Authorization` :

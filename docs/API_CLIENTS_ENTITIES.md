@@ -72,12 +72,16 @@ curl -X POST "https://votre-api.com/api/register" \
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "def50200...",
   "user": {
     "id": 2,
     "email": "nouveau@example.com",
     "firstName": "Jean",
     "lastName": "Dupont",
-    "roles": ["ROLE_USER"]
+    "phone": "+261341234567",
+    "roles": ["ROLE_USER"],
+    "userType": "customer",
+    "isActive": true
   }
 }
 ```
