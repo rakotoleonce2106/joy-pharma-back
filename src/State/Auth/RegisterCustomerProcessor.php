@@ -54,7 +54,7 @@ class RegisterCustomerProcessor implements ProcessorInterface
 
                  // Set roles
                  $data->setRoles(['ROLE_USER']);
-                 $data->setUserType('customer');
+
                  $data->setActive(true);
 
                  // Hash password
