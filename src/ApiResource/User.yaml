@@ -22,6 +22,9 @@ App\Entity\User:
                                     email:
                                         type: string
                                         format: email
+                                    password:
+                                        type: string
+                                        minLength: 8
                                     plainPassword:
                                         type: string
                                         minLength: 8
@@ -36,7 +39,7 @@ App\Entity\User:
                                         description: IRI of avatar (e.g., "/api/media_objects/123")
                                 required:
                                     - email
-                                    - plainPassword
+                                    - password
                                     - firstName
                                     - lastName
                                     - phone
@@ -47,6 +50,9 @@ App\Entity\User:
                                     email:
                                         type: string
                                         format: email
+                                    password:
+                                        type: string
+                                        minLength: 8
                                     plainPassword:
                                         type: string
                                         minLength: 8
@@ -61,7 +67,7 @@ App\Entity\User:
                                         description: IRI of avatar (e.g., "/api/media_objects/123")
                                 required:
                                     - email
-                                    - plainPassword
+                                    - password
                                     - firstName
                                     - lastName
                                     - phone

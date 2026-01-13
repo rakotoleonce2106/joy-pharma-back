@@ -36,6 +36,12 @@ class RegisterCustomerProcessor implements ProcessorInterface
                  if (empty($data->getEmail())) {
                      throw new BadRequestHttpException('Email is required');
                  }
+                 
+                 // Support both plainPassword and password fields
+                 if (empty($data->getPlainPassword()) && !empty($data->getPassword())) {
+                     $data->setPlainPassword($data->getPassword());
+                 }
+
                  if (empty($data->getPlainPassword())) {
                      throw new BadRequestHttpException('Password is required');
                  }

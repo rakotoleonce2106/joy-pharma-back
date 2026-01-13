@@ -44,6 +44,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $email = null;
 
     #[ORM\Column]
+    #[Groups(['user:create'])]
     private ?string $password = null;
 
     #[Groups(['user:create', 'user:update'])]
