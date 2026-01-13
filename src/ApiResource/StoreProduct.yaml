@@ -73,16 +73,25 @@ App\Entity\StoreProduct:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/admin/store-products'
             security: 'is_granted("ROLE_ADMIN")'
+            provider: App\State\Admin\AdminStoreProductCollectionProvider
             normalizationContext:
                 groups: ['id:read','store-product:read','product:read','image:read','media_object:read','store:read','location:read','user:store:read','store_setting:read']
             openapi:
                 summary: 'List all store products (Admin)'
-                description: 'List every store product across all stores (Admin only)'
+                description: 'List every store product across all stores (Admin only). Supports filtering by store_id query parameter.'
+                parameters:
+                    - name: store_id
+                      in: query
+                      description: 'Filter store products by store ID'
+                      required: false
+                      schema:
+                          type: integer
 
         admin_get_store_product:
             class: ApiPlatform\Metadata\Get
             uriTemplate: '/admin/store-products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
+            provider: App\State\Admin\AdminStoreProductItemProvider
             normalizationContext:
                 groups: ['id:read','store-product:read','product:read','image:read','media_object:read','store:read','location:read','user:store:read','store_setting:read']
             openapi:
@@ -93,6 +102,7 @@ App\Entity\StoreProduct:
             class: ApiPlatform\Metadata\Post
             uriTemplate: '/admin/store-products'
             security: 'is_granted("ROLE_ADMIN")'
+            processor: App\State\Admin\AdminStoreProductProcessor
             inputFormats:
                 json: ['application/json']
                 jsonld: ['application/ld+json']
@@ -110,6 +120,7 @@ App\Entity\StoreProduct:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/admin/store-products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
+            processor: App\State\Admin\AdminStoreProductProcessor
             inputFormats:
                 json: ['application/json']
                 jsonld: ['application/ld+json']
@@ -125,6 +136,7 @@ App\Entity\StoreProduct:
             class: ApiPlatform\Metadata\Patch
             uriTemplate: '/admin/store-products/{id}'
             security: 'is_granted("ROLE_ADMIN")'
+            processor: App\State\Admin\AdminStoreProductProcessor
             inputFormats:
                 json: ['application/json']
                 jsonld: ['application/ld+json']

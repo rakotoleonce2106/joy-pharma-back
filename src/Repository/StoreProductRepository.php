@@ -16,28 +16,36 @@ class StoreProductRepository extends ServiceEntityRepository
         parent::__construct($registry, StoreProduct::class);
     }
 
-    //    /**
-    //     * @return StoreProduct[] Returns an array of StoreProduct objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('s.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * Find all store products for a specific store
+     * 
+     * @param \App\Entity\Store $store
+     * @return StoreProduct[] Returns an array of StoreProduct objects
+     */
+    public function findByStore(\App\Entity\Store $store): array
+    {
+        return $this->createQueryBuilder('sp')
+            ->andWhere('sp.store = :store')
+            ->setParameter('store', $store)
+            ->orderBy('sp.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 
-    //    public function findOneBySomeField($value): ?StoreProduct
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * Find store products by store ID
+     * 
+     * @param int $storeId
+     * @return StoreProduct[] Returns an array of StoreProduct objects
+     */
+    public function findByStoreId(int $storeId): array
+    {
+        return $this->createQueryBuilder('sp')
+            ->join('sp.store', 's')
+            ->andWhere('s.id = :storeId')
+            ->setParameter('storeId', $storeId)
+            ->orderBy('sp.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

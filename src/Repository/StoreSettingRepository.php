@@ -16,28 +16,23 @@ class StoreSettingRepository extends ServiceEntityRepository
         parent::__construct($registry, StoreSetting::class);
     }
 
-    //    /**
-    //     * @return StoreSetting[] Returns an array of StoreSetting objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('s.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?StoreSetting
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * Find the store setting for a specific store by store ID
+     * 
+     * @param int $storeId
+     * @return StoreSetting|null
+     */
+    public function findByStoreId(int $storeId): ?StoreSetting
+    {
+        $result = $this->getEntityManager()
+            ->createQuery(
+                'SELECT ss FROM App\Entity\StoreSetting ss
+                 JOIN App\Entity\Store s WITH s.setting = ss
+                 WHERE s.id = :storeId'
+            )
+            ->setParameter('storeId', $storeId)
+            ->getOneOrNullResult();
+            
+        return $result;
+    }
 }

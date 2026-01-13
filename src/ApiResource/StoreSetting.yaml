@@ -46,16 +46,25 @@ App\Entity\StoreSetting:
             class: ApiPlatform\Metadata\GetCollection
             uriTemplate: '/admin/store-settings'
             security: 'is_granted("ROLE_ADMIN")'
+            provider: App\State\Admin\AdminStoreSettingCollectionProvider
             normalizationContext:
                 groups: ['id:read','store_setting:read']
             openapi:
                 summary: 'List all store settings (Admin)'
-                description: 'List every store setting across all stores (Admin only)'
+                description: 'List every store setting across all stores (Admin only). Supports filtering by store_id query parameter.'
+                parameters:
+                    - name: store_id
+                      in: query
+                      description: 'Filter store settings by store ID'
+                      required: false
+                      schema:
+                          type: integer
 
         admin_get_store_setting:
             class: ApiPlatform\Metadata\Get
             uriTemplate: '/admin/store-settings/{id}'
             security: 'is_granted("ROLE_ADMIN")'
+            provider: App\State\Admin\AdminStoreSettingItemProvider
             normalizationContext:
                 groups: ['id:read','store_setting:read']
             openapi:

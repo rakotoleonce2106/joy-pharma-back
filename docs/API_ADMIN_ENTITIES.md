@@ -1352,12 +1352,66 @@ async function deleteStoreProduct(storeProductId) {
 
 ### Endpoints disponibles
 
-- **GET** `/api/admin/store-settings` - Liste tous les paramètres de magasin
+- **GET** `/api/admin/store-settings` - Liste tous les paramètres de magasin (avec filtre par store_id)
 - **GET** `/api/admin/store-settings/{id}` - Récupère les paramètres d'un magasin par ID
 - **POST** `/api/admin/store-settings` - Crée un nouveau paramètre de magasin
 - **PUT** `/api/admin/store-settings/{id}` - Met à jour les paramètres d'un magasin (mise à jour complète)
 - **PATCH** `/api/admin/store-settings/{id}` - Met à jour les paramètres d'un magasin (mise à jour partielle)
 - **DELETE** `/api/admin/store-settings/{id}` - Supprime les paramètres d'un magasin
+
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/store-settings` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `store_id` | integer | Filtrer par ID de magasin | `?store_id=1` |
+
+**Exemples de recherche :**
+
+```bash
+# Lister tous les paramètres de magasin
+curl -X GET "https://votre-api.com/api/admin/store-settings" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Filtrer par magasin spécifique
+curl -X GET "https://votre-api.com/api/admin/store-settings?store_id=1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Récupérer un paramètre de magasin par ID
+curl -X GET "https://votre-api.com/api/admin/store-settings/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function getStoreSettings(storeId = null) {
+  let url = '/api/admin/store-settings';
+  if (storeId) {
+    url += `?store_id=${storeId}`;
+  }
+  
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la récupération des paramètres de magasin');
+  }
+  
+  const data = await response.json();
+  return data['hydra:member'] || data;
+}
+
+// Exemple d'utilisation - Tous les paramètres de magasin
+const allSettings = await getStoreSettings();
+
+// Exemple d'utilisation - Paramètres d'un magasin spécifique
+const storeSettings = await getStoreSettings(1);
+```
 
 **Note importante :** Toutes les opérations de création et mise à jour (POST, PUT, PATCH) utilisent uniquement le format `application/ld+json`. Les heures par défaut lors de la création d'un magasin sont : **Lundi-Vendredi 8:00-17:00**, **Samedi-Dimanche fermé**.
 
@@ -2729,6 +2783,293 @@ Les prescriptions contiennent des métadonnées importantes :
 3. **Audit :** Documenter les modifications administratives
 4. **Performance :** Utiliser la pagination pour les grandes listes
 5. **Sécurité :** Ne pas exposer d'informations sensibles
+
+---
+
+## 🏪 Produits de Magasin (Store Products)
+
+### Vue d'ensemble
+
+Les produits de magasin (`StoreProduct`) représentent l'association entre un produit et un magasin avec des informations spécifiques comme le prix, le stock et le prix unitaire propres à chaque magasin.
+
+### Endpoints disponibles
+
+- **GET** `/api/admin/store-products` - Liste tous les produits de magasin (avec filtre par store_id)
+- **GET** `/api/admin/store-products/{id}` - Récupère un produit de magasin par son ID
+- **POST** `/api/admin/store-products` - Crée un nouveau produit de magasin
+- **PUT** `/api/admin/store-products/{id}` - Met à jour un produit de magasin existant (mise à jour complète)
+- **PATCH** `/api/admin/store-products/{id}` - Met à jour un produit de magasin existant (mise à jour partielle)
+- **DELETE** `/api/admin/store-products/{id}` - Supprime un produit de magasin
+
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/store-products` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `store_id` | integer | Filtrer par ID de magasin | `?store_id=1` |
+
+**Exemples de recherche :**
+
+```bash
+# Lister tous les produits de magasin
+curl -X GET "https://votre-api.com/api/admin/store-products" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Filtrer par magasin spécifique
+curl -X GET "https://votre-api.com/api/admin/store-products?store_id=1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Récupérer un produit de magasin par ID
+curl -X GET "https://votre-api.com/api/admin/store-products/42" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+### Structure des données
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `product` | string | ✅ Oui (create/put) | IRI du produit (ex: `"/api/products/1"` ou `"/api/admin/products/1"`) |
+| `store` | string | ✅ Oui (create/put) | IRI du magasin (ex: `"/api/stores/1"` ou `"/api/admin/stores/1"`) |
+| `price` | float | ✅ Oui (create/put) | Prix du produit dans ce magasin (doit être positif) |
+| `stock` | integer | ✅ Oui (create/put) | Stock disponible (doit être >= 0) |
+| `unitPrice` | float | ❌ Non | Prix unitaire (optionnel) |
+
+### Workflow complet : Créer un produit de magasin
+
+#### Étape 1 : Créer le produit de magasin
+
+```bash
+curl -X POST "https://votre-api.com/api/admin/store-products" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "product": "/api/products/1",
+    "store": "/api/stores/1",
+    "price": 15000,
+    "stock": 100,
+    "unitPrice": 1500
+  }'
+```
+
+**Réponse de succès (201 Created) :**
+```json
+{
+  "@context": "/api/contexts/StoreProduct",
+  "@id": "/api/admin/store-products/1",
+  "@type": "StoreProduct",
+  "id": 1,
+  "product": {
+    "@id": "/api/products/1",
+    "@type": "Product",
+    "id": 1,
+    "name": "Paracétamol 500mg",
+    "code": "PARA500",
+    "images": []
+  },
+  "store": {
+    "@id": "/api/stores/1",
+    "@type": "Store",
+    "id": 1,
+    "name": "Pharmacie Centrale"
+  },
+  "price": 15000,
+  "stock": 100,
+  "unitPrice": 1500
+}
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function createStoreProduct(storeProductData) {
+  const response = await fetch('/api/admin/store-products', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      product: `/api/products/${storeProductData.productId}`,
+      store: `/api/stores/${storeProductData.storeId}`,
+      price: storeProductData.price,
+      stock: storeProductData.stock,
+      unitPrice: storeProductData.unitPrice || null
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la création du produit de magasin');
+  }
+  
+  return await response.json();
+}
+
+// Exemple d'utilisation
+await createStoreProduct({
+  productId: 1,
+  storeId: 1,
+  price: 15000,
+  stock: 100,
+  unitPrice: 1500
+});
+```
+
+### Mettre à jour un produit de magasin
+
+#### Mise à jour complète (PUT)
+
+```bash
+curl -X PUT "https://votre-api.com/api/admin/store-products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "product": "/api/products/1",
+    "store": "/api/stores/1",
+    "price": 18000,
+    "stock": 150,
+    "unitPrice": 1800
+  }'
+```
+
+#### Mise à jour partielle (PATCH)
+
+```bash
+# Mettre à jour uniquement le prix et le stock
+curl -X PATCH "https://votre-api.com/api/admin/store-products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "price": 16000,
+    "stock": 200
+  }'
+
+# Mettre à jour uniquement le stock
+curl -X PATCH "https://votre-api.com/api/admin/store-products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "stock": 50
+  }'
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function updateStoreProduct(storeProductId, updates) {
+  const response = await fetch(`/api/admin/store-products/${storeProductId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/ld+json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(updates)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la mise à jour du produit de magasin');
+  }
+  
+  return await response.json();
+}
+
+// Exemple d'utilisation
+await updateStoreProduct(1, {
+  price: 16000,
+  stock: 200
+});
+```
+
+### Supprimer un produit de magasin
+
+```bash
+curl -X DELETE "https://votre-api.com/api/admin/store-products/1" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
+**Exemple avec JavaScript :**
+```javascript
+async function deleteStoreProduct(storeProductId) {
+  const response = await fetch(`/api/admin/store-products/${storeProductId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok && response.status !== 204) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la suppression du produit de magasin');
+  }
+  
+  return true;
+}
+```
+
+### Lister les produits par magasin
+
+```javascript
+async function getStoreProducts(storeId = null) {
+  let url = '/api/admin/store-products';
+  if (storeId) {
+    url += `?store_id=${storeId}`;
+  }
+  
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Échec de la récupération des produits de magasin');
+  }
+  
+  const data = await response.json();
+  return data['hydra:member'] || data;
+}
+
+// Exemple d'utilisation - Tous les produits de magasin
+const allStoreProducts = await getStoreProducts();
+
+// Exemple d'utilisation - Produits d'un magasin spécifique
+const storeProducts = await getStoreProducts(1);
+```
+
+### Contraintes métier
+
+1. **Unicité :** Un même produit ne peut être associé qu'une seule fois à un magasin donné. La combinaison `product` + `store` doit être unique.
+
+2. **Validation des prix :**
+   - `price` doit être un nombre positif (> 0)
+   - `unitPrice` est optionnel et peut être `null`
+
+3. **Validation du stock :**
+   - `stock` doit être un entier >= 0
+
+4. **Relations obligatoires :**
+   - Pour POST et PUT, `product` et `store` sont requis
+   - Pour PATCH, seuls les champs à modifier sont requis
+
+### Codes de réponse
+
+| Code | Signification |
+|------|---------------|
+| 200 | Succès (GET, PUT, PATCH) |
+| 201 | Création réussie (POST) |
+| 204 | Suppression réussie (DELETE) |
+| 400 | Requête invalide (champs manquants ou invalides) |
+| 401 | Non authentifié |
+| 403 | Non autorisé (rôle ROLE_ADMIN requis) |
+| 404 | Ressource non trouvée |
+| 409 | Conflit (combinaison product/store déjà existante) |
+
+### Notes importantes
+
+- **Content-Type :** Utilisez toujours `Content-Type: application/ld+json` lorsque vous envoyez des IRIs pour les relations (`product`, `store`)
+- **Format des IRIs :** Les relations doivent être envoyées sous forme d'IRI (ex: `/api/products/1`), pas comme des IDs numériques
+- **Filtrage :** Le paramètre `store_id` permet de récupérer uniquement les produits d'un magasin spécifique
 
 ---
 
