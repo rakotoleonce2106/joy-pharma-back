@@ -864,6 +864,42 @@ curl -X POST "https://votre-api.com/api/admin/currencies" \
 - **DELETE** `/api/admin/users/{id}` - Supprime un utilisateur
 - **POST** `/api/admin/users/{id}/toggle-active` - Active/désactive un utilisateur
 
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/users` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `firstName` | string | Recherche partielle dans le prénom (insensible à la casse) | `?firstName=jean` |
+| `lastName` | string | Recherche partielle dans le nom (insensible à la casse) | `?lastName=dupont` |
+| `email` | string | Recherche partielle dans l'email (insensible à la casse) | `?email=example.com` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10) | `?itemsPerPage=20` |
+
+**Exemples de recherche :**
+
+```bash
+# Rechercher les utilisateurs par prénom
+curl -X GET "https://votre-api.com/api/admin/users?firstName=jean" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher les utilisateurs par nom de famille
+curl -X GET "https://votre-api.com/api/admin/users?lastName=dupont" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher les utilisateurs par email
+curl -X GET "https://votre-api.com/api/admin/users?email=gmail.com" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Combiner plusieurs filtres
+curl -X GET "https://votre-api.com/api/admin/users?firstName=jean&lastName=dupont" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec pagination
+curl -X GET "https://votre-api.com/api/admin/users?firstName=jean&page=1&itemsPerPage=20" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
+
 ### Structure des données
 
 | Champ | Type | Requis | Description |
@@ -1018,6 +1054,28 @@ curl -X POST "https://votre-api.com/api/admin/users/1/toggle-active" \
 - **PATCH** `/api/admin/stores/{id}` - Met à jour un magasin existant (mise à jour partielle)
 - **DELETE** `/api/admin/stores/{id}` - Supprime un magasin
 - **POST** `/api/admin/stores/batch-delete` - Supprime plusieurs magasins en lot
+
+### Recherche et filtres
+
+L'endpoint `GET /api/admin/stores` supporte les paramètres de recherche suivants :
+
+| Paramètre | Type | Description | Exemple |
+|-----------|------|-------------|---------|
+| `name` | string | Recherche partielle dans le nom du magasin (insensible à la casse) | `?name=pharmacie` |
+| `page` | integer | Numéro de page (défaut: 1) | `?page=2` |
+| `itemsPerPage` | integer | Nombre d'éléments par page (défaut: 10) | `?itemsPerPage=20` |
+
+**Exemples de recherche :**
+
+```bash
+# Rechercher les magasins par nom
+curl -X GET "https://votre-api.com/api/admin/stores?name=pharmacie" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+
+# Rechercher avec pagination
+curl -X GET "https://votre-api.com/api/admin/stores?name=pharma&page=1&itemsPerPage=20" \
+  -H "Authorization: Bearer VOTRE_TOKEN"
+```
 
 ### Structure des données
 

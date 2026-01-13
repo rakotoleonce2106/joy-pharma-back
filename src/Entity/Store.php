@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use App\Entity\Traits\EntityIdTrait;
@@ -49,6 +51,7 @@ enum BoutiqueStatus: string
 
 #[ORM\Entity(repositoryClass: StoreRepository::class)]
 #[ApiResource]
+#[ApiFilter(SearchFilter::class, properties: ['name' => 'ipartial'])]
 class Store
 {
     use EntityIdTrait;
