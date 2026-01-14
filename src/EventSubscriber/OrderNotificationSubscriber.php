@@ -3,6 +3,8 @@
 namespace App\EventSubscriber;
 
 use App\Entity\Order;
+use App\Entity\OrderStatus;
+use App\Repository\UserRepository;
 use App\Service\NotificationService;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener;
 use Doctrine\ORM\Event\PostPersistEventArgs;
@@ -19,6 +21,7 @@ readonly class OrderNotificationSubscriber
 {
     public function __construct(
         private NotificationService $notificationService,
+        private UserRepository $userRepository,
         private LoggerInterface $logger
     ) {
     }
@@ -61,16 +64,6 @@ readonly class OrderNotificationSubscriber
                     );
                 }
             }
-
-            // Déclencher l'événement n8n
-            $this->notificationService->getN8nService()->triggerEvent('order.created', [
-                'orderId' => $order->getId(),
-                'orderReference' => $order->getReference(),
-                'customerId' => $owner->getId(),
-                'customerEmail' => $owner->getEmail(),
-                'totalAmount' => $order->getTotalAmount(),
-                'status' => $order->getStatus()->value,
-            ]);
         } catch (\Exception $e) {
             $this->logger->error('Error sending order creation notification', [
                 'order_id' => $order->getId(),
@@ -93,6 +86,26 @@ readonly class OrderNotificationSubscriber
             // Vérifier si le statut a changé
             $changeSet = $event->getObjectManager()->getUnitOfWork()->getEntityChangeSet($order);
             
+            // Delivery assignment change
+            if (isset($changeSet['deliver'])) {
+                $oldDeliver = $changeSet['deliver'][0] ?? null;
+                $newDeliver = $changeSet['deliver'][1] ?? null;
+
+                if ($newDeliver && $newDeliver !== $oldDeliver) {
+                    $this->notificationService->sendNotification(
+                        $newDeliver,
+                        'Commande assignée',
+                        "Une commande {$order->getReference()} vous a été assignée",
+                        'order_new',
+                        [
+                            'orderId' => $order->getId(),
+                            'orderReference' => $order->getReference(),
+                        ],
+                        ['sendPush' => true, 'sendEmail' => false]
+                    );
+                }
+            }
+
             if (isset($changeSet['status'])) {
                 $oldStatus = $changeSet['status'][0];
                 $newStatus = $changeSet['status'][1];
@@ -105,30 +118,105 @@ readonly class OrderNotificationSubscriber
                     ['sendPush' => true, 'sendEmail' => $newStatus->value === 'delivered']
                 );
 
-                // Notifier le livreur si une commande est assignée
                 $deliver = $order->getDeliver();
-                if ($deliver && in_array($newStatus->value, ['confirmed', 'processing', 'shipped'])) {
-                    $this->notificationService->sendNotification(
-                        $deliver,
-                        'Nouvelle commande assignée',
-                        "Une commande {$order->getReference()} vous a été assignée",
-                        'order_new',
-                        [
-                            'orderId' => $order->getId(),
-                            'orderReference' => $order->getReference(),
-                        ],
-                        ['sendPush' => true]
-                    );
-                }
+                $stores = $order->getStores();
 
-                // Déclencher l'événement n8n
-                $this->notificationService->getN8nService()->triggerEvent('order.status_changed', [
-                    'orderId' => $order->getId(),
-                    'orderReference' => $order->getReference(),
-                    'oldStatus' => $oldStatus->value,
-                    'newStatus' => $newStatus->value,
-                    'customerId' => $owner->getId(),
-                ]);
+                // Your requested rules
+                switch ($newStatus) {
+                    case OrderStatus::STATUS_PROCESSING:
+                        // Keep existing customer status notification; store assignment is handled on deliver selection.
+                        break;
+
+                    case OrderStatus::STATUS_COLLECTED:
+                        // order picked up from store by deliver -> notify store + admins + deliver
+                        $admins = $this->userRepository->findByRole('ROLE_ADMIN');
+                        foreach ($stores as $store) {
+                            $storeOwner = $store->getOwner();
+                            if ($storeOwner) {
+                                $this->notificationService->sendNotification(
+                                    $storeOwner,
+                                    'Commande récupérée',
+                                    "La commande {$order->getReference()} a été récupérée par le livreur",
+                                    'order_status',
+                                    [
+                                        'orderId' => $order->getId(),
+                                        'orderReference' => $order->getReference(),
+                                        'status' => $newStatus->value,
+                                    ],
+                                    ['sendPush' => true, 'sendEmail' => false]
+                                );
+                            }
+                        }
+
+                        foreach ($admins as $admin) {
+                            $this->notificationService->sendNotification(
+                                $admin,
+                                'Commande récupérée',
+                                "La commande {$order->getReference()} a été récupérée au magasin",
+                                'order_status',
+                                [
+                                    'orderId' => $order->getId(),
+                                    'orderReference' => $order->getReference(),
+                                    'status' => $newStatus->value,
+                                ],
+                                ['sendPush' => true, 'sendEmail' => false]
+                            );
+                        }
+
+                        if ($deliver) {
+                            $this->notificationService->sendNotification(
+                                $deliver,
+                                'Commande récupérée',
+                                "Vous avez récupéré la commande {$order->getReference()}",
+                                'order_status',
+                                [
+                                    'orderId' => $order->getId(),
+                                    'orderReference' => $order->getReference(),
+                                    'status' => $newStatus->value,
+                                ],
+                                ['sendPush' => true, 'sendEmail' => false]
+                            );
+                        }
+                        break;
+
+                    case OrderStatus::STATUS_DELIVERED:
+                        // order delivered -> notify user + admins + deliver
+                        $admins = $this->userRepository->findByRole('ROLE_ADMIN');
+                        foreach ($admins as $admin) {
+                            $this->notificationService->sendNotification(
+                                $admin,
+                                'Commande livrée',
+                                "La commande {$order->getReference()} a été livrée",
+                                'order_status',
+                                [
+                                    'orderId' => $order->getId(),
+                                    'orderReference' => $order->getReference(),
+                                    'status' => $newStatus->value,
+                                ],
+                                ['sendPush' => true, 'sendEmail' => false]
+                            );
+                        }
+
+                        if ($deliver) {
+                            $this->notificationService->sendNotification(
+                                $deliver,
+                                'Commande livrée',
+                                "La commande {$order->getReference()} a été livrée",
+                                'order_status',
+                                [
+                                    'orderId' => $order->getId(),
+                                    'orderReference' => $order->getReference(),
+                                    'status' => $newStatus->value,
+                                ],
+                                ['sendPush' => true, 'sendEmail' => false]
+                            );
+                        }
+                        break;
+
+                    default:
+                        // no-op
+                        break;
+                }
             }
         } catch (\Exception $e) {
             $this->logger->error('Error sending order update notification', [

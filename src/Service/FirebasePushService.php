@@ -4,6 +4,8 @@ namespace App\Service;
 
 use App\Entity\User;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Service for sending push notifications via Firebase Cloud Messaging through n8n.
@@ -29,9 +31,10 @@ readonly class FirebasePushService
     private const MAX_TOKENS_PER_BATCH = 500;
 
     public function __construct(
-        private N8nService $n8nService,
+        private HttpClientInterface $httpClient,
         private FcmTokenService $fcmTokenService,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private ParameterBagInterface $params,
     ) {
     }
 
@@ -181,18 +184,18 @@ readonly class FirebasePushService
         array $data = [],
         array $options = []
     ): bool {
-        $result = $this->n8nService->triggerWebhook('push-notification', [
-            'type' => 'single',
-            'fcmToken' => $fcmToken,
+        $result = $this->sendFcmRequest([
+            'to' => $fcmToken,
             'notification' => [
                 'title' => $title,
                 'body' => $body,
             ],
             'data' => $this->prepareDataPayload($data),
-            'options' => $this->prepareOptions($options),
+            'android' => $this->prepareOptions($options)['android'] ?? null,
+            'apns' => $this->prepareOptions($options)['apns'] ?? null,
         ]);
 
-        if ($result === null) {
+        if (!$result['success']) {
             $this->fcmTokenService->handleFailedPush($fcmToken);
             return false;
         }
@@ -224,15 +227,20 @@ readonly class FirebasePushService
             ];
         }
 
-        $result = $this->n8nService->triggerWebhook('push-notification', [
-            'type' => 'data_only',
-            'tokens' => $tokens,
-            'data' => $this->prepareDataPayload($data),
-            'options' => array_merge(['content_available' => true], $this->prepareOptions($options)),
-        ]);
+        $preparedData = $this->prepareDataPayload($data);
+        $options = array_merge(['content_available' => true], $this->prepareOptions($options));
+
+        $batchResult = $this->sendBatch(
+            $tokens,
+            '',
+            '',
+            $preparedData,
+            $options,
+            dataOnly: true
+        );
 
         return [
-            'success' => $result !== null,
+            'success' => $batchResult['failure_count'] < $batchResult['success_count'] + $batchResult['failure_count'],
             'tokens_count' => count($tokens),
         ];
     }
@@ -255,23 +263,23 @@ readonly class FirebasePushService
         array $data = [],
         array $options = []
     ): bool {
-        $result = $this->n8nService->triggerWebhook('push-notification', [
-            'type' => 'topic',
-            'topic' => $topic,
+        $payload = [
+            'to' => '/topics/' . $topic,
             'notification' => [
                 'title' => $title,
                 'body' => $body,
             ],
             'data' => $this->prepareDataPayload($data),
-            'options' => $this->prepareOptions($options),
-        ]);
+        ];
+
+        $result = $this->sendFcmRequest($payload);
 
         $this->logger->info('Topic notification sent', [
             'topic' => $topic,
-            'success' => $result !== null,
+            'success' => $result['success'],
         ]);
 
-        return $result !== null;
+        return $result['success'];
     }
 
     /**
@@ -320,31 +328,30 @@ readonly class FirebasePushService
         string $title,
         string $body,
         array $data,
-        array $options
+        array $options,
+        bool $dataOnly = false,
     ): array {
-        $result = $this->n8nService->triggerWebhook('push-notification', [
-            'type' => 'multicast',
-            'tokens' => $tokens,
-            'notification' => [
+        $payload = [
+            'registration_ids' => $tokens,
+            'priority' => $options['priority'] ?? 'high',
+        ];
+
+        if ($dataOnly) {
+            $payload['content_available'] = true;
+            $payload['data'] = $this->prepareDataPayload($data);
+        } else {
+            $payload['notification'] = [
                 'title' => $title,
                 'body' => $body,
-            ],
-            'data' => $this->prepareDataPayload($data),
-            'options' => $this->prepareOptions($options),
-        ]);
-
-        if ($result === null) {
-            return [
-                'success_count' => 0,
-                'failure_count' => count($tokens),
-                'failed_tokens' => $tokens,
             ];
+            $payload['data'] = $this->prepareDataPayload($data);
         }
 
-        // Parse n8n response to get success/failure counts
+        $result = $this->sendFcmRequest($payload);
+
         return [
-            'success_count' => $result['success_count'] ?? count($tokens),
-            'failure_count' => $result['failure_count'] ?? 0,
+            'success_count' => $result['success_count'] ?? 0,
+            'failure_count' => $result['failure_count'] ?? count($tokens),
             'failed_tokens' => $result['failed_tokens'] ?? [],
         ];
     }
@@ -392,5 +399,89 @@ readonly class FirebasePushService
                 ],
             ],
         ], $options);
+    }
+
+    /**
+     * Send a raw request to Firebase Cloud Messaging using the legacy HTTP API.
+     *
+     * @param array $payload
+     * @return array{
+     *     success: bool,
+     *     success_count?: int,
+     *     failure_count?: int,
+     *     failed_tokens?: array<int, string>
+     * }
+     */
+    private function sendFcmRequest(array $payload): array
+    {
+        $serverKey = $this->params->get('env(FIREBASE_SERVER_KEY)');
+
+        if (!$serverKey) {
+            $this->logger->error('FIREBASE_SERVER_KEY is not configured');
+            return [
+                'success' => false,
+                'success_count' => 0,
+                'failure_count' => 0,
+                'failed_tokens' => [],
+            ];
+        }
+
+        try {
+            $response = $this->httpClient->request('POST', 'https://fcm.googleapis.com/fcm/send', [
+                'headers' => [
+                    'Authorization' => 'key=' . $serverKey,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $payload,
+            ]);
+
+            $statusCode = $response->getStatusCode();
+            $content = $response->getContent(false);
+            $data = json_decode($content, true) ?? [];
+
+            if ($statusCode < 200 || $statusCode >= 300) {
+                $this->logger->error('FCM request failed', [
+                    'status_code' => $statusCode,
+                    'response' => $content,
+                ]);
+
+                return [
+                    'success' => false,
+                    'success_count' => 0,
+                    'failure_count' => $data['failure'] ?? 0,
+                    'failed_tokens' => [],
+                ];
+            }
+
+            $failedTokens = [];
+
+            if (isset($payload['registration_ids'], $data['results']) && is_array($data['results'])) {
+                foreach ($data['results'] as $index => $result) {
+                    if (!empty($result['error'] ?? null) && isset($payload['registration_ids'][$index])) {
+                        $failedTokens[] = $payload['registration_ids'][$index];
+                    }
+                }
+            } elseif (isset($payload['to'], $data['failure']) && $data['failure'] > 0) {
+                $failedTokens[] = $payload['to'];
+            }
+
+            return [
+                'success' => ($data['failure'] ?? 0) === 0,
+                'success_count' => $data['success'] ?? 0,
+                'failure_count' => $data['failure'] ?? 0,
+                'failed_tokens' => $failedTokens,
+            ];
+        } catch (\Throwable $e) {
+            $this->logger->error('Error sending FCM request', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'success_count' => 0,
+                'failure_count' => 0,
+                'failed_tokens' => [],
+            ];
+        }
     }
 }

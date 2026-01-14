@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Repository\OrderRepository;
 use App\Repository\StoreRepository;
 use App\Repository\UserRepository;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +26,7 @@ class AdminOrderController extends AbstractController
         private readonly OrderRepository $orderRepository,
         private readonly StoreRepository $storeRepository,
         private readonly UserRepository $userRepository,
+        private readonly NotificationService $notificationService,
         private readonly EntityManagerInterface $entityManager
     ) {
     }
@@ -89,6 +91,24 @@ class AdminOrderController extends AbstractController
             }
 
             $this->entityManager->flush();
+
+            // Notify the store owner when admin assigns a store to the order
+            $storeOwner = $store->getOwner();
+            if ($storeOwner) {
+                $this->notificationService->sendNotification(
+                    $storeOwner,
+                    'Nouvelle commande assignée',
+                    "Une commande {$order->getReference()} a été assignée à votre magasin",
+                    'order_new',
+                    [
+                        'orderId' => $order->getId(),
+                        'orderReference' => $order->getReference(),
+                        'storeId' => $store->getId(),
+                        'storeName' => $store->getName(),
+                    ],
+                    ['sendPush' => true, 'sendEmail' => false]
+                );
+            }
 
             return $this->json([
                 'success' => true,
