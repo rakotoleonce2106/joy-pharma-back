@@ -18,6 +18,7 @@ class ApiException extends HttpException
     public const FORBIDDEN = 'FORBIDDEN';
     public const CONFLICT = 'CONFLICT';
     public const SERVER_ERROR = 'SERVER_ERROR';
+    public const EMAIL_NOT_VERIFIED = 'EMAIL_NOT_VERIFIED';
 
     private string $statusCode;
 

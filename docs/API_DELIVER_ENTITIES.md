@@ -4,6 +4,16 @@
 
 Cette documentation explique comment gérer le profil, les statistiques, les factures et les actions en temps réel (localisation, SOS) pour les livreurs via l'API Deliverer.
 
+## 🔐 Authentification et Inscription
+
+### Endpoints d'authentification
+
+- **POST** `/api/auth` - Connexion (obtenir un token JWT)
+- **POST** `/api/register/delivery` - Inscription d'un livreur
+- **POST** `/api/verify-email` - Vérifier l'adresse email avec un code
+- **POST** `/api/resend-verification` - Renvoyer l'email de vérification
+- **POST** `/api/token/refresh` - Rafraîchir le token JWT
+
 ## 🔐 Inscription (Register)
 
 Pour devenir un livreur, vous devez vous inscrire via l'endpoint dédié. Cet endpoint accepte du `multipart/form-data` car il nécessite l'envoi de documents justificatifs.
@@ -35,14 +45,15 @@ curl -X POST "https://votre-api.com/api/register/delivery" \
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "def50200...",
+  "success": true,
+  "message": "Inscription réussie. Un email de vérification a été envoyé à votre adresse email.",
   "user": {
     "id": 10,
     "email": "livreur@example.com",
     "firstName": "Jean",
     "lastName": "Livreur",
     "phone": "+261340000000",
+    "isEmailVerified": false,
     "roles": ["ROLE_DELIVER"],
     "userType": "delivery",
     "isActive": false,
@@ -54,11 +65,96 @@ curl -X POST "https://votre-api.com/api/register/delivery" \
       "averageRating": 0,
       "totalEarnings": 0
     }
-  }
+  },
+  "requiresEmailVerification": true
 }
 ```
 
-> **Note :** Les comptes livreurs sont créés avec `isActive: false` par défaut et nécessitent une validation par l'administrateur avant de pouvoir se connecter.
+> **Note :** Les comptes livreurs sont créés avec `isActive: false` par défaut et nécessitent une validation par l'administrateur avant de pouvoir se connecter. De plus, vous devez vérifier votre adresse email avant de pouvoir vous connecter.
+
+### Vérification de l'adresse email
+
+Après l'inscription, vous recevrez un email contenant un code de vérification. Utilisez ce code pour vérifier votre adresse email.
+
+#### Vérifier l'email
+
+```bash
+curl -X POST "https://votre-api.com/api/verify-email" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "livreur@example.com",
+    "code": "123456"
+  }'
+```
+
+**Réponse (succès) :**
+
+```json
+{
+  "success": true,
+  "message": "Votre adresse email a été vérifiée avec succès. Vous pouvez maintenant vous connecter.",
+  "email": "livreur@example.com"
+}
+```
+
+#### Renvoyer l'email de vérification
+
+```bash
+curl -X POST "https://votre-api.com/api/resend-verification" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "livreur@example.com"
+  }'
+```
+
+**Réponse :**
+
+```json
+{
+  "success": true,
+  "message": "Un nouvel email de vérification a été envoyé à votre adresse email.",
+  "email": "livreur@example.com"
+}
+```
+
+### Réinitialisation de mot de passe
+
+Si vous oubliez votre mot de passe, vous pouvez le réinitialiser en utilisant les endpoints suivants :
+
+#### Demander un code de réinitialisation
+
+```bash
+curl -X POST "https://votre-api.com/api/password/forgot" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "livreur@example.com"
+  }'
+```
+
+#### Vérifier le code
+
+```bash
+curl -X POST "https://votre-api.com/api/password/verify-code" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "livreur@example.com",
+    "code": "123456"
+  }'
+```
+
+#### Réinitialiser le mot de passe
+
+```bash
+curl -X POST "https://votre-api.com/api/password/reset" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "livreur@example.com",
+    "code": "123456",
+    "password": "nouveauMotDePasse123"
+  }'
+```
+
+> **Note :** Les emails de réinitialisation de mot de passe sont envoyés automatiquement via n8n avec des codes de sécurité à 6 chiffres valides 1 heure.
 
 ## Authentification
 
@@ -66,6 +162,20 @@ Tous les endpoints livreur nécessitent une authentification avec le rôle `ROLE
 
 ```http
 Authorization: Bearer VOTRE_TOKEN_JWT
+```
+
+> **⚠️ Important :** Avant de pouvoir vous connecter, vous devez :
+> 1. Avoir vérifié votre adresse email (voir section Vérification de l'adresse email)
+> 2. Avoir été activé par un administrateur (votre compte doit avoir `isActive: true`)
+
+Si vous essayez de vous connecter sans avoir vérifié votre email, vous recevrez une erreur :
+
+```json
+{
+  "code": 401,
+  "status": "EMAIL_NOT_VERIFIED",
+  "message": "Votre adresse email n'est pas vérifiée. Veuillez vérifier votre email avant de vous connecter."
+}
 ```
 
 ## Format des données (Important)

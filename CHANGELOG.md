@@ -23,6 +23,14 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - 🐛 Configuration XDebug pour développement
 - 📝 Guides de démarrage rapide et déploiement
 - 🤖 CI/CD avec GitHub Actions
+- 📧 Système de vérification email obligatoire avec n8n
+- 🔐 Vérification email avant connexion utilisateur
+- 📬 Templates d'emails HTML/text pour vérification
+- ⏰ Codes de vérification expirant après 15 minutes
+- 🔄 API pour renvoi d'emails de vérification
+- 🔑 Réinitialisation de mot de passe sécurisée via n8n
+- 📧 Emails de réinitialisation avec codes 6 chiffres
+- ⏰ Codes de réinitialisation expirant après 1 heure
 
 ### Modifié
 - ⬆️ Mise à jour vers Symfony 7.2
@@ -46,6 +54,7 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - `docs/docker.md` : Documentation Docker détaillée
 - `docs/quickstart.md` : Guide de démarrage rapide
 - `docs/production.md` : Guide de déploiement production
+- `docs/N8N_CONFIGURATION.md` : Guide complet de configuration n8n
 - `Makefile` : Commandes simplifiées
 - `start.sh` : Script de démarrage interactif
 

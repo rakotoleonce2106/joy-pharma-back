@@ -10,6 +10,8 @@ Cette documentation explique comment gérer l'authentification, l'inscription, l
 
 - **POST** `/api/auth` - Connexion (obtenir un token JWT)
 - **POST** `/api/register` - Inscription d'un nouvel utilisateur
+- **POST** `/api/verify-email` - Vérifier l'adresse email avec un code
+- **POST** `/api/resend-verification` - Renvoyer l'email de vérification
 - **POST** `/api/token/refresh` - Rafraîchir le token JWT
 
 ### Connexion (Login)
@@ -25,7 +27,7 @@ curl -X POST "https://votre-api.com/api/auth" \
   }'
 ```
 
-**Réponse :**
+**Réponse (succès) :**
 
 ```json
 {
@@ -36,10 +38,23 @@ curl -X POST "https://votre-api.com/api/auth" \
     "email": "utilisateur@example.com",
     "firstName": "Jean",
     "lastName": "Dupont",
-    "roles": ["ROLE_USER"]
+    "roles": ["ROLE_USER"],
+    "isEmailVerified": true
   }
 }
 ```
+
+**Réponse (erreur - email non vérifié) :**
+
+```json
+{
+  "code": 401,
+  "status": "EMAIL_NOT_VERIFIED",
+  "message": "Votre adresse email n'est pas vérifiée. Veuillez vérifier votre email avant de vous connecter."
+}
+```
+
+> **⚠️ Important :** Vous devez avoir vérifié votre adresse email avant de pouvoir vous connecter. Si vous n'avez pas encore vérifié votre email, utilisez les endpoints de vérification ci-dessus.
 
 ### Inscription (Register)
 
@@ -71,20 +86,90 @@ curl -X POST "https://votre-api.com/api/register" \
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "def50200...",
+  "success": true,
+  "message": "Inscription réussie. Un email de vérification a été envoyé à votre adresse email.",
   "user": {
     "id": 2,
     "email": "nouveau@example.com",
     "firstName": "Jean",
     "lastName": "Dupont",
     "phone": "+261341234567",
-    "roles": ["ROLE_USER"],
-    "userType": "customer",
-    "isActive": true
-  }
+    "isEmailVerified": false
+  },
+  "requiresEmailVerification": true
 }
 ```
+
+> **⚠️ Important :** Après l'inscription, vous devez vérifier votre adresse email avant de pouvoir vous connecter. Un email contenant un code de vérification de 6 chiffres vous a été envoyé.
+
+### Vérification de l'adresse email
+
+Après l'inscription, vous recevrez un email contenant un code de vérification. Utilisez ce code pour vérifier votre adresse email.
+
+#### Vérifier l'email
+
+```bash
+curl -X POST "https://votre-api.com/api/verify-email" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "nouveau@example.com",
+    "code": "123456"
+  }'
+```
+
+**Réponse (succès) :**
+
+```json
+{
+  "success": true,
+  "message": "Votre adresse email a été vérifiée avec succès. Vous pouvez maintenant vous connecter.",
+  "email": "nouveau@example.com"
+}
+```
+
+**Réponse (erreur - code invalide) :**
+
+```json
+{
+  "code": 400,
+  "status": "VALIDATION_ERROR",
+  "message": "Code de vérification invalide"
+}
+```
+
+**Réponse (erreur - code expiré) :**
+
+```json
+{
+  "code": 400,
+  "status": "VALIDATION_ERROR",
+  "message": "Le code de vérification a expiré. Veuillez demander un nouveau code."
+}
+```
+
+#### Renvoyer l'email de vérification
+
+Si vous n'avez pas reçu l'email ou si le code a expiré, vous pouvez demander un nouveau code :
+
+```bash
+curl -X POST "https://votre-api.com/api/resend-verification" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "nouveau@example.com"
+  }'
+```
+
+**Réponse :**
+
+```json
+{
+  "success": true,
+  "message": "Un nouvel email de vérification a été envoyé à votre adresse email.",
+  "email": "nouveau@example.com"
+}
+```
+
+> **Note :** Les codes de vérification expirent après 15 minutes. Vous pouvez demander un nouveau code autant de fois que nécessaire.
 
 ### Rafraîchir le token
 
@@ -152,6 +237,7 @@ curl -X GET "https://votre-api.com/api/me" \
     "contentUrl": "/media/images/avatar.jpg"
   },
   "roles": ["ROLE_USER"],
+  "isEmailVerified": true,
   "createdAt": "2025-01-01T10:00:00+00:00"
 }
 ```
@@ -222,6 +308,109 @@ curl -X POST "https://votre-api.com/api/user/update-password" \
 - `newPassword` : Le nouveau mot de passe (minimum 8 caractères)
 - `confirmPassword` : Confirmation du nouveau mot de passe (doit correspondre)
 
+## 🔑 Réinitialisation de Mot de Passe (Password Reset)
+
+### Endpoints disponibles
+
+- **POST** `/api/password/forgot` - Demander un code de réinitialisation
+- **POST** `/api/password/verify-code` - Vérifier le code de réinitialisation
+- **POST** `/api/password/reset` - Réinitialiser le mot de passe
+
+### Processus de réinitialisation
+
+#### 1. Demander un code de réinitialisation
+
+Envoyez votre adresse email pour recevoir un code de réinitialisation :
+
+```bash
+curl -X POST "https://votre-api.com/api/password/forgot" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "utilisateur@example.com"
+  }'
+```
+
+**Réponse :**
+
+```json
+{
+  "success": true,
+  "message": "If an account exists with this email, you will receive a password reset code."
+}
+```
+
+> **Note :** Pour des raisons de sécurité, le même message est retourné même si l'email n'existe pas.
+
+#### 2. Vérifier le code de réinitialisation
+
+Utilisez le code reçu par email pour vérifier qu'il est valide :
+
+```bash
+curl -X POST "https://votre-api.com/api/password/verify-code" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "utilisateur@example.com",
+    "code": "123456"
+  }'
+```
+
+**Réponse (succès) :**
+
+```json
+{
+  "valid": true,
+  "message": "Code is valid"
+}
+```
+
+**Réponse (erreur) :**
+
+```json
+{
+  "valid": false,
+  "message": "Invalid or expired code"
+}
+```
+
+#### 3. Réinitialiser le mot de passe
+
+Une fois le code vérifié, utilisez-le pour définir un nouveau mot de passe :
+
+```bash
+curl -X POST "https://votre-api.com/api/password/reset" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "utilisateur@example.com",
+    "code": "123456",
+    "password": "nouveauMotDePasse123"
+  }'
+```
+
+**Réponse (succès) :**
+
+```json
+{
+  "success": true,
+  "message": "Password has been reset successfully"
+}
+```
+
+### Sécurité et expiration
+
+- **Codes de 6 chiffres** générés aléatoirement
+- **Expiration** : 1 heure après génération
+- **Usage unique** : Un code ne peut être utilisé qu'une seule fois
+- **Emails envoyés via n8n** pour une livraison fiable
+- **Templates HTML/text** professionnels avec avertissements de sécurité
+
+### Gestion des erreurs
+
+| Erreur | Cause | Solution |
+|--------|-------|----------|
+| `Invalid or expired code` | Code incorrect ou expiré | Demandez un nouveau code |
+| `Code already used` | Code déjà utilisé | Demandez un nouveau code |
+| `Email not found` | Email n'existe pas | Vérifiez l'adresse email |
+
 ### Champs modifiables
 
 | Champ | Type | Description | Requis |
@@ -231,6 +420,15 @@ curl -X POST "https://votre-api.com/api/user/update-password" \
 | `lastName` | string | Nom de famille | Oui (PUT) |
 | `phone` | string | Numéro de téléphone | Non |
 | `image` | IRI | Avatar (ex: `/api/media_objects/123`) | Non |
+
+### Champs en lecture seule
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `isEmailVerified` | boolean | Statut de vérification de l'email |
+| `emailVerificationCode` | string | Code de vérification (masqué, utilisé en interne) |
+| `createdAt` | datetime | Date de création du compte |
+| `updatedAt` | datetime | Date de dernière mise à jour |
 
 ## 📦 Produits (Products)
 

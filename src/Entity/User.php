@@ -72,6 +72,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read', 'user:update'])]
     private ?string $fcmToken = null;
 
+    #[ORM\Column(length: 6, nullable: true)]
+    #[Groups(['user:read', 'user:create', 'user:update'])]
+    private ?string $emailVerificationCode = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $emailVerificationCodeExpiresAt = null;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    #[Groups(['user:read', 'user:create', 'user:update'])]
+    private bool $isEmailVerified = false;
+
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
@@ -612,6 +623,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $deviceToken->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getEmailVerificationCode(): ?string
+    {
+        return $this->emailVerificationCode;
+    }
+
+    public function setEmailVerificationCode(?string $emailVerificationCode): static
+    {
+        $this->emailVerificationCode = $emailVerificationCode;
+
+        return $this;
+    }
+
+    public function getEmailVerificationCodeExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->emailVerificationCodeExpiresAt;
+    }
+
+    public function setEmailVerificationCodeExpiresAt(?\DateTimeImmutable $emailVerificationCodeExpiresAt): static
+    {
+        $this->emailVerificationCodeExpiresAt = $emailVerificationCodeExpiresAt;
+
+        return $this;
+    }
+
+    public function isEmailVerified(): bool
+    {
+        return $this->isEmailVerified;
+    }
+
+    public function setIsEmailVerified(bool $isEmailVerified): static
+    {
+        $this->isEmailVerified = $isEmailVerified;
 
         return $this;
     }

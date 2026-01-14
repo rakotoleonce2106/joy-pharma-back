@@ -73,18 +73,35 @@ App\Entity\User:
                                     - phone
                 responses:
                     '201':
-                        description: 'Customer registered successfully'
+                        description: 'Customer registered successfully. Email verification required before login.'
                         content:
                             application/json:
                                 schema:
                                     type: object
                                     properties:
-                                        token:
+                                        success:
+                                            type: boolean
+                                            example: true
+                                        message:
                                             type: string
-                                        refresh_token:
-                                            type: string
+                                            example: "Inscription réussie. Un email de vérification a été envoyé à votre adresse email."
                                         user:
                                             type: object
+                                            properties:
+                                                id:
+                                                    type: integer
+                                                email:
+                                                    type: string
+                                                firstName:
+                                                    type: string
+                                                lastName:
+                                                    type: string
+                                                isEmailVerified:
+                                                    type: boolean
+                                                    example: false
+                                        requiresEmailVerification:
+                                            type: boolean
+                                            example: true
                     '409':
                         description: 'Email already exists'
                     '422':
@@ -219,7 +236,101 @@ App\Entity\User:
             openapi:
                 summary: "Google login"
                 description: "Login with Google and receive JWT token"
-            
+
+        verify_email:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/verify-email'
+            input: 'App\Dto\VerifyEmailInput'
+            processor: App\State\Auth\VerifyEmailProcessor
+            read: false
+            public: true
+            openapi:
+                summary: 'Verify email address'
+                description: 'Verify user email address with verification code sent by email'
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                        description: 'User email address'
+                                    code:
+                                        type: string
+                                        minLength: 6
+                                        maxLength: 6
+                                        description: '6-digit verification code'
+                                required:
+                                    - email
+                                    - code
+                responses:
+                    '200':
+                        description: 'Email verified successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        success:
+                                            type: boolean
+                                            example: true
+                                        message:
+                                            type: string
+                                            example: "Votre adresse email a été vérifiée avec succès. Vous pouvez maintenant vous connecter."
+                                        email:
+                                            type: string
+                                            format: email
+                    '400':
+                        description: 'Invalid code or expired code'
+                    '404':
+                        description: 'User not found'
+
+        resend_verification:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/resend-verification'
+            input: 'App\Dto\ResendVerificationInput'
+            processor: App\State\Auth\ResendVerificationProcessor
+            read: false
+            public: true
+            openapi:
+                summary: 'Resend email verification'
+                description: 'Resend email verification code to user email address'
+                requestBody:
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    email:
+                                        type: string
+                                        format: email
+                                        description: 'User email address'
+                                required:
+                                    - email
+                responses:
+                    '200':
+                        description: 'Verification email sent successfully'
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    properties:
+                                        success:
+                                            type: boolean
+                                            example: true
+                                        message:
+                                            type: string
+                                            example: "Un nouvel email de vérification a été envoyé à votre adresse email."
+                                        email:
+                                            type: string
+                                            format: email
+                    '400':
+                        description: 'Email already verified or invalid request'
+                    '404':
+                        description: 'User not found'
+
 
         delete:
             class: ApiPlatform\Metadata\Delete

@@ -23,6 +23,15 @@ class ApiUserChecker implements UserCheckerInterface
                 401
             );
         }
+
+        // Block users who haven't verified their email
+        if (!$user->isEmailVerified()) {
+            throw new ApiException(
+                'Votre adresse email n\'est pas vérifiée. Veuillez vérifier votre email avant de vous connecter.',
+                ApiException::EMAIL_NOT_VERIFIED,
+                401
+            );
+        }
     }
 
     public function checkPostAuth(UserInterface $user): void

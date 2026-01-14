@@ -11,6 +11,7 @@ Bienvenue dans la documentation du backend Joy Pharma ! Ce répertoire contient 
 | [**Refresh Token**](./REFRESH_TOKEN.md) | Guide complet sur .l'authentification JWT et les refresh tokens | ⭐⭐⭐ |
 | [**CORS Configuration**](./CORS_CONFIGURATION.md) | Documentation détaillée sur la configuration CORS | ⭐⭐⭐ |
 | [**CORS Quick Start**](./CORS_QUICK_START.md) | Guide rapide pour résoudre les problèmes CORS | ⭐ |
+| [**Configuration n8n**](./N8N_CONFIGURATION.md) | Guide complet pour configurer n8n (emails, notifications) | ⭐⭐⭐ |
 
 ### 👤 Utilisateurs & API
 
@@ -23,7 +24,23 @@ Bienvenue dans la documentation du backend Joy Pharma ! Ce répertoire contient 
 #### Authentification JWT
 
 ```bash
-# Connexion
+# 1. Inscription
+POST /api/register
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "firstName": "Jean",
+  "lastName": "Dupont"
+}
+
+# 2. Vérifier l'email (code reçu par email)
+POST /api/verify-email
+{
+  "email": "user@example.com",
+  "code": "123456"
+}
+
+# 3. Connexion (après vérification email)
 POST /api/auth
 {
   "email": "user@example.com",
@@ -148,10 +165,13 @@ curl -X OPTIONS 'http://localhost:8000/api/products' \
 
 | Méthode | Endpoint | Description | Auth |
 |---------|----------|-------------|------|
-| `POST` | `/api/auth` | Connexion | ❌ |
+| `POST` | `/api/auth` | Connexion (nécessite vérification email) | ❌ |
 | `POST` | `/api/register` | Inscription | ❌ |
+| `POST` | `/api/verify-email` | Vérifier l'adresse email avec code | ❌ |
+| `POST` | `/api/resend-verification` | Renvoyer l'email de vérification | ❌ |
 | `POST` | `/api/token/refresh` | Rafraîchir le token | ❌ |
-| `POST` | `/api/password/forgot` | Mot de passe oublié | ❌ |
+| `POST` | `/api/password/forgot` | Mot de passe oublié (envoi code via n8n) | ❌ |
+| `POST` | `/api/password/verify-code` | Vérifier le code de réinitialisation | ❌ |
 | `POST` | `/api/password/reset` | Réinitialiser le mot de passe | ❌ |
 
 ### Produits

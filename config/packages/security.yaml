@@ -60,6 +60,8 @@ security:
        - { path: ^/api/password/verify-code, roles: PUBLIC_ACCESS }
        - { path: ^/api/password/reset, roles: PUBLIC_ACCESS }
        - { path: ^/api/products ,roles: PUBLIC_ACCESS }
+       - { path: ^/api/verify-email, roles: PUBLIC_ACCESS }
+       - { path: ^/api/resend-verification, roles: PUBLIC_ACCESS }
        - { path: ^/api/facebook_login, roles: PUBLIC_ACCESS }
        - { path: ^/api/google_login, roles: PUBLIC_ACCESS }
 

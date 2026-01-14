@@ -4,17 +4,16 @@ namespace App\State\Password;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Service\EmailVerificationService;
 use App\Service\ResetPasswordService;
 use App\Service\UserService;
-use Symfony\Component\Mime\Email;
-use Symfony\Component\Mailer\MailerInterface;
 
 class SendResetEmailProcessor implements ProcessorInterface
 {
     public function __construct(
         private UserService $userService,
         private ResetPasswordService $resetPasswordService,
-        private MailerInterface $mailer
+        private EmailVerificationService $emailVerificationService
     ) {
     }
 
@@ -39,17 +38,8 @@ class SendResetEmailProcessor implements ProcessorInterface
         $code = random_int(100000, 999999); // Generate a 6-digit code
         $this->resetPasswordService->createResetPassword($data->email, (string)$code);
 
-        // Send email with HTML content
-        try {
-            $emailMessage = (new Email())
-                ->from('noreply@joypharma.com')
-                ->to($data->email)
-                ->subject('Password Reset Code - Joy Pharma')
-                ->html('<p>Your password reset code is: <strong>' . htmlspecialchars($code) . '</strong></p>');
-            $this->mailer->send($emailMessage);
-        } catch (\Exception $e) {
-            // Log but don't reveal error to user
-        }
+        // Send email via n8n
+        $this->emailVerificationService->sendPasswordResetEmail($data->email, (string)$code);
 
         return [
             'success' => true,

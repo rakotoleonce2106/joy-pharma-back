@@ -4,13 +4,77 @@
 
 Cette documentation explique comment gérer le profil du magasin, les paramètres, les produits en stock et les commandes via l'API Store, destinée aux utilisateurs ayant le rôle `ROLE_STORE`.
 
-## Authentification
+## 🔐 Authentification et Sécurité
+
+### Endpoints d'authentification
 
 Tous les endpoints store nécessitent une authentification avec le rôle `ROLE_STORE`. Utilisez un token JWT dans l'en-tête `Authorization` :
 
 ```http
 Authorization: Bearer VOTRE_TOKEN_JWT
 ```
+
+### Vérification d'adresse email
+
+Tous les comptes magasin doivent avoir une adresse email vérifiée avant de pouvoir se connecter.
+
+#### Vérifier l'email
+
+```bash
+curl -X POST "https://votre-api.com/api/verify-email" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "magasin@example.com",
+    "code": "123456"
+  }'
+```
+
+#### Renvoyer l'email de vérification
+
+```bash
+curl -X POST "https://votre-api.com/api/resend-verification" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "magasin@example.com"
+  }'
+```
+
+### Réinitialisation de mot de passe
+
+#### Demander un code de réinitialisation
+
+```bash
+curl -X POST "https://votre-api.com/api/password/forgot" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "magasin@example.com"
+  }'
+```
+
+#### Vérifier le code
+
+```bash
+curl -X POST "https://votre-api.com/api/password/verify-code" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "magasin@example.com",
+    "code": "123456"
+  }'
+```
+
+#### Réinitialiser le mot de passe
+
+```bash
+curl -X POST "https://votre-api.com/api/password/reset" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "magasin@example.com",
+    "code": "123456",
+    "password": "nouveauMotDePasse123"
+  }'
+```
+
+> **Note :** Les emails de vérification et de réinitialisation de mot de passe sont envoyés automatiquement via n8n avec des templates professionnels.
 
 ## Format des relations (Important)
 

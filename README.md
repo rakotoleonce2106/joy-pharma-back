@@ -69,7 +69,9 @@ services:
 ## ✨ Fonctionnalités
 
 ### API REST & GraphQL
-- 🔐 Authentication JWT avec refresh tokens
+- 🔐 Authentication JWT avec vérification email obligatoire
+- 📧 Vérification email automatique via n8n
+- 🔑 Réinitialisation de mot de passe sécurisée via n8n
 - 📱 API REST complète (CRUD)
 - 🔍 Recherche Elasticsearch intégrée
 - 📄 Documentation OpenAPI/Swagger automatique
@@ -103,6 +105,7 @@ services:
 - 🚀 [Guide de Démarrage Rapide](docs/quickstart.md)
 - 🐳 [Documentation Docker](DOCKER.md)
 - 🐳 [Docker Détaillé](docs/docker.md)
+- 📧 [Configuration n8n](docs/N8N_CONFIGURATION.md)
 
 ### API Documentation
 - 📖 OpenAPI/Swagger : https://localhost/docs
