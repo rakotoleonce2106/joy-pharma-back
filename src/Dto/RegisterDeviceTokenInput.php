@@ -32,8 +32,9 @@ class RegisterDeviceTokenInput
 
     /**
      * Optional device name for identification.
+     * Kept larger to support browser user-agent strings when using web push.
      */
-    #[Assert\Length(max: 100)]
+    #[Assert\Length(max: 255)]
     public ?string $deviceName = null;
 
     /**

@@ -45,9 +45,9 @@ class DeviceToken
     private ?string $platform = null;
 
     /**
-     * Optional device name for identification (e.g., "iPhone 15 Pro", "Pixel 8").
+     * Optional device name for identification (e.g., "iPhone 15 Pro", "Pixel 8", browser user agent).
      */
-    #[ORM\Column(length: 100, nullable: true)]
+    #[ORM\Column(length: 255, nullable: true)]
     #[Groups(['device_token:read', 'device_token:write'])]
     private ?string $deviceName = null;
 
