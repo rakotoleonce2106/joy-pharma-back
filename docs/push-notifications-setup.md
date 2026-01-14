@@ -1,20 +1,19 @@
 # Push Notification Setup Guide
 
-This guide explains how to set up push notifications with n8n and Firebase Cloud Messaging (FCM) in the Joy Pharma application.
+This guide explains how to set up push notifications with Firebase Cloud Messaging (FCM) HTTP v1 API in the Joy Pharma application.
 
 ## Architecture Overview
 
 ```
 ┌─────────────────┐     ┌─────────────┐     ┌─────────────────┐     ┌──────────────┐
-│  Mobile App     │────▶│  Backend    │────▶│     n8n         │────▶│   Firebase   │
-│  (FCM SDK)      │     │  (Symfony)  │     │  (Webhook)      │     │   FCM        │
+│  Mobile App     │────▶│  Backend    │────▶│ FirebasePushSvc │────▶│   Firebase   │
+│  (FCM SDK)      │     │  (Symfony)  │     │  (HTTP v1 API)   │     │   FCM        │
 └─────────────────┘     └─────────────┘     └─────────────────┘     └──────────────┘
-       │                       │                                           │
-       │                       │                                           │
-       ▼                       ▼                                           ▼
-  Device Token          DeviceToken              Push Notification    Device Display
-  Registration          Storage                  Processing
-```
+       │                       │                       │                       │
+       │                       │                       │                       │
+       ▼                       ▼                       ▼                       ▼
+  Device Token          DeviceToken          Push Notification          Device Display
+  Registration          Storage              Processing
 
 ## Components
 
@@ -30,14 +29,15 @@ This guide explains how to set up push notifications with n8n and Firebase Cloud
 - Supports multi-device per user
 
 ### 3. FirebasePushService
-- Integrates with n8n for push delivery
+- Direct integration with Firebase Cloud Messaging HTTP v1 API
 - Supports single, multicast, topic, and broadcast notifications
 - Handles batching for large recipient lists
+- Uses OAuth2 authentication with service account credentials
 
-### 4. NotificationService (Enhanced)
+### 4. NotificationService
 - Creates in-app notifications
-- Triggers push notifications to all user devices
-- Sends email notifications
+- Triggers push notifications to all user devices via FirebasePushService
+- Sends email notifications via n8n (if configured)
 
 ## API Endpoints
 
@@ -92,12 +92,45 @@ CREATE INDEX idx_device_token_platform ON "device_token" (platform);
 
 ## Environment Configuration
 
-Add to your `.env` file:
+Add Firebase service account credentials to your `.env` file:
 
 ```env
-# n8n Configuration
-N8N_WEBHOOK_URL=http://your-n8n-instance:5678/
+# Firebase Configuration (HTTP v1 API)
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----"
 ```
+
+### Obtaining Firebase Credentials
+
+1. **Go to Firebase Console**:
+   - Navigate to [Firebase Console](https://console.firebase.google.com/)
+   - Select your project
+
+2. **Generate Service Account Key**:
+   - Click the gear icon next to "Project Overview"
+   - Select "Project settings"
+   - Go to the "Service accounts" tab
+   - Click "Generate new private key"
+   - Download the JSON file
+
+3. **Extract Values from JSON**:
+   ```json
+   {
+     "type": "service_account",
+     "project_id": "your-project-id",
+     "private_key_id": "...",
+     "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n",
+     "client_email": "firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com",
+     "client_id": "...",
+     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+     "token_uri": "https://oauth2.googleapis.com/token",
+     "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+     "client_x509_cert_url": "..."
+   }
+   ```
+
+   Use the `project_id`, `client_email`, and `private_key` values in your `.env` file.
 
 ## Mobile App Integration
 
@@ -172,9 +205,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 ```
 
-## n8n Workflow Setup
+## Direct FCM Integration
 
-See [n8n-firebase-push-notifications.md](./n8n-firebase-push-notifications.md) for detailed n8n workflow configuration.
+The application uses Firebase Cloud Messaging HTTP v1 API directly without intermediaries. Push notifications are sent from the Symfony backend to Firebase using OAuth2 authentication with service account credentials.
+
+### Key Features
+
+- **HTTP v1 API**: Uses the latest FCM API with improved security and features
+- **OAuth2 Authentication**: Secure authentication using Firebase service account credentials
+- **Batch Processing**: Handles multiple tokens efficiently
+- **Error Handling**: Automatic token cleanup for failed deliveries
+- **Platform-Specific**: Custom Android and iOS notification settings
 
 ## Token Cleanup
 
@@ -197,14 +238,16 @@ Add to crontab for automatic cleanup:
 
 ## Best Practices Implemented
 
-1. **FCM Tokens, Not Phone IDs**: Using FCM registration tokens which are the recommended approach
-2. **Multi-Device Support**: One user can have multiple devices, each with its own token
-3. **Token Lifecycle Management**: Track failed attempts, automatically deactivate/remove stale tokens
-4. **Batching**: Large recipient lists are batched to respect FCM limits
-5. **Platform-Specific Options**: Android and iOS specific notification settings
-6. **Separation of Concerns**: In-app notifications separate from push notifications
-7. **Error Handling**: Failed tokens are tracked and cleaned up automatically
-8. **Logging**: Comprehensive logging for debugging and monitoring
+1. **FCM HTTP v1 API**: Uses the latest Firebase Cloud Messaging API
+2. **OAuth2 Authentication**: Secure authentication with service account credentials
+3. **FCM Tokens, Not Phone IDs**: Using FCM registration tokens which are the recommended approach
+4. **Multi-Device Support**: One user can have multiple devices, each with its own token
+5. **Token Lifecycle Management**: Track failed attempts, automatically deactivate/remove stale tokens
+6. **Batch Processing**: Efficient handling of multiple tokens
+7. **Platform-Specific Options**: Android and iOS specific notification settings
+8. **Separation of Concerns**: In-app notifications separate from push notifications
+9. **Error Handling**: Failed tokens are tracked and cleaned up automatically
+10. **Logging**: Comprehensive logging for debugging and monitoring
 
 ## Troubleshooting
 
@@ -215,9 +258,10 @@ Add to crontab for automatic cleanup:
 
 ### Notifications Not Received
 - Check FCM token validity
-- Verify n8n workflow is running
+- Verify Firebase credentials are properly configured
 - Check Firebase Console for delivery reports
 - Ensure correct notification channel (Android)
+- Verify OAuth2 token generation is working
 
 ### Token Refresh Issues
 - Implement onTokenRefresh handler

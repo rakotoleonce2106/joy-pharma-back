@@ -8,27 +8,33 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * Service for sending push notifications via Firebase Cloud Messaging through n8n.
- * 
+ * Service for sending push notifications via Firebase Cloud Messaging HTTP v1 API.
+ *
  * This service supports:
  * - Single device notifications using FCM token
  * - Multi-device notifications (one user, multiple devices)
  * - Batch notifications (multiple users)
  * - Topic-based notifications
  * - Data-only notifications (silent notifications)
- * 
+ *
  * Firebase best practices implemented:
  * - Uses FCM registration tokens (not phone IDs)
  * - Supports multi-device per user
  * - Handles token refresh and cleanup
  * - Supports both notification + data payloads
+ * - Uses FCM HTTP v1 API with OAuth2 authentication
  */
 readonly class FirebasePushService
 {
     /**
-     * Maximum number of tokens per batch (FCM limit is 500 for multicast).
+     * Maximum number of messages per batch (FCM v1 limit).
      */
-    private const MAX_TOKENS_PER_BATCH = 500;
+    private const MAX_MESSAGES_PER_BATCH = 500;
+
+    /**
+     * FCM v1 API base URL
+     */
+    private const FCM_V1_BASE_URL = 'https://fcm.googleapis.com/v1/projects/';
 
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -134,14 +140,14 @@ readonly class FirebasePushService
             'failed_tokens' => [],
         ];
 
-        // Process tokens in batches
-        $batches = array_chunk($tokens, self::MAX_TOKENS_PER_BATCH);
+        // Process tokens in batches (v1 API has individual message limits)
+        $batches = array_chunk($tokens, self::MAX_MESSAGES_PER_BATCH);
 
         foreach ($batches as $batch) {
             $batchResult = $this->sendBatch($batch, $title, $body, $data, $options);
 
-            $results['success_count'] += $batchResult['success_count'] ?? count($batch);
-            $results['failure_count'] += $batchResult['failure_count'] ?? 0;
+            $results['success_count'] += $batchResult['success_count'];
+            $results['failure_count'] += $batchResult['failure_count'];
 
             if (!empty($batchResult['failed_tokens'])) {
                 $results['failed_tokens'] = array_merge(
@@ -184,16 +190,24 @@ readonly class FirebasePushService
         array $data = [],
         array $options = []
     ): bool {
-        $result = $this->sendFcmRequest([
-            'to' => $fcmToken,
+        $message = [
+            'token' => $fcmToken,
             'notification' => [
                 'title' => $title,
                 'body' => $body,
             ],
             'data' => $this->prepareDataPayload($data),
-            'android' => $this->prepareOptions($options)['android'] ?? null,
-            'apns' => $this->prepareOptions($options)['apns'] ?? null,
-        ]);
+        ];
+
+        $preparedOptions = $this->prepareOptions($options);
+        if (!empty($preparedOptions['android'])) {
+            $message['android'] = $preparedOptions['android'];
+        }
+        if (!empty($preparedOptions['apns'])) {
+            $message['apns'] = $preparedOptions['apns'];
+        }
+
+        $result = $this->sendFcmRequest($message);
 
         if (!$result['success']) {
             $this->fcmTokenService->handleFailedPush($fcmToken);
@@ -263,8 +277,8 @@ readonly class FirebasePushService
         array $data = [],
         array $options = []
     ): bool {
-        $payload = [
-            'to' => '/topics/' . $topic,
+        $message = [
+            'topic' => $topic,
             'notification' => [
                 'title' => $title,
                 'body' => $body,
@@ -272,7 +286,15 @@ readonly class FirebasePushService
             'data' => $this->prepareDataPayload($data),
         ];
 
-        $result = $this->sendFcmRequest($payload);
+        $preparedOptions = $this->prepareOptions($options);
+        if (!empty($preparedOptions['android'])) {
+            $message['android'] = $preparedOptions['android'];
+        }
+        if (!empty($preparedOptions['apns'])) {
+            $message['apns'] = $preparedOptions['apns'];
+        }
+
+        $result = $this->sendFcmRequest($message);
 
         $this->logger->info('Topic notification sent', [
             'topic' => $topic,
@@ -314,14 +336,14 @@ readonly class FirebasePushService
     }
 
     /**
-     * Send a batch of notifications via n8n.
+     * Send a batch of notifications to multiple tokens.
      *
      * @param string[] $tokens Array of FCM tokens
      * @param string $title Notification title
      * @param string $body Notification body
      * @param array $data Data payload
      * @param array $options FCM options
-     * @return array Result from n8n
+     * @return array Result with success/failure counts
      */
     private function sendBatch(
         array $tokens,
@@ -331,29 +353,44 @@ readonly class FirebasePushService
         array $options,
         bool $dataOnly = false,
     ): array {
-        $payload = [
-            'registration_ids' => $tokens,
-            'priority' => $options['priority'] ?? 'high',
+        $results = [
+            'success_count' => 0,
+            'failure_count' => 0,
+            'failed_tokens' => [],
         ];
 
-        if ($dataOnly) {
-            $payload['content_available'] = true;
-            $payload['data'] = $this->prepareDataPayload($data);
-        } else {
-            $payload['notification'] = [
-                'title' => $title,
-                'body' => $body,
+        foreach ($tokens as $token) {
+            $message = [
+                'token' => $token,
+                'data' => $this->prepareDataPayload($data),
             ];
-            $payload['data'] = $this->prepareDataPayload($data);
+
+            if (!$dataOnly) {
+                $message['notification'] = [
+                    'title' => $title,
+                    'body' => $body,
+                ];
+            }
+
+            $preparedOptions = $this->prepareOptions($options);
+            if (!empty($preparedOptions['android'])) {
+                $message['android'] = $preparedOptions['android'];
+            }
+            if (!empty($preparedOptions['apns'])) {
+                $message['apns'] = $preparedOptions['apns'];
+            }
+
+            $result = $this->sendFcmRequest($message);
+
+            if ($result['success']) {
+                $results['success_count']++;
+            } else {
+                $results['failure_count']++;
+                $results['failed_tokens'][] = $token;
+            }
         }
 
-        $result = $this->sendFcmRequest($payload);
-
-        return [
-            'success_count' => $result['success_count'] ?? 0,
-            'failure_count' => $result['failure_count'] ?? count($tokens),
-            'failed_tokens' => $result['failed_tokens'] ?? [],
-        ];
+        return $results;
     }
 
     /**
@@ -402,9 +439,9 @@ readonly class FirebasePushService
     }
 
     /**
-     * Send a raw request to Firebase Cloud Messaging using the legacy HTTP API.
+     * Send a raw request to Firebase Cloud Messaging using HTTP v1 API.
      *
-     * @param array $payload
+     * @param array $message The FCM v1 message payload
      * @return array{
      *     success: bool,
      *     success_count?: int,
@@ -412,27 +449,33 @@ readonly class FirebasePushService
      *     failed_tokens?: array<int, string>
      * }
      */
-    private function sendFcmRequest(array $payload): array
+    private function sendFcmRequest(array $message): array
     {
-        $serverKey = $this->params->get('env(FIREBASE_SERVER_KEY)');
+        $projectId = $this->params->get('env(FIREBASE_PROJECT_ID)');
+        $accessToken = $this->getAccessToken();
 
-        if (!$serverKey) {
-            $this->logger->error('FIREBASE_SERVER_KEY is not configured');
+        if (!$projectId || !$accessToken) {
+            $this->logger->error('Firebase credentials not configured', [
+                'has_project_id' => !empty($projectId),
+                'has_access_token' => !empty($accessToken),
+            ]);
             return [
                 'success' => false,
                 'success_count' => 0,
-                'failure_count' => 0,
+                'failure_count' => 1,
                 'failed_tokens' => [],
             ];
         }
 
         try {
-            $response = $this->httpClient->request('POST', 'https://fcm.googleapis.com/fcm/send', [
+            $url = self::FCM_V1_BASE_URL . $projectId . '/messages:send';
+
+            $response = $this->httpClient->request('POST', $url, [
                 'headers' => [
-                    'Authorization' => 'key=' . $serverKey,
+                    'Authorization' => 'Bearer ' . $accessToken,
                     'Content-Type' => 'application/json',
                 ],
-                'json' => $payload,
+                'json' => ['message' => $message],
             ]);
 
             $statusCode = $response->getStatusCode();
@@ -440,48 +483,137 @@ readonly class FirebasePushService
             $data = json_decode($content, true) ?? [];
 
             if ($statusCode < 200 || $statusCode >= 300) {
-                $this->logger->error('FCM request failed', [
+                $this->logger->error('FCM v1 request failed', [
                     'status_code' => $statusCode,
                     'response' => $content,
+                    'message_token' => $message['token'] ?? 'batch',
                 ]);
 
                 return [
                     'success' => false,
                     'success_count' => 0,
-                    'failure_count' => $data['failure'] ?? 0,
+                    'failure_count' => 1,
+                    'failed_tokens' => !empty($message['token']) ? [$message['token']] : [],
+                ];
+            }
+
+            // FCM v1 API returns different response structure
+            if (isset($data['name'])) {
+                // Success - message was sent
+                return [
+                    'success' => true,
+                    'success_count' => 1,
+                    'failure_count' => 0,
                     'failed_tokens' => [],
                 ];
             }
 
-            $failedTokens = [];
+            // Handle error responses
+            $error = $data['error'] ?? null;
+            if ($error) {
+                $this->logger->error('FCM v1 API error', [
+                    'error' => $error,
+                    'message_token' => $message['token'] ?? 'unknown',
+                ]);
 
-            if (isset($payload['registration_ids'], $data['results']) && is_array($data['results'])) {
-                foreach ($data['results'] as $index => $result) {
-                    if (!empty($result['error'] ?? null) && isset($payload['registration_ids'][$index])) {
-                        $failedTokens[] = $payload['registration_ids'][$index];
-                    }
-                }
-            } elseif (isset($payload['to'], $data['failure']) && $data['failure'] > 0) {
-                $failedTokens[] = $payload['to'];
+                return [
+                    'success' => false,
+                    'success_count' => 0,
+                    'failure_count' => 1,
+                    'failed_tokens' => !empty($message['token']) ? [$message['token']] : [],
+                ];
             }
 
             return [
-                'success' => ($data['failure'] ?? 0) === 0,
-                'success_count' => $data['success'] ?? 0,
-                'failure_count' => $data['failure'] ?? 0,
-                'failed_tokens' => $failedTokens,
+                'success' => true,
+                'success_count' => 1,
+                'failure_count' => 0,
+                'failed_tokens' => [],
             ];
         } catch (\Throwable $e) {
-            $this->logger->error('Error sending FCM request', [
+            $this->logger->error('Error sending FCM v1 request', [
                 'error' => $e->getMessage(),
+                'message_token' => $message['token'] ?? 'unknown',
             ]);
 
             return [
                 'success' => false,
                 'success_count' => 0,
-                'failure_count' => 0,
-                'failed_tokens' => [],
+                'failure_count' => 1,
+                'failed_tokens' => !empty($message['token']) ? [$message['token']] : [],
             ];
+        }
+    }
+
+    /**
+     * Generate OAuth2 access token for Firebase using service account credentials.
+     *
+     * @return string|null The access token or null if generation failed
+     */
+    private function getAccessToken(): ?string
+    {
+        $clientEmail = $this->params->get('env(FIREBASE_CLIENT_EMAIL)');
+        $privateKey = $this->params->get('env(FIREBASE_PRIVATE_KEY)');
+
+        if (!$clientEmail || !$privateKey) {
+            $this->logger->error('Firebase service account credentials not configured');
+            return null;
+        }
+
+        try {
+            // Create JWT payload
+            $now = time();
+            $jwtPayload = [
+                'iss' => $clientEmail,
+                'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+                'aud' => 'https://oauth2.googleapis.com/token',
+                'exp' => $now + 3600, // 1 hour
+                'iat' => $now,
+            ];
+
+            // Create JWT header
+            $jwtHeader = [
+                'alg' => 'RS256',
+                'typ' => 'JWT',
+            ];
+
+            // Encode header and payload
+            $headerEncoded = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(json_encode($jwtHeader)));
+            $payloadEncoded = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(json_encode($jwtPayload)));
+
+            // Create signature
+            $privateKey = "-----BEGIN PRIVATE KEY-----\n" . $privateKey . "\n-----END PRIVATE KEY-----";
+            $signature = '';
+            openssl_sign($headerEncoded . "." . $payloadEncoded, $signature, $privateKey, 'sha256WithRSAEncryption');
+            $signatureEncoded = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
+
+            $jwt = $headerEncoded . "." . $payloadEncoded . "." . $signatureEncoded;
+
+            // Exchange JWT for access token
+            $response = $this->httpClient->request('POST', 'https://oauth2.googleapis.com/token', [
+                'headers' => [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                ],
+                'body' => [
+                    'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                    'assertion' => $jwt,
+                ],
+            ]);
+
+            $data = json_decode($response->getContent(), true);
+
+            if (isset($data['access_token'])) {
+                return $data['access_token'];
+            }
+
+            $this->logger->error('Failed to obtain access token', ['response' => $data]);
+            return null;
+
+        } catch (\Throwable $e) {
+            $this->logger->error('Error generating Firebase access token', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
         }
     }
 }
