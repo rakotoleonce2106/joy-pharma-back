@@ -228,7 +228,7 @@ const imageIri = mediaObject['@id']; // "/api/media_objects/123"
 - `residenceDocument` → `media_object`
 - `vehicleDocument` → `media_object`
 
-**Note :** Les documents de livraison sont généralement gérés via l'inscription des livreurs.
+**Note :** Pour l'inscription des livreurs, ces documents doivent d'abord être uploadés via `/api/media_objects` pour obtenir leurs IRIs, qui seront ensuite utilisés lors de l'appel à `/api/register/delivery`.
 
 ---
 

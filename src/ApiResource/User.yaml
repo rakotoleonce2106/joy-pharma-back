@@ -113,14 +113,14 @@ App\Entity\User:
             input: 'App\Dto\RegisterDeliveryInput'
             processor: App\State\Auth\RegisterDeliveryProcessor
             read: false
-            input_formats:
-                multipart: [ 'multipart/form-data' ]
+            inputFormats:
+                jsonld: ['application/ld+json']
             openapi:
                 summary: 'Register as delivery person'
-                description: 'Register a new delivery person account and receive JWT token'
+                description: 'Register a new delivery person account and receive JWT token. Upload documents first using POST /api/media_objects, then reference them using IRI.'
                 requestBody:
                     content:
-                        multipart/form-data:
+                        application/ld+json:
                             schema:
                                 type: object
                                 properties:
@@ -143,10 +143,10 @@ App\Entity\User:
                                         type: string
                                     residenceDocument:
                                         type: string
-                                        format: binary
+                                        description: 'IRI of residence document (e.g., /api/media_objects/123)'
                                     vehicleDocument:
                                         type: string
-                                        format: binary
+                                        description: 'IRI of vehicle document (e.g., /api/media_objects/456)'
                                 required:
                                     - email
                                     - password
@@ -154,6 +154,8 @@ App\Entity\User:
                                     - lastName
                                     - phone
                                     - vehicleType
+                                    - residenceDocument
+                                    - vehicleDocument
                 responses:
                     '201':
                         description: 'Delivery person registered successfully'

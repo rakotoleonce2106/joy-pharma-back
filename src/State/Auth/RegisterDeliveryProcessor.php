@@ -2,6 +2,7 @@
 
 namespace App\State\Auth;
 
+use ApiPlatform\Metadata\IriConverterInterface;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Delivery;
@@ -9,7 +10,6 @@ use App\Entity\MediaObject;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Security\Http\Authentication\AuthenticationSuccessHandler;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -19,7 +19,8 @@ class RegisterDeliveryProcessor implements ProcessorInterface
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
-        private AuthenticationSuccessHandler $authenticationSuccessHandler
+        private AuthenticationSuccessHandler $authenticationSuccessHandler,
+        private IriConverterInterface $iriConverter
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
@@ -58,85 +59,78 @@ class RegisterDeliveryProcessor implements ProcessorInterface
             }
 
             // Validate required documents
-            if (!property_exists($data, 'residenceDocument') || $data->residenceDocument === null) {
-                throw new BadRequestHttpException('Residence document is required');
+            if (!property_exists($data, 'residenceDocument') || empty($data->residenceDocument)) {
+                throw new BadRequestHttpException('Residence document IRI is required');
             }
 
-            if (!property_exists($data, 'vehicleDocument') || $data->vehicleDocument === null) {
-                throw new BadRequestHttpException('Vehicle document is required');
+            if (!property_exists($data, 'vehicleDocument') || empty($data->vehicleDocument)) {
+                throw new BadRequestHttpException('Vehicle document IRI is required');
             }
             
-            // Check if files are UploadedFile instances
-            if (!($data->residenceDocument instanceof \Symfony\Component\HttpFoundation\File\UploadedFile)) {
-                throw new BadRequestHttpException('Residence document must be a valid file');
+            // Check if email already exists
+            $existingUser = $this->entityManager->getRepository(User::class)
+                ->findOneBy(['email' => $data->email]);
+
+            if ($existingUser) {
+                throw new ConflictHttpException('Email already exists');
             }
 
-            if (!($data->vehicleDocument instanceof \Symfony\Component\HttpFoundation\File\UploadedFile)) {
-                throw new BadRequestHttpException('Vehicle document must be a valid file');
+            // Create new delivery user
+            $user = new User();
+            $user->setEmail($data->email);
+            $user->setFirstName($data->firstName);
+            $user->setLastName($data->lastName);
+            $user->setPhone($data->phone);
+
+            // Set roles for delivery person (no ROLE_USER as requested)
+            $user->setRoles(['ROLE_DELIVER']);
+
+            // Newly created delivery accounts require admin activation
+            $user->setActive(false);
+
+            // Hash password
+            $hashedPassword = $this->passwordHasher->hashPassword($user, $data->password);
+            $user->setPassword($hashedPassword);
+
+            // Create Delivery entity
+            $delivery = new Delivery();
+            $delivery->setVehicleType($data->vehicleType);
+
+            if (!empty($data->vehiclePlate)) {
+                $delivery->setVehiclePlate($data->vehiclePlate);
             }
-
-        // Check if email already exists
-        $existingUser = $this->entityManager->getRepository(User::class)
-            ->findOneBy(['email' => $data->email]);
-
-        if ($existingUser) {
-            throw new ConflictHttpException('Email already exists');
-        }
-
-        // Create new delivery user
-        $user = new User();
-        $user->setEmail($data->email);
-        $user->setFirstName($data->firstName);
-        $user->setLastName($data->lastName);
-        $user->setPhone($data->phone);
-
-        // Set roles for delivery person (no ROLE_USER as requested)
-        $user->setRoles(['ROLE_DELIVER']);
-
-        // Newly created delivery accounts require admin activation
-        $user->setActive(false);
-
-        // Hash password
-        $hashedPassword = $this->passwordHasher->hashPassword($user, $data->password);
-        $user->setPassword($hashedPassword);
-
-        // Create Delivery entity
-        $delivery = new Delivery();
-        $delivery->setVehicleType($data->vehicleType);
-
-        if (!empty($data->vehiclePlate)) {
-            $delivery->setVehiclePlate($data->vehiclePlate);
-        }
 
             // Attach verification documents (required)
-            // Check if files are valid before setting
             try {
-                if (!$data->residenceDocument->isValid()) {
-                    throw new BadRequestHttpException('Residence document is not valid');
+                // Resolve IRIs to MediaObject entities
+                try {
+                    $residenceMediaObject = $this->iriConverter->getResourceFromIri($data->residenceDocument);
+                } catch (\Exception $e) {
+                    throw new BadRequestHttpException('Invalid residence document IRI', $e);
                 }
 
-                if (!$data->vehicleDocument->isValid()) {
-                    throw new BadRequestHttpException('Vehicle document is not valid');
+                try {
+                    $vehicleMediaObject = $this->iriConverter->getResourceFromIri($data->vehicleDocument);
+                } catch (\Exception $e) {
+                    throw new BadRequestHttpException('Invalid vehicle document IRI', $e);
                 }
 
-                // Create MediaObject for residence document
-                $residenceMediaObject = new MediaObject();
-                $residenceMediaObject->setFile($data->residenceDocument);
-                $residenceMediaObject->setMapping('media_object');
-                $this->entityManager->persist($residenceMediaObject);
+                if (!$residenceMediaObject instanceof MediaObject) {
+                    throw new BadRequestHttpException('Residence document IRI must point to a MediaObject');
+                }
+
+                if (!$vehicleMediaObject instanceof MediaObject) {
+                    throw new BadRequestHttpException('Vehicle document IRI must point to a MediaObject');
+                }
+
                 $delivery->setResidenceDocument($residenceMediaObject);
-
-                // Create MediaObject for vehicle document
-                $vehicleMediaObject = new MediaObject();
-                $vehicleMediaObject->setFile($data->vehicleDocument);
-                $vehicleMediaObject->setMapping('media_object');
-                $this->entityManager->persist($vehicleMediaObject);
                 $delivery->setVehicleDocument($vehicleMediaObject);
-            } catch (\Exception $fileException) {
-                if ($fileException instanceof BadRequestHttpException) {
-                    throw $fileException;
+
+            } catch (\Exception $e) {
+                 if ($e instanceof BadRequestHttpException) {
+                    throw $e;
                 }
-                throw new BadRequestHttpException('Error processing documents: ' . $fileException->getMessage(), $fileException);
+                throw new BadRequestHttpException('Error processing documents: ' . $e->getMessage(), $e);
             }
 
         // Link Delivery to User

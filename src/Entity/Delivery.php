@@ -59,13 +59,13 @@ class Delivery
     // Delivery verification documents
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:update'])]
     #[ApiProperty(types: ['https://schema.org/Document'])]
     private ?MediaObject $residenceDocument = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:update'])]
     #[ApiProperty(types: ['https://schema.org/Document'])]
     private ?MediaObject $vehicleDocument = null;
 

@@ -122,7 +122,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
 
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Delivery::class, cascade: ['persist', 'remove'])]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:update'])]
     #[MaxDepth(1)]
     private ?Delivery $delivery = null;
 

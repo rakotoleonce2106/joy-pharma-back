@@ -16,7 +16,10 @@ Cette documentation explique comment gérer le profil, les statistiques, les fac
 
 ## 🔐 Inscription (Register)
 
-Pour devenir un livreur, vous devez vous inscrire via l'endpoint dédié. Cet endpoint accepte du `multipart/form-data` car il nécessite l'envoi de documents justificatifs.
+Pour devenir un livreur, vous devez vous inscrire via l'endpoint dédié.
+**⚠️ Important :** L'inscription se fait maintenant en deux étapes :
+1. Uploadez vos documents justificatifs via `/api/media_objects` pour obtenir leurs IRIs (ex: `/api/media_objects/123`).
+2. Utilisez ces IRIs pour vous inscrire avec le format `application/ld+json`.
 
 - **POST** `/api/register/delivery`
 
@@ -24,22 +27,25 @@ Pour devenir un livreur, vous devez vous inscrire via l'endpoint dédié. Cet en
 
 ```bash
 curl -X POST "https://votre-api.com/api/register/delivery" \
-  -F "email=livreur@example.com" \
-  -F "password=MotDePasseSecret123" \
-  -F "firstName=Jean" \
-  -F "lastName=Livreur" \
-  -F "phone=+261340000000" \
-  -F "vehicleType=motorcycle" \
-  -F "vehiclePlate=1234 TAB" \
-  -F "residenceDocument=@justificatif_domicile.pdf" \
-  -F "vehicleDocument=@carte_grise.pdf"
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "email": "livreur@example.com",
+    "password": "MotDePasseSecret123",
+    "firstName": "Jean",
+    "lastName": "Livreur",
+    "phone": "+261340000000",
+    "vehicleType": "motorcycle",
+    "vehiclePlate": "1234 TAB",
+    "residenceDocument": "/api/media_objects/1",
+    "vehicleDocument": "/api/media_objects/2"
+  }'
 ```
 
 **Paramètres requis :**
 - `email`, `password`, `firstName`, `lastName`, `phone`
 - `vehicleType` : un parmi `bike`, `motorcycle`, `car`, `van`
-- `residenceDocument` : Fichier (PDF, Image)
-- `vehicleDocument` : Fichier (PDF, Image)
+- `residenceDocument` : IRI du document de résidence (ex: `/api/media_objects/1`)
+- `vehicleDocument` : IRI du document du véhicule (ex: `/api/media_objects/2`)
 
 **Réponse :**
 
@@ -202,8 +208,18 @@ Si vous essayez de vous connecter sans avoir vérifié votre email, vous recevre
 | `firstName` | string | ✅ Oui | Prénom |
 | `lastName` | string | ✅ Oui | Nom |
 | `phone` | string | ❌ Non | Numéro de téléphone |
-| `image` | string (IRI) | ❌ Non | IRI de l'avatar (ex: `"/api/media_objects/123"`) |
+| `image` | string (IRI) | ❌ Non | IRI de l'avatar (ex: `/api/media_objects/123`) |
 | `plainPassword` | string | ❌ Non | Nouveau mot de passe |
+| `delivery` | object | ❌ Non | Informations de livraison (voir ci-dessous) |
+
+### Structure de l'objet `delivery`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `vehicleType` | string | Type de véhicule (`bike`, `motorcycle`, `car`, `van`) |
+| `vehiclePlate` | string | Plaque d'immatriculation |
+| `residenceDocument` | string (IRI) | IRI du document de résidence (ex: `/api/media_objects/1`) |
+| `vehicleDocument` | string (IRI) | IRI du document du véhicule (ex: `/api/media_objects/2`) |
 
 ### Exemples
 
@@ -218,6 +234,18 @@ curl -X PATCH "https://votre-api.com/api/deliver/update" \
   -H "Content-Type: application/ld+json" \
   -d '{
     "image": "/api/media_objects/456"
+  }'
+
+# Mettre à jour informations de livraison (Véhicule et documents)
+curl -X PATCH "https://votre-api.com/api/deliver/update" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -H "Content-Type: application/ld+json" \
+  -d '{
+    "delivery": {
+        "vehicleType": "car",
+        "vehiclePlate": "5678 TAB",
+        "vehicleDocument": "/api/media_objects/789"
+    }
   }'
 ```
 
