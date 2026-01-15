@@ -8,6 +8,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Delivery;
 use App\Entity\MediaObject;
 use App\Entity\User;
+use App\Service\EmailVerificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Security\Http\Authentication\AuthenticationSuccessHandler;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -20,7 +21,8 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
         private AuthenticationSuccessHandler $authenticationSuccessHandler,
-        private IriConverterInterface $iriConverter
+        private IriConverterInterface $iriConverter,
+        private EmailVerificationService $emailVerificationService
     ) {}
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): mixed
@@ -140,11 +142,33 @@ class RegisterDeliveryProcessor implements ProcessorInterface
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        // Generate JWT token
-        $jwtResponse = $this->authenticationSuccessHandler->handleAuthenticationSuccess($user);
-        
-        // Return the JWT response directly
-        return $jwtResponse;
+        // Send verification email
+        $this->emailVerificationService->sendVerificationEmail($user);
+
+        // Return success response instead of JWT auto-login
+        return [
+            'success' => true,
+            'message' => 'Inscription réussie. Un email de vérification a été envoyé à votre adresse email.',
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'isEmailVerified' => $user->isEmailVerified(),
+                'roles' => $user->getRoles(),
+                'userType' => 'delivery',
+                'isActive' => $user->getActive(),
+                'delivery' => [
+                    'vehicleType' => $delivery->getVehicleType(),
+                    'vehiclePlate' => $delivery->getVehiclePlate(),
+                    'isOnline' => $delivery->getIsOnline(),
+                    'totalDeliveries' => $delivery->getTotalDeliveries(),
+                    'averageRating' => $delivery->getAverageRating(),
+                    'totalEarnings' => $delivery->getTotalEarnings()
+                ]
+            ],
+            'requiresEmailVerification' => true
+        ];
         } catch (ConflictHttpException | BadRequestHttpException $e) {
             // Re-throw HTTP exceptions as-is
             throw $e;
