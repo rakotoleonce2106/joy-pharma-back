@@ -80,7 +80,8 @@ final class MediaObjectProcessor implements ProcessorInterface
                     'brand_images',
                     'manufacturer_images',
                     'user_images',
-                    'store_images'
+                    'store_images',
+                    'deliver_documents'
                 ], true)) {
                     $mapping = $requestMapping;
                 }
@@ -114,6 +115,7 @@ final class MediaObjectProcessor implements ProcessorInterface
                     'manufacturer_images' => $kernelProjectDir . '/public/images/manufacturers',
                     'user_images' => $kernelProjectDir . '/public/images/users',
                     'store_images' => $kernelProjectDir . '/public/images/stores',
+                    'deliver_documents' => $kernelProjectDir . '/public/uploads/deliver',
                 ];
                 
                 $destinationDir = $destinationDirs[$mapping] ?? null;

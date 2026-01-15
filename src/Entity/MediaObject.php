@@ -3,15 +3,9 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiProperty;
-use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\OpenApi\Model\Operation;
 use App\Entity\Traits\EntityIdTrait;
 use App\Entity\Traits\EntityTimestampTrait;
 use App\Repository\MediaObjectRepository;
-use App\State\MediaObjectProcessor;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\HttpFoundation\File\File;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -19,69 +13,6 @@ use Vich\UploaderBundle\Mapping\Attribute as Vich;
 
 #[Vich\Uploadable]
 #[ORM\Entity(repositoryClass: MediaObjectRepository::class)]
-#[ApiResource(
-    normalizationContext: ['groups' => ['media_object:read']],
-    types: ['https://schema.org/MediaObject'],
-    operations: [
-        new Get(),
-        new GetCollection(),
-        new Post(
-            uriTemplate: '/media_objects',
-            inputFormats: ['multipart' => ['multipart/form-data']],
-            outputFormats: ['jsonld' => ['application/ld+json'], 'json' => ['application/json']],
-            processor: MediaObjectProcessor::class,
-            openapi: new Operation(
-                summary: 'Upload a file (POST only)',
-                description: <<<'DESC'
-Upload a file to create a MediaObject. This endpoint uses POST method only because:
-
-**Technical Reasons:**
-- PHP's $_FILES superglobal only works with POST requests
-- php://input doesn't parse multipart/form-data for PUT/PATCH requests
-- Symfony follows PHP's native behavior for file uploads
-
-**Usage Pattern:**
-1. Upload file using POST /api/media_objects with multipart/form-data
-2. Receive the MediaObject IRI in response (e.g., "/api/media_objects/123")
-3. Use this IRI in your create/update requests (PUT/PATCH with JSON)
-
-**Example Request (Create):**
-```
-POST /api/media_objects
-Content-Type: multipart/form-data
-
-file: [binary file data]
-mapping: "category_images" (optional)
-```
-
-**Example Request (Update):**
-```
-POST /api/media_objects
-Content-Type: multipart/form-data
-
-id: 123 (optional - if provided and MediaObject exists, it will be updated)
-file: [binary file data]
-mapping: "category_images" (optional)
-```
-
-**Example Response:**
-```json
-{
-  "@id": "/api/media_objects/123",
-  "contentUrl": "/images/categories/abc123.jpg"
-}
-```
-
-**For Updates:**
-- Use POST /api/media_objects with `id` field to update existing MediaObject
-- If `id` is provided and MediaObject exists, it will be updated with the new file
-- If `id` is provided but MediaObject doesn't exist, a new MediaObject will be created
-- Or use PUT/PATCH with JSON and reference existing MediaObject IRI
-DESC
-            )
-        )
-    ]
-)]
 class MediaObject
 {
     use EntityIdTrait;
@@ -113,6 +44,7 @@ class MediaObject
                 'manufacturer_images' => '/images/manufacturers/',
                 'user_images' => '/images/users/',
                 'store_images' => '/images/stores/',
+                'deliver_documents' => '/uploads/deliver/',
                 default => '/media/',
             };
             

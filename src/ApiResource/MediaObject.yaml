@@ -1,0 +1,64 @@
+App\Entity\MediaObject:
+    normalizationContext:
+        groups: ['media_object:read']
+    types: ['https://schema.org/MediaObject']
+    operations:
+        ApiPlatform\Metadata\Get: ~
+        ApiPlatform\Metadata\GetCollection: ~
+        upload_media_object:
+            class: ApiPlatform\Metadata\Post
+            uriTemplate: '/media_objects'
+            inputFormats:
+                multipart: ['multipart/form-data']
+            outputFormats:
+                jsonld: ['application/ld+json']
+                json: ['application/json']
+            processor: App\State\MediaObjectProcessor
+            openapi:
+                summary: 'Upload a file (POST only)'
+                description: |
+                    Upload a file to create a MediaObject. This endpoint uses POST method only because:
+
+                    **Technical Reasons:**
+                    - PHP's $_FILES superglobal only works with POST requests
+                    - php://input doesn't parse multipart/form-data for PUT/PATCH requests
+                    - Symfony follows PHP's native behavior for file uploads
+
+                    **Usage Pattern:**
+                    1. Upload file using POST /api/media_objects with multipart/form-data
+                    2. Receive the MediaObject IRI in response (e.g., "/api/media_objects/123")
+                    3. Use this IRI in your create/update requests (PUT/PATCH with JSON)
+
+                    **Example Request (Create):**
+                    ```
+                    POST /api/media_objects
+                    Content-Type: multipart/form-data
+
+                    file: [binary file data]
+                    mapping: "category_images", "deliver_documents", ... (optional)
+                    ```
+
+                    **Example Request (Update):**
+                    ```
+                    POST /api/media_objects
+                    Content-Type: multipart/form-data
+
+                    id: 123 (optional - if provided and MediaObject exists, it will be updated)
+                    file: [binary file data]
+                    mapping: "category_images", "deliver_documents", ... (optional)
+                    ```
+
+                    **Example Response:**
+                    ```json
+                    {
+                      "@id": "/api/media_objects/123",
+                      "contentUrl": "/images/categories/abc123.jpg"
+                    }
+                    ```
+
+                    **For Updates:**
+                    - Use POST /api/media_objects with `id` field to update existing MediaObject
+                    - If `id` is provided and MediaObject exists, it will be updated with the new file
+                    - If `id` is provided but MediaObject doesn't exist, a new MediaObject will be created
+                    - Or use PUT/PATCH with JSON and reference existing MediaObject IRI
+                    - Available mappings: category_images, category_icons, product_images, brand_images, manufacturer_images, user_images, store_images, deliver_documents

@@ -18,7 +18,7 @@ Cette documentation explique comment gérer le profil, les statistiques, les fac
 
 Pour devenir un livreur, vous devez vous inscrire via l'endpoint dédié.
 **⚠️ Important :** L'inscription se fait maintenant en deux étapes :
-1. Uploadez vos documents justificatifs via `/api/media_objects` pour obtenir leurs IRIs (ex: `/api/media_objects/123`).
+1. Uploadez vos documents justificatifs via `/api/media_objects` en utilisant le paramètre **mapping: "deliver_documents"** pour obtenir leurs IRIs (ex: `/api/media_objects/123`).
 2. Utilisez ces IRIs pour vous inscrire avec le format `application/ld+json`.
 
 - **POST** `/api/register/delivery`
@@ -193,7 +193,44 @@ Si vous essayez de vous connecter sans avoir vérifié votre email, vous recevre
 
 ---
 
-## 👤 Profil du Livreur (Deliverer Profile)
+## � Gestion des Images et Documents
+
+L'upload d'images et de documents se fait via un endpoint dédié avant de référencer l'IRI obtenu dans vos requêtes (Inscription ou Mise à jour de profil).
+
+### Endpoint d'upload
+
+- **POST** `/api/media_objects`
+- **Content-Type** : `multipart/form-data`
+
+### Mappings disponibles pour Livreurs
+
+| Mapping | Usage | Destination |
+|---------|-------|-------------|
+| `deliver_documents` | Documents justificatifs (CNI, Permis, Résidence) | `/public/uploads/deliver/` |
+| `user_images` | Photo de profil (Avatar) | `/public/images/users/` |
+
+### Exemples d'upload
+
+#### 1. Uploader un document de résidence
+```bash
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -F "file=@/chemin/vers/residence.pdf" \
+  -F "mapping=deliver_documents"
+```
+**Réponse :** `{ "@id": "/api/media_objects/123", ... }`
+
+#### 2. Uploader une photo de profil
+```bash
+curl -X POST "https://votre-api.com/api/media_objects" \
+  -H "Authorization: Bearer VOTRE_TOKEN" \
+  -F "file=@/chemin/vers/avatar.jpg" \
+  -F "mapping=user_images"
+```
+**Réponse :** `{ "@id": "/api/media_objects/124", ... }`
+
+---
+
+## �👤 Profil du Livreur (Deliverer Profile)
 
 ### Endpoints disponibles
 
@@ -218,8 +255,8 @@ Si vous essayez de vous connecter sans avoir vérifié votre email, vous recevre
 |-------|------|-------------|
 | `vehicleType` | string | Type de véhicule (`bike`, `motorcycle`, `car`, `van`) |
 | `vehiclePlate` | string | Plaque d'immatriculation |
-| `residenceDocument` | string (IRI) | IRI du document de résidence (ex: `/api/media_objects/1`) |
-| `vehicleDocument` | string (IRI) | IRI du document du véhicule (ex: `/api/media_objects/2`) |
+| `residenceDocument` | string (IRI) | IRI du document de résidence (upload avec mapping: "deliver_documents") |
+| `vehicleDocument` | string (IRI) | IRI du document du véhicule (upload avec mapping: "deliver_documents") |
 
 ### Exemples
 
