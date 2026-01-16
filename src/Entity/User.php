@@ -662,4 +662,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    #[Groups(['user:update'])]
+    public function setIsOnline(bool $isOnline): static
+    {
+        if ($this->delivery) {
+            $this->delivery->setIsOnline($isOnline);
+        }
+
+        return $this;
+    }
+
+    #[Groups(['user:read'])]
+    public function getIsOnline(): bool
+    {
+        return $this->delivery ? $this->delivery->getIsOnline() : false;
+    }
 }

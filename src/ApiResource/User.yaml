@@ -215,6 +215,7 @@ App\Entity\User:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/deliver/update'
             security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\User\UserProfileProvider
             processor: App\State\User\DelivererProfileProcessor
             denormalizationContext:
                 groups: ['user:update']
@@ -228,6 +229,7 @@ App\Entity\User:
             class: ApiPlatform\Metadata\Patch
             uriTemplate: '/deliver/update'
             security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\User\UserProfileProvider
             processor: App\State\User\DelivererProfileProcessor
             denormalizationContext:
                 groups: ['user:update']
@@ -246,6 +248,7 @@ App\Entity\User:
         put:
             class: ApiPlatform\Metadata\Put
             uriTemplate: "/user/update"
+            provider: App\State\User\UserProfileProvider
             inputFormats:
                 jsonld: ['application/ld+json']
                 json: ['application/json']
@@ -263,6 +266,7 @@ App\Entity\User:
         patch:
             class: ApiPlatform\Metadata\Patch
             uriTemplate: "/user/update"
+            provider: App\State\User\UserProfileProvider
             inputFormats:
                 jsonld: ['application/ld+json']
                 json: ['application/json']
