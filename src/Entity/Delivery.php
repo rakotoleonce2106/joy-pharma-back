@@ -21,7 +21,7 @@ class Delivery
     private ?User $user = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
-    #[Groups(['user:read', 'user:update', 'delivery:read'])]
+    #[Groups(['user:read', 'user:update', 'user:update:profile', 'delivery:read'])]
     private bool $isOnline = false;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 8, nullable: true)]
@@ -49,23 +49,23 @@ class Delivery
     private string $totalEarnings = '0.00';
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user:read', 'user:update', 'delivery:read'])]
+    #[Groups(['user:read', 'user:update', 'user:update:profile', 'delivery:read'])]
     private ?string $vehicleType = null; // bike, motorcycle, car
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user:read', 'user:update', 'delivery:read'])]
+    #[Groups(['user:read', 'user:update', 'user:update:profile', 'delivery:read'])]
     private ?string $vehiclePlate = null;
 
     // Delivery verification documents
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['user:read', 'user:update'])]
+    #[Groups(['user:read', 'user:update', 'user:update:profile'])]
     #[ApiProperty(types: ['https://schema.org/Document'])]
     private ?MediaObject $residenceDocument = null;
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['user:read', 'user:update'])]
+    #[Groups(['user:read', 'user:update', 'user:update:profile'])]
     #[ApiProperty(types: ['https://schema.org/Document'])]
     private ?MediaObject $vehicleDocument = null;
 

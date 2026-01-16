@@ -218,7 +218,7 @@ App\Entity\User:
             provider: App\State\User\UserProfileProvider
             processor: App\State\User\DelivererProfileProcessor
             denormalizationContext:
-                groups: ['user:update']
+                groups: ['user:update:profile']
             normalizationContext:
                 groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
             openapi:
@@ -232,7 +232,7 @@ App\Entity\User:
             provider: App\State\User\UserProfileProvider
             processor: App\State\User\DelivererProfileProcessor
             denormalizationContext:
-                groups: ['user:update']
+                groups: ['user:update:profile']
             normalizationContext:
                 groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
             openapi:
@@ -253,9 +253,9 @@ App\Entity\User:
                 jsonld: ['application/ld+json']
                 json: ['application/json']
             denormalizationContext:
-                groups: ['user:update']
+                groups: ['user:update:profile']
             validationContext:
-                groups: ['user:update']
+                groups: ['user:update:profile']
             normalizationContext:
                 groups: ['id:read', "user:read", "image:read", "media_object:read", "location:read" ]
             security: "is_granted('ROLE_USER')"
@@ -271,7 +271,7 @@ App\Entity\User:
                 jsonld: ['application/ld+json']
                 json: ['application/json']
             denormalizationContext:
-                groups: ['user:update']
+                groups: ['user:update:profile']
             normalizationContext:
                 groups: ['id:read', "user:read", "image:read", "media_object:read", "location:read" ]
             security: "is_granted('ROLE_USER')"

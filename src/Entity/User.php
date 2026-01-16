@@ -47,7 +47,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:create'])]
     private ?string $password = null;
 
-    #[Groups(['user:create', 'user:update'])]
+    #[Groups(['user:create', 'user:update', 'user:update:profile'])]
     private ?string $plainPassword = null;
 
     #[ORM\Column(type: 'json')]
@@ -56,20 +56,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column(length: 255)]
-    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:update:profile', 'user:store:read'])]
     private ?string $firstName = null;
 
     #[Assert\NotBlank(groups: ['create'])]
     #[ORM\Column(length: 255)]
-    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:update:profile', 'user:store:read'])]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:update:profile', 'user:store:read'])]
     private ?string $phone = null;
 
     #[ORM\Column(length: 500, nullable: true)]
-    #[Groups(['user:read', 'user:update'])]
+    #[Groups(['user:read', 'user:update', 'user:update:profile'])]
     private ?string $fcmToken = null;
 
     #[ORM\Column(length: 6, nullable: true)]
@@ -86,7 +86,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\ManyToOne(targetEntity: MediaObject::class, cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['user:read', 'user:create', 'user:update', 'user:store:read', 'media_object:read'])]
+    #[Groups(['user:read', 'user:create', 'user:update', 'user:update:profile', 'user:store:read', 'media_object:read'])]
     #[ApiProperty(types: ['https://schema.org/image'], iris: [MediaObject::class])]
     private ?MediaObject $image = null;
 
@@ -122,7 +122,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
 
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: Delivery::class, cascade: ['persist', 'remove'])]
-    #[Groups(['user:read', 'user:update'])]
+    #[Groups(['user:read', 'user:update', 'user:update:profile'])]
     #[MaxDepth(1)]
     private ?Delivery $delivery = null;
 
@@ -663,7 +663,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    #[Groups(['user:update'])]
+    #[Groups(['user:update', 'user:update:profile'])]
     public function setIsOnline(bool $isOnline): static
     {
         if ($this->delivery) {
