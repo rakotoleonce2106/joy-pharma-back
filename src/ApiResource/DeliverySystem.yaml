@@ -1,44 +1,29 @@
 # Deliverer Specific API Resources
 
-# Profile Management
-App\Entity\User:
+# Delivery Entity Resource
+App\Entity\Delivery:
     operations:
-        deliverer_get_profile:
+        deliverer_get_delivery_status:
             class: ApiPlatform\Metadata\Get
-            uriTemplate: '/deliver'
+            uriTemplate: '/deliver/status'
             security: 'is_granted("ROLE_DELIVER")'
-            provider: App\State\User\DelivererProfileProvider
             normalizationContext:
-                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
+                groups: ['delivery:read', 'user:read']
             openapi:
-                summary: 'Get deliverer profile'
-                description: 'Get profile information for the authenticated deliverer'
+                summary: 'Get delivery status and current location'
+                description: 'Get real-time status and coordinates for the authenticated deliverer'
 
-        deliverer_update_profile:
-            class: ApiPlatform\Metadata\Put
-            uriTemplate: '/deliver/update'
-            security: 'is_granted("ROLE_DELIVER")'
-            processor: App\State\User\DelivererProfileProcessor
-            denormalizationContext:
-                groups: ['user:update']
-            normalizationContext:
-                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
-            openapi:
-                summary: 'Update deliverer profile (Full)'
-                description: 'Update all profile information. Use Content-Type: application/ld+json for IRIs.'
-
-        deliverer_patch_profile:
+        deliverer_update_delivery:
             class: ApiPlatform\Metadata\Patch
-            uriTemplate: '/deliver/update'
+            uriTemplate: '/deliver/status'
             security: 'is_granted("ROLE_DELIVER")'
-            processor: App\State\User\DelivererProfileProcessor
             denormalizationContext:
                 groups: ['user:update']
             normalizationContext:
-                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
+                groups: ['delivery:read', 'user:read']
             openapi:
-                summary: 'Update deliverer profile (Partial)'
-                description: 'Update specific profile fields. Use Content-Type: application/ld+json for IRIs.'
+                summary: 'Update delivery status (online/offline)'
+                description: 'Update online status and other delivery-specific fields'
 
 # Dashboard Stats
 App\Dto\DashboardStats:

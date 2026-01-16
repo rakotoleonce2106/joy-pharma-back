@@ -158,26 +158,84 @@ App\Entity\User:
                                     - vehicleDocument
                 responses:
                     '201':
-                        description: 'Delivery person registered successfully'
+                        description: 'Delivery person registered successfully. Email verification required before login.'
                         content:
                             application/json:
                                 schema:
                                     type: object
                                     properties:
-                                        token:
+                                        success:
+                                            type: boolean
+                                            example: true
+                                        message:
                                             type: string
-                                        refresh_token:
-                                            type: string
+                                            example: "Inscription réussie. Un email de vérification a été envoyé à votre adresse email."
                                         user:
                                             type: object
                                             properties:
+                                                id:
+                                                    type: integer
+                                                email:
+                                                    type: string
+                                                firstName:
+                                                    type: string
+                                                lastName:
+                                                    type: string
+                                                isEmailVerified:
+                                                    type: boolean
+                                                roles:
+                                                    type: array
+                                                    items:
+                                                        type: string
                                                 userType:
                                                     type: string
                                                     example: delivery
+                                                isActive:
+                                                    type: boolean
                                                 delivery:
                                                     type: object
+                                        requiresEmailVerification:
+                                            type: boolean
+                                            example: true
                     '409':
                         description: 'Email already exists'
+
+        deliverer_get_profile:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/deliver'
+            security: 'is_granted("ROLE_DELIVER")'
+            provider: App\State\User\DelivererProfileProvider
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
+            openapi:
+                summary: 'Get deliverer profile'
+                description: 'Get profile information for the authenticated deliverer'
+
+        deliverer_update_profile:
+            class: ApiPlatform\Metadata\Put
+            uriTemplate: '/deliver/update'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\User\DelivererProfileProcessor
+            denormalizationContext:
+                groups: ['user:update']
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
+            openapi:
+                summary: 'Update deliverer profile (Full)'
+                description: 'Update all profile information. Use Content-Type: application/ld+json for IRIs.'
+
+        deliverer_patch_profile:
+            class: ApiPlatform\Metadata\Patch
+            uriTemplate: '/deliver/update'
+            security: 'is_granted("ROLE_DELIVER")'
+            processor: App\State\User\DelivererProfileProcessor
+            denormalizationContext:
+                groups: ['user:update']
+            normalizationContext:
+                groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
+            openapi:
+                summary: 'Update deliverer profile (Partial)'
+                description: 'Update specific profile fields. Use Content-Type: application/ld+json for IRIs.'
 
         get_collection:
             class: ApiPlatform\Metadata\GetCollection

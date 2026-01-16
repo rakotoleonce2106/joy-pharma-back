@@ -21,39 +21,39 @@ class Delivery
     private ?User $user = null;
 
     #[ORM\Column(type: Types::BOOLEAN, options: ['default' => false])]
-    #[Groups(['user:read', 'user:update'])]
+    #[Groups(['user:read', 'user:update', 'delivery:read'])]
     private bool $isOnline = false;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 8, nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'delivery:read'])]
     private ?string $currentLatitude = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 11, scale: 8, nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'delivery:read'])]
     private ?string $currentLongitude = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'delivery:read'])]
     private ?\DateTimeInterface $lastLocationUpdate = null;
 
     #[ORM\Column(type: Types::INTEGER, options: ['default' => 0])]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'delivery:read'])]
     private int $totalDeliveries = 0;
 
     #[ORM\Column(type: Types::FLOAT, nullable: true)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'delivery:read'])]
     private ?float $averageRating = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, options: ['default' => 0])]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'delivery:read'])]
     private string $totalEarnings = '0.00';
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user:read', 'user:update'])]
+    #[Groups(['user:read', 'user:update', 'delivery:read'])]
     private ?string $vehicleType = null; // bike, motorcycle, car
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['user:read', 'user:update'])]
+    #[Groups(['user:read', 'user:update', 'delivery:read'])]
     private ?string $vehiclePlate = null;
 
     // Delivery verification documents

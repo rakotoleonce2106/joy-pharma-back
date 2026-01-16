@@ -42,19 +42,6 @@ App\Entity\Order:
                 description: 'Get the current order being delivered by the authenticated delivery person (ROLE_DELIVER required)'
 
                 
-        get_order:
-            method: 'GET'
-            class: ApiPlatform\Metadata\Get
-            uriTemplate: '/orders/{id}'
-            normalizationContext:
-                groups: ['id:read','order:read','location:read','user:read','product:read','image:read','store:read']
-            openapi:
-                summary: 'Get a order'
-                description: 'Get a order by id'
-                parameters:
-                    - name: 'id'
-                      in: 'path'
-                      description:  'The id of the order'
 
         get_orders:
             method: 'GET'
@@ -130,6 +117,20 @@ App\Entity\Order:
                       in: query
                       schema:
                           type: string
+
+        get_order:
+            method: 'GET'
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/orders/{id}'
+            normalizationContext:
+                groups: ['id:read','order:read','location:read','user:read','product:read','image:read','store:read']
+            openapi:
+                summary: 'Get a order'
+                description: 'Get a order by id'
+                parameters:
+                    - name: 'id'
+                      in: 'path'
+                      description:  'The id of the order'
 
         # Accept order
         accept_order:
