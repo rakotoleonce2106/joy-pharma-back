@@ -35,14 +35,13 @@ App\Entity\Order:
             uriTemplate: '/orders/current'
             security: 'is_granted("ROLE_DELIVER")'
             provider: App\State\Order\CurrentOrderProvider
+            read: false  # Important: désactive le provider par défaut
             normalizationContext:
                 groups: ['id:read','order:read','image:read','product:read', 'location:read', 'user:read','store:read','media_object:read']
             openapi:
                 summary: 'Get current active order'
-                description: 'Get the current order being delivered by the authenticated delivery person (ROLE_DELIVER required)'
-
-                
-
+                description: 'Get the current order being delivered by the authenticated delivery person (ROLE_DELIVER required)' 
+                  
         get_orders:
             method: 'GET'
             class: ApiPlatform\Metadata\GetCollection

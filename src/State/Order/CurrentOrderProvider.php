@@ -35,11 +35,6 @@ class CurrentOrderProvider implements ProviderInterface
         // Get the order where this delivery person is assigned
         $order = $this->orderRepository->findCurrentOrderForDeliveryPerson($user);
 
-        // If no current order found, throw a proper exception with a clear message
-        if (!$order) {
-            return [];
-        }
-
-        return [$order];
+        return $order;
     }
 }
