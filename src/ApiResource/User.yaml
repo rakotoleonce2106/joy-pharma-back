@@ -215,6 +215,7 @@ App\Entity\User:
             class: ApiPlatform\Metadata\Put
             uriTemplate: '/deliver/update'
             security: 'is_granted("ROLE_DELIVER")'
+            uriVariables: []
             provider: App\State\User\UserProfileProvider
             processor: App\State\User\DelivererProfileProcessor
             denormalizationContext:
@@ -223,12 +224,13 @@ App\Entity\User:
                 groups: ['id:read', 'user:read', 'image:read', 'media_object:read', 'delivery:read']
             openapi:
                 summary: 'Update deliverer profile (Full)'
-                description: 'Update all profile information. Use Content-Type: application/ld+json for IRIs.'
+                description: 'Update all profile information. Use Content-Type: application/ld+json for IRIs. FOR PARTIAL UPDATES, USE PATCH INSTEAD.'
 
         deliverer_patch_profile:
             class: ApiPlatform\Metadata\Patch
             uriTemplate: '/deliver/update'
             security: 'is_granted("ROLE_DELIVER")'
+            uriVariables: []
             provider: App\State\User\UserProfileProvider
             processor: App\State\User\DelivererProfileProcessor
             denormalizationContext:
@@ -248,7 +250,9 @@ App\Entity\User:
         put:
             class: ApiPlatform\Metadata\Put
             uriTemplate: "/user/update"
+            uriVariables: []
             provider: App\State\User\UserProfileProvider
+            processor: App\State\User\UserProfileProcessor
             inputFormats:
                 jsonld: ['application/ld+json']
                 json: ['application/json']
@@ -261,12 +265,14 @@ App\Entity\User:
             security: "is_granted('ROLE_USER')"
             openapi:
                 summary: "Update user profile - Full update"
-                description: "Update user profile information. Upload avatar first using POST /api/media_objects with mapping=user_images, then reference it using IRI (e.g., \"/api/media_objects/123\"). Use Content-Type: application/ld+json when sending IRIs. For partial updates, use PATCH instead."
+                description: "Update user profile information. Upload avatar first using POST /api/media_objects with mapping=user_images, then reference it using IRI (e.g., \"/api/media_objects/123\"). Use Content-Type: application/ld+json when sending IRIs. FOR PARTIAL UPDATES, USE PATCH INSTEAD."
 
         patch:
             class: ApiPlatform\Metadata\Patch
             uriTemplate: "/user/update"
+            uriVariables: []
             provider: App\State\User\UserProfileProvider
+            processor: App\State\User\UserProfileProcessor
             inputFormats:
                 jsonld: ['application/ld+json']
                 json: ['application/json']
