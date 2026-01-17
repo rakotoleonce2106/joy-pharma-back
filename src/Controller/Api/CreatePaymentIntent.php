@@ -27,27 +27,38 @@ class CreatePaymentIntent extends AbstractController
             throw new BadRequestHttpException('Invalid payment method. Only "mvola" and "mpgs" are currently supported.');
         }
 
-        // Try to find order by the linked entity (if passed via IRI) or by reference string
+        // Try to find order by the linked entity (IRI) and/or by reference string
         $order = $payment->getOrder();
-        if (!$order && $payment->getReference()) {
-            $order = $this->orderService->findByReference($payment->getReference());
+        $reference = $payment->getReference();
+
+        if (!$order && !$reference) {
+            throw new BadRequestHttpException('Order IRI or Reference must be provided.');
         }
 
-        if (!$order) {
-            throw new NotFoundHttpException('Order not found. Please provide a valid order IRI or reference.');
+        if ($order && $reference) {
+            // Verify they match
+            if ($order->getReference() !== $reference) {
+                throw new BadRequestHttpException(sprintf(
+                    'Reference mismatch: The provided reference "%s" does not match the reference of the provided order "%s".',
+                    $reference,
+                    $order->getReference()
+                ));
+            }
+        } elseif (!$order && $reference) {
+            // Find order by reference
+            $order = $this->orderService->findByReference($reference);
+            if (!$order) {
+                throw new NotFoundHttpException(sprintf('Order with reference "%s" not found.', $reference));
+            }
+            $payment->setOrder($order);
+        } elseif ($order && !$reference) {
+            // Set reference from order
+            $payment->setReference($order->getReference());
         }
 
         // Set amount from order details
         $payment->setAmount((string)$order->getTotalAmount());
         
-        // Ensure connection between payment and order
-        $payment->setOrder($order);
-        
-        // Ensure reference matches order
-        if (!$payment->getReference()) {
-            $payment->setReference($order->getReference());
-        }
-
         $user = $order->getOwner();
         if (!$user) {
             throw new NotFoundHttpException('Order owner not found.');

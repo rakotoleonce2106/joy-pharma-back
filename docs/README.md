@@ -18,6 +18,7 @@ Bienvenue dans la documentation du backend Joy Pharma ! Ce répertoire contient 
 | Document | Description | Niveau |
 |----------|-------------|--------|
 | [**Update User**](./UPDATE_USER.md) | Documentation complète pour la mise à jour d'utilisateur | ⭐⭐⭐ |
+| [**Paiements**](./API_PAYMENTS.md) | Guide d'intégration Mvola et MPGS | ⭐⭐⭐ |
 
 ### 🚀 Démarrage rapide
 

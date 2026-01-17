@@ -621,38 +621,16 @@ curl -X GET "https://votre-api.com/api/currencies"
 
 ## 💳 Paiements (Payments)
 
-### Endpoints disponibles
+Les paiements sur Joy Pharma sont gérés via des intentions de paiement pour Mvola et MPGS.
 
-- **POST** `/api/create-payment-intent` - Crée une intention de paiement (Mvola / MPGS)
-- **GET** `/api/verify-payment/{orderId}` - Vérifie le statut d'un paiement pour une commande
-- **GET** `/api/payment/order/{orderId}` - Récupère les infos de paiement par ID commande
+### Documentation détaillée
+Pour plus d'informations sur l'implémentation des paiements, veuillez consulter la documentation dédiée :
 
-### Créer une intention de paiement
+👉 [**Documentation des Paiements (API_PAYMENTS.md)**](./API_PAYMENTS.md)
 
-Envoyez le montant, la méthode et la référence de la commande (ou son IRI).
-
-```bash
-curl -X POST "https://votre-api.com/api/create-payment-intent" \
-  -H "Authorization: Bearer VOTRE_TOKEN" \
-  -H "Content-Type: application/ld+json" \
-  -d '{
-    "amount": 50000,
-    "method": "mvola",
-    "phoneNumber": "0340000000",
-    "order": "/api/admin/orders/123"
-  }'
-```
-
-**Note :** Le champ `order` peut être une IRI (`/api/admin/orders/123`) ou simplement la référence de la commande (`ORD-2025-ABCDEF`).
-
-### Vérifier le statut d'un paiement
-
-Cet endpoint retourne le détail du paiement au format JSON-LD.
-
-```bash
-curl -X GET "https://votre-api.com/api/verify-payment/ORD-2025-ABCDEF" \
-  -H "Authorization: Bearer VOTRE_TOKEN"
-```
+### Résumé des Endpoints
+- **POST** `/api/create-payment-intent` : Crée une intention de paiement.
+- **GET** `/api/verify-payment/{reference}` : Vérifie le statut d'un paiement.
 
 
 ---
