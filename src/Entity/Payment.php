@@ -43,7 +43,7 @@ class Payment
     private ?string $transactionId = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Groups(['payment:create', 'payment:read'])]
+    #[Groups(['payment:read'])]
     private float $amount = 0;
 
     #[ORM\Column(length: 20, enumType: PaymentMethod::class)]

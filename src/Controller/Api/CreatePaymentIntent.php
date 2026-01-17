@@ -37,12 +37,22 @@ class CreatePaymentIntent extends AbstractController
             throw new NotFoundHttpException('Order not found. Please provide a valid order IRI or reference.');
         }
 
+        // Set amount from order details
+        $payment->setAmount((string)$order->getTotalAmount());
+        
+        // Ensure connection between payment and order
+        $payment->setOrder($order);
+        
+        // Ensure reference matches order
+        if (!$payment->getReference()) {
+            $payment->setReference($order->getReference());
+        }
+
         $user = $order->getOwner();
         if (!$user) {
             throw new NotFoundHttpException('Order owner not found.');
         }
 
-        $payment->setOrder($order);
         $order->setPayment($payment);
         $this->orderService->updateOrder($order);
 
