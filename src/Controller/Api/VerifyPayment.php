@@ -17,10 +17,10 @@ class VerifyPayment extends AbstractController
         private readonly SerializerInterface $serializer
     ) {}
 
-    #[Route('/api/verify-payment/{orderId}', methods: ['GET'])]
-    public function __invoke(string $orderId, Request $request): JsonResponse
+    #[Route('/api/verify-payment/{orderReference}', methods: ['GET'])]
+    public function __invoke(string $orderReference, Request $request): JsonResponse
     {
-        $order = $this->orderService->findByReference($orderId);
+        $order = $this->orderService->findByReference($orderReference);
         
         if (!$order) {
             return new JsonResponse([
