@@ -90,7 +90,7 @@ class Order
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Phone number is required', groups: ['create'])]
-    #[Groups(['order:read','order:write', 'payment:order:read'])]
+    #[Groups(['order:read','order:write', 'payment:order:read', 'order:create'])]
     private ?string $phone = null;
 
     #[ORM\ManyToOne(inversedBy: 'orders', cascade: ['persist', 'remove'])]
