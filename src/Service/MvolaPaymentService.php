@@ -47,10 +47,10 @@ final readonly class MvolaPaymentService
     }
 
 
-    private function createTransactionRequest(User $user, Payment $payment,string $amount,string $currency): TransactionRequest
+    private function createTransactionRequest(User $user, Payment $payment, int $amount, string $currency): TransactionRequest
     {
         $transactionRequest = new TransactionRequest();
-        $transactionRequest->setAmount($amount);
+        $transactionRequest->setAmount((string) $amount);
         $transactionRequest->setCurrency($currency);
         $transactionRequest->setDescriptionText("Subscription payment for {$user->getFullName()}");
         $transactionRequest->setRequestingOrganisationTransactionReference(uniqid('payment_intent',false));
@@ -60,8 +60,8 @@ final readonly class MvolaPaymentService
         $transactionRequest->setCreditParty([['key' => 'msisdn', 'value' => $this->params->get('mvola.merchant_number')]]);
         $transactionRequest->setMetadata([
             ['key' => 'partnerName', 'value' => $this->params->get('mvola.company_name')],
-            ['key' => 'fc', 'value' => 'USD'],
-            ['key' => 'amountFc', 'value' => '1']
+            ['key' => 'fc', 'value' => $currency],
+            ['key' => 'amountFc', 'value' => (string) $amount]
         ]);
         $transactionRequest->setCallbackData([
             'userId' => $user->getId(),
