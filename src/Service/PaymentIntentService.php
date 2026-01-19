@@ -30,16 +30,19 @@ readonly class PaymentIntentService
                 $payment->getAmount()
             );
             
-            // Get currency - use MPGS default for MPGS payments, otherwise get from service
-            $currencyLabel = 'USD'; // Default fallback
+            // Get currency - use specific currency per payment method
+            $currencyLabel = 'Ar'; // Default fallback
             if ($payment->getMethod() === PaymentMethod::METHOD_MPGS) {
                 // For MPGS, use the configured default currency
-                $currencyLabel = $this->params->get('mpgs.default_currency', 'USD');
+                $currencyLabel = $this->params->get('mpgs.default_currency', 'Ar');
+            } elseif ($payment->getMethod() === PaymentMethod::METHODE_MVOLA) {
+                // For MVola, use Ariary (Ar)
+                $currencyLabel = 'Ar';
             } else {
                 // For other payment methods, get currency from database
                 $currency = $this->currencyService->getCurrency();
                 if ($currency) {
-                    $currencyLabel = $currency->getIsoCode() ?? 'USD';
+                    $currencyLabel = $currency->getIsoCode() ?? 'Ar';
                 }
             }
             
