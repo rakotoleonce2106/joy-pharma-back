@@ -24,6 +24,15 @@ final readonly class MvolaPaymentService
     {
         $transactionRequest = $this->createTransactionRequest($user, $payment, $amount, $currency);
 
+        // Debug: log the full request data
+        $this->logger->info('MVola transaction request data', [
+            'request_data' => $transactionRequest->toArray(),
+            'user_id' => $user->getId(),
+            'phone_number' => $payment->getPhoneNumber(),
+            'merchant_number' => $this->params->get('mvola.merchant_number'),
+            'company_name' => $this->params->get('mvola.company_name')
+        ]);
+
         try {
             $result = $this->mvolaService->initiateTransaction($transactionRequest);
             $this->logger->info('Mvola payment intent created', [
@@ -40,7 +49,8 @@ final readonly class MvolaPaymentService
         } catch (\Exception $e) {
             $this->logger->error('Failed to create Mvola payment intent', [
                 'user_id' => $user->getId(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'request_data' => $transactionRequest->toArray()
             ]);
             throw $e;
         }
