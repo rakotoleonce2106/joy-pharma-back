@@ -70,8 +70,8 @@ final readonly class MvolaPaymentService
         $transactionRequest->setCreditParty([['key' => 'msisdn', 'value' => $this->params->get('mvola.merchant_number')]]);
         $transactionRequest->setMetadata([
             ['key' => 'partnerName', 'value' => $this->params->get('mvola.company_name')],
-            ['key' => 'fc', 'value' => $currency],
-            ['key' => 'amountFc', 'value' => (string) $amount]
+            ['key' => 'fc', 'value' => 'USD'],
+            ['key' => 'amountFc', 'value' => '1']
         ]);
         $transactionRequest->setCallbackData([
             'userId' => $user->getId(),
