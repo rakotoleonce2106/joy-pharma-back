@@ -70,4 +70,10 @@ readonly class PaymentService
         
         return $payment;
     }
+
+    public function deletePayment(Payment $payment): void
+    {
+        $this->manager->remove($payment);
+        $this->manager->flush();
+    }
 }
