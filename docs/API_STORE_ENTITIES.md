@@ -4,7 +4,37 @@
 
 Cette documentation explique comment gérer le profil du magasin, les paramètres, les produits en stock et les commandes via l'API Store, destinée aux utilisateurs ayant le rôle `ROLE_STORE`.
 
-## 🔐 Authentification et Sécurité
+## � Référence Rapide des Endpoints
+
+**Base URL:** `https://back.joy-pharma.com/api`
+
+### Profil du Magasin
+- `GET /store` - Récupérer le profil
+- `PUT /store/update` - Mise à jour complète
+- `PATCH /store/update` - Mise à jour partielle
+
+### Paramètres du Magasin
+- `GET /store/settings` - Récupérer les paramètres
+- `PUT /store/settings` - Mise à jour complète
+- `PATCH /store/settings/{id}` - Mise à jour partielle
+
+### Produits du Magasin
+- `GET /store/products` - Liste des produits
+- `GET /store/products/{id}` - Détail d'un produit
+- `POST /store/products` - Ajouter un produit
+- `PUT /store/products/{id}` - Mise à jour complète
+- `PATCH /store/products/{id}` - Mise à jour partielle
+
+### Commandes
+- `GET /orders` - Liste des commandes
+- `PUT /store/orders/{id}` - Mettre à jour le statut des articles
+
+### Statistiques
+- `GET /store/statistics` - Tableau de bord et statistiques
+
+---
+
+## �🔐 Authentification et Sécurité
 
 ### Endpoints d'authentification
 
@@ -224,8 +254,93 @@ curl -X PUT "https://votre-api.com/api/store/orders/1" \
 
 ## 📊 Statistiques (Statistics)
 
+### Endpoint disponible
+
+- **GET** `/api/store/statistics` - Récupère les statistiques du tableau de bord
+
+### Exemple d'utilisation
+
 ```bash
 # Récupérer les statistiques du magasin
 curl -X GET "https://votre-api.com/api/store/statistics" \
   -H "Authorization: Bearer VOTRE_TOKEN"
 ```
+
+### Structure de la réponse
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `pendingCount` | integer | Nombre de commandes en attente |
+| `recentOrders` | array | Liste des 10 commandes les plus récentes |
+| `recentOrdersCount` | integer | Nombre de commandes récentes retournées |
+| `statistics` | object | Objet contenant les statistiques détaillées |
+
+#### Objet `statistics`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `pendingOrdersCount` | integer | Nombre de commandes en attente |
+| `todayOrdersCount` | integer | Nombre de commandes aujourd'hui |
+| `lowStockCount` | integer | Nombre de produits en stock faible (≤ 10) |
+| `todayEarnings` | float | Revenus du jour (en Ariary) |
+| `weeklyEarnings` | float | Revenus de la semaine |
+| `monthlyEarnings` | float | Revenus du mois |
+
+#### Objet `recentOrders[]`
+
+| Champ | Type | Description |
+|-------|------|-------------|
+| `id` | string | ID de la commande |
+| `reference` | string | Référence unique de la commande |
+| `status` | string | Statut de la commande |
+| `totalAmount` | float | Montant total de la commande |
+| `itemsCount` | integer | Nombre d'articles pour ce magasin |
+| `scheduledDate` | string\|null | Date de livraison prévue |
+| `location` | object\|null | Adresse de livraison |
+| `owner` | object | Informations du client |
+
+### Exemple de réponse
+
+```json
+{
+  "pendingCount": 5,
+  "recentOrdersCount": 10,
+  "recentOrders": [
+    {
+      "id": "123",
+      "reference": "ORD-2026-288236",
+      "status": "pending",
+      "totalAmount": 96500,
+      "itemsCount": 3,
+      "scheduledDate": "2026-01-23 14:30:00",
+      "location": {
+        "address": "123 Rue Example",
+        "city": "Antananarivo",
+        "latitude": -18.8792,
+        "longitude": 47.5079
+      },
+      "owner": {
+        "id": 42,
+        "email": "client@example.com",
+        "firstName": "Jean",
+        "lastName": "Dupont"
+      }
+    }
+  ],
+  "statistics": {
+    "pendingOrdersCount": 5,
+    "todayOrdersCount": 12,
+    "lowStockCount": 3,
+    "todayEarnings": 450000,
+    "weeklyEarnings": 2500000,
+    "monthlyEarnings": 8750000
+  }
+}
+```
+
+### Notes importantes
+
+- Les revenus (`earnings`) sont calculés uniquement pour les commandes **livrées** avec des articles **acceptés/approuvés**
+- Le `lowStockCount` compte les produits avec un stock ≤ 10 unités
+- Les `recentOrders` sont limitées aux 10 commandes les plus récentes
+- Les montants sont en **Ariary (MGA)**

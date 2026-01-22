@@ -8,6 +8,7 @@ use App\Dto\StoreStatistics;
 use App\Entity\OrderItemStatus;
 use App\Entity\OrderStatus;
 use App\Repository\OrderItemRepository;
+use App\Repository\OrderRepository;
 use App\Repository\StoreProductRepository;
 use App\Repository\StoreRepository;
 use App\Service\DateRangeService;
@@ -20,6 +21,7 @@ class StoreStatisticsProvider implements ProviderInterface
     public function __construct(
         private readonly StoreRepository $storeRepository,
         private readonly OrderItemRepository $orderItemRepository,
+        private readonly OrderRepository $orderRepository,
         private readonly StoreProductRepository $storeProductRepository,
         private readonly Security $security,
         private readonly DateRangeService $dateRangeService
@@ -50,15 +52,24 @@ class StoreStatisticsProvider implements ProviderInterface
         $weeklyEarnings = $this->getWeeklyEarnings($store);
         $monthlyEarnings = $this->getMonthlyEarnings($store);
 
+        // Get recent orders
+        $recentOrders = $this->getRecentOrders($store);
+
         return new StoreStatistics(
-            pendingOrdersCount: $pendingOrdersCount,
-            todayOrdersCount: $todayOrdersCount,
-            lowStockCount: $lowStockCount,
-            todayEarnings: $todayEarnings,
-            weeklyEarnings: $weeklyEarnings,
-            monthlyEarnings: $monthlyEarnings
+            pendingCount: $pendingOrdersCount,
+            recentOrders: $recentOrders,
+            recentOrdersCount: count($recentOrders),
+            statistics: [
+                'pendingOrdersCount' => $pendingOrdersCount,
+                'todayOrdersCount' => $todayOrdersCount,
+                'lowStockCount' => $lowStockCount,
+                'todayEarnings' => $todayEarnings,
+                'weeklyEarnings' => $weeklyEarnings,
+                'monthlyEarnings' => $monthlyEarnings
+            ]
         );
     }
+
 
     private function getPendingOrdersCount($store): int
     {
@@ -165,6 +176,52 @@ class StoreStatisticsProvider implements ProviderInterface
             ->setParameter('monthStart', $monthStart)
             ->getQuery()
             ->getSingleScalarResult() ?? 0);
+    }
+
+    private function getRecentOrders($store, int $limit = 10): array
+    {
+        $orders = $this->orderRepository->createQueryBuilder('o')
+            ->innerJoin('o.orderItems', 'oi')
+            ->where('oi.store = :store')
+            ->setParameter('store', $store)
+            ->orderBy('o.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        $result = [];
+        foreach ($orders as $order) {
+            // Count items for this store only
+            $itemsCount = 0;
+            foreach ($order->getOrderItems() as $item) {
+                if ($item->getStore() === $store) {
+                    $itemsCount++;
+                }
+            }
+
+            $result[] = [
+                'id' => (string) $order->getId(),
+                'reference' => $order->getReference(),
+                'status' => $order->getStatus(),
+                'totalAmount' => $order->getTotalAmount(),
+                'itemsCount' => $itemsCount,
+                'scheduledDate' => $order->getScheduledDate()?->format('Y-m-d H:i:s'),
+                'location' => $order->getLocation() ? [
+                    'address' => $order->getLocation()->getAddress(),
+                    'city' => $order->getLocation()->getCity(),
+                    'latitude' => $order->getLocation()->getLatitude(),
+                    'longitude' => $order->getLocation()->getLongitude(),
+                ] : null,
+                'owner' => [
+                    'id' => $order->getOwner()?->getId(),
+                    'email' => $order->getOwner()?->getEmail(),
+                    'firstName' => $order->getOwner()?->getFirstName(),
+                    'lastName' => $order->getOwner()?->getLastName(),
+                ]
+            ];
+        }
+
+        return $result;
     }
 }
 

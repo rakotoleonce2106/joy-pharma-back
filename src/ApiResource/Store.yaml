@@ -122,6 +122,16 @@ App\Entity\Store:
                 summary: 'Update store profile (Partial)'
                 description: 'Partially update the store profile for the authenticated store owner. Use Content-Type: application/ld+json when sending IRIs.'
 
+        get_store_statistics:
+            class: ApiPlatform\Metadata\Get
+            uriTemplate: '/store/statistics'
+            security: 'is_granted("ROLE_STORE")'
+            provider: App\State\Store\StoreStatisticsProvider
+            output: App\Dto\StoreStatistics
+            openapi:
+                summary: 'Get store dashboard statistics'
+                description: 'Get statistics including pending orders, recent orders, earnings, and low stock count for the authenticated store owner'
+
     normalizationContext:
         groups: ['id:read', 'store:read', 'location:read', 'user:store:read']
 
