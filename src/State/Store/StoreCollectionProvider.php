@@ -21,8 +21,8 @@ class StoreCollectionProvider implements ProviderInterface
 
         // Get all active stores
         return $this->storeRepository->createQueryBuilder('s')
-            ->where('s.status = :status')
-            ->setParameter('status', 1) // Assuming 1 is active status
+            ->where('s.active = :status')
+            ->setParameter('status', true) // Assuming true is active status
             ->orderBy('s.name', 'ASC')
             ->setMaxResults($limit)
             ->setFirstResult($offset)

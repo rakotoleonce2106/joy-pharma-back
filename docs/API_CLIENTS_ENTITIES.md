@@ -183,6 +183,15 @@ curl -X POST "https://votre-api.com/api/token/refresh" \
   }'
 ```
 
+**Réponse :**
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "def50200..."
+}
+```
+
 ## Utilisation du Token JWT
 
 Tous les endpoints protégés nécessitent un token JWT dans l'en-tête `Authorization` :

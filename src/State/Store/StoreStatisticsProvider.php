@@ -105,7 +105,7 @@ class StoreStatisticsProvider implements ProviderInterface
             ->where('sp.store = :store')
             ->andWhere('sp.stock <= :threshold')
             ->andWhere('sp.stock > 0')
-            ->andWhere('sp.status = 1') // Only active products
+            ->andWhere('sp.active = true') // Only active products
             ->setParameter('store', $store)
             ->setParameter('threshold', $threshold)
             ->getQuery()
