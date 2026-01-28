@@ -46,26 +46,60 @@ class EmailVerificationService
         $htmlBody = $this->getVerificationEmailTemplate($user, $code);
         $textBody = $this->getVerificationEmailTextTemplate($user, $code);
 
-        $result = $this->n8nService->sendEmail(
+        // Tentative d'envoi par Email
+        $emailResult = $this->n8nService->sendEmail(
             $user->getEmail(),
             'Vérifiez votre adresse email - Joy Pharma',
             $htmlBody,
             $textBody
         );
 
-        if ($result) {
-            $this->logger->info('Email de vérification envoyé', [
-                'user_id' => $user->getId(),
-                'email' => $user->getEmail()
-            ]);
-        } else {
-            $this->logger->error('Échec de l\'envoi de l\'email de vérification', [
-                'user_id' => $user->getId(),
-                'email' => $user->getEmail()
-            ]);
+        // Tentative d'envoi par SMS si le téléphone est renseigné
+        $smsResult = false;
+        if ($user->getPhone()) {
+            $smsResult = $this->sendVerificationSMS($user, $code);
         }
 
-        return $result;
+        if ($emailResult || $smsResult) {
+            $this->logger->info('Code de vérification envoyé', [
+                'user_id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'phone' => $user->getPhone(),
+                'email_sent' => $emailResult,
+                'sms_sent' => $smsResult
+            ]);
+            return true;
+        }
+
+        $this->logger->error('Échec de l\'envoi du code de vérification (Email et SMS)', [
+            'user_id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'phone' => $user->getPhone()
+        ]);
+
+        return false;
+    }
+
+    /**
+     * Envoie un SMS de vérification via n8n
+     */
+    public function sendVerificationSMS(User $user, ?string $code = null): bool
+    {
+        if (!$user->getPhone()) {
+            return false;
+        }
+
+        $code = $code ?? $user->getEmailVerificationCode();
+        if (!$code) {
+            $code = $this->generateVerificationCode();
+            $user->setEmailVerificationCode($code);
+            $user->setEmailVerificationCodeExpiresAt(new \DateTimeImmutable('+' . self::CODE_EXPIRY_MINUTES . ' minutes'));
+            $this->entityManager->flush();
+        }
+
+        $message = "Votre code de vérification Joy Pharma est : {$code}. Valable 15 minutes.";
+        
+        return $this->n8nService->sendSMS($user->getPhone(), $message);
     }
 
     /**
@@ -219,27 +253,53 @@ TEXT;
      */
     public function sendPasswordResetEmail(string $email, string $code): bool
     {
+        $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+
         $htmlBody = $this->getPasswordResetEmailTemplate($code);
         $textBody = $this->getPasswordResetEmailTextTemplate($code);
 
-        $result = $this->n8nService->sendEmail(
+        // Envoi Email
+        $emailResult = $this->n8nService->sendEmail(
             $email,
             'Code de réinitialisation - Joy Pharma',
             $htmlBody,
             $textBody
         );
 
-        if ($result) {
-            $this->logger->info('Email de réinitialisation envoyé', [
-                'email' => $email
-            ]);
-        } else {
-            $this->logger->error('Échec de l\'envoi de l\'email de réinitialisation', [
-                'email' => $email
-            ]);
+        // Envoi SMS si l'utilisateur existe et a un téléphone
+        $smsResult = false;
+        if ($user && $user->getPhone()) {
+            $smsResult = $this->sendPasswordResetSMS($user, $code);
         }
 
-        return $result;
+        if ($emailResult || $smsResult) {
+            $this->logger->info('Email/SMS de réinitialisation envoyé', [
+                'email' => $email,
+                'email_sent' => $emailResult,
+                'sms_sent' => $smsResult
+            ]);
+            return true;
+        }
+
+        $this->logger->error('Échec de l\'envoi de la réinitialisation (Email et SMS)', [
+            'email' => $email
+        ]);
+
+        return false;
+    }
+
+    /**
+     * Envoie un SMS de réinitialisation de mot de passe
+     */
+    public function sendPasswordResetSMS(User $user, string $code): bool
+    {
+        if (!$user->getPhone()) {
+            return false;
+        }
+
+        $message = "Code de réinitialisation Joy Pharma : {$code}. Ne le partagez pas.";
+        
+        return $this->n8nService->sendSMS($user->getPhone(), $message);
     }
 
     /**

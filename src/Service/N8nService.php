@@ -36,20 +36,29 @@ readonly class N8nService
         $timeout = $options['timeout'] ?? self::DEFAULT_TIMEOUT;
         $headers = $options['headers'] ?? [];
         
+        $auth = $this->getAuth();
+        
         try {
             $this->logger->info('Triggering n8n webhook', [
                 'url' => $url,
                 'webhook_path' => $webhookPath,
-                'data_keys' => array_keys($data)
+                'data_keys' => array_keys($data),
+                'has_auth' => $auth !== null
             ]);
 
-            $response = $this->httpClient->request('POST', $url, [
+            $requestOptions = [
                 'json' => $data,
                 'headers' => array_merge([
                     'Content-Type' => 'application/json',
                 ], $headers),
                 'timeout' => $timeout,
-            ]);
+            ];
+
+            if ($auth) {
+                $requestOptions['auth_basic'] = $auth;
+            }
+
+            $response = $this->httpClient->request('POST', $url, $requestOptions);
 
             $statusCode = $response->getStatusCode();
             $content = $response->getContent(false);
@@ -171,10 +180,32 @@ readonly class N8nService
      */
     private function getWebhookBaseUrl(): string
     {
-        $webhookUrl = $_ENV['N8N_WEBHOOK_URL'] ?? 'http://n8n:5678';
-        $webhookType = $_ENV['N8N_WEBHOOK_TYPE'] ?? 'webhook';
+        $webhookUrl = $_ENV['N8N_WEBHOOK_URL'] ?? $_SERVER['N8N_WEBHOOK_URL'] ?? 'http://n8n:5678';
+        $webhookType = $_ENV['N8N_WEBHOOK_TYPE'] ?? $_SERVER['N8N_WEBHOOK_TYPE'] ?? 'webhook';
+        
+        // Si l'URL contient déjà le type de webhook, on ne le rajoute pas
+        if (str_contains($webhookUrl, '/' . $webhookType)) {
+            return rtrim($webhookUrl, '/');
+        }
         
         return rtrim($webhookUrl, '/') . '/' . ltrim($webhookType, '/');
+    }
+
+    /**
+     * Récupère les identifiants d'authentification n8n
+     *
+     * @return array|null [user, password] ou null
+     */
+    private function getAuth(): ?array
+    {
+        $user = $_ENV['N8N_USER'] ?? $_SERVER['N8N_USER'] ?? null;
+        $password = $_ENV['N8N_PASSWORD'] ?? $_SERVER['N8N_PASSWORD'] ?? null;
+
+        if ($user && $password) {
+            return [$user, $password];
+        }
+
+        return null;
     }
 }
 
