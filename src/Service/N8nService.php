@@ -171,8 +171,10 @@ readonly class N8nService
      */
     private function getWebhookBaseUrl(): string
     {
-        $webhookUrl = $_ENV['N8N_WEBHOOK_URL'] ?? 'http://n8n:5678/';
-        return rtrim($webhookUrl, '/') . '/webhook';
+        $webhookUrl = $_ENV['N8N_WEBHOOK_URL'] ?? 'http://n8n:5678';
+        $webhookType = $_ENV['N8N_WEBHOOK_TYPE'] ?? 'webhook';
+        
+        return rtrim($webhookUrl, '/') . '/' . ltrim($webhookType, '/');
     }
 }
 
