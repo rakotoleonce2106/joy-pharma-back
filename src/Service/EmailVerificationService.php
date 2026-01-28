@@ -46,7 +46,6 @@ class EmailVerificationService
         $htmlBody = $this->getVerificationEmailTemplate($user, $code);
         $textBody = $this->getVerificationEmailTextTemplate($user, $code);
 
-        dd($htmlBody, $textBody, $user->getEmail(), $code);
         // Tentative d'envoi par Email
         $emailResult = $this->n8nService->sendEmail(
             $user->getEmail(),
@@ -55,9 +54,10 @@ class EmailVerificationService
             $textBody
         );
 
-        dd($emailResult);
-
-        $this->entityManager->flush();
+        if ($emailResult) {
+            $this->entityManager->flush();
+            return true;
+        }
 
         return false;
     }
