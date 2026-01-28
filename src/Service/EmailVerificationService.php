@@ -59,7 +59,7 @@ class EmailVerificationService
             return true;
         }
 
-        return false;
+        throw new \Exception('Échec de l\'envoi du code de vérification (Email)');
     }
 
     /**
