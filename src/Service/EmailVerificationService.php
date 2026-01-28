@@ -40,12 +40,13 @@ class EmailVerificationService
         $user->setEmailVerificationCode($code);
         $user->setEmailVerificationCodeExpiresAt($expiresAt);
 
-        $this->entityManager->flush();
+
 
         // Prépare le contenu HTML de l'email
         $htmlBody = $this->getVerificationEmailTemplate($user, $code);
         $textBody = $this->getVerificationEmailTextTemplate($user, $code);
 
+        dd($htmlBody, $textBody, $user->getEmail(), $code);
         // Tentative d'envoi par Email
         $emailResult = $this->n8nService->sendEmail(
             $user->getEmail(),
@@ -56,21 +57,7 @@ class EmailVerificationService
 
         dd($emailResult);
 
-        if ($emailResult) {
-            $this->logger->info('Code de vérification envoyé', [
-                'user_id' => $user->getId(),
-                'email' => $user->getEmail(),
-                'phone' => $user->getPhone(),
-                'email_sent' => $emailResult,
-            ]);
-            return true;
-        }
-
-        $this->logger->error('Échec de l\'envoi du code de vérification (Email et SMS)', [
-            'user_id' => $user->getId(),
-            'email' => $user->getEmail(),
-            'phone' => $user->getPhone()
-        ]);
+        $this->entityManager->flush();
 
         return false;
     }
