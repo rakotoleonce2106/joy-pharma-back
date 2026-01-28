@@ -54,19 +54,14 @@ class EmailVerificationService
             $textBody
         );
 
-        // Tentative d'envoi par SMS si le téléphone est renseigné
-        $smsResult = false;
-        if ($user->getPhone()) {
-            $smsResult = $this->sendVerificationSMS($user, $code);
-        }
+        dd($emailResult);
 
-        if ($emailResult || $smsResult) {
+        if ($emailResult) {
             $this->logger->info('Code de vérification envoyé', [
                 'user_id' => $user->getId(),
                 'email' => $user->getEmail(),
                 'phone' => $user->getPhone(),
                 'email_sent' => $emailResult,
-                'sms_sent' => $smsResult
             ]);
             return true;
         }
