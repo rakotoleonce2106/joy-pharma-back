@@ -16,8 +16,9 @@ readonly class ResetPasswordService
     ) {
     }
 
-    public function createResetPassword(string $email,string $code): void
+    public function createResetPassword(string $email): string
     {
+        $code = (string) random_int(100000, 999999);
         $resetRequest = new ResetPassword();
 
         $resetRequest->setEmail($email);
@@ -26,6 +27,8 @@ readonly class ResetPasswordService
         $resetRequest->setIsValid(true);
         $this->manager->persist($resetRequest);
         $this->manager->flush();
+
+        return $code;
     }
 
 

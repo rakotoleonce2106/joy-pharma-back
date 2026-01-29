@@ -35,11 +35,10 @@ class SendResetEmailProcessor implements ProcessorInterface
             $this->resetPasswordService->invalidateResetRequest($existingRequest);
         }
         
-        $code = random_int(100000, 999999); // Generate a 6-digit code
-        $this->resetPasswordService->createResetPassword($data->email, (string)$code);
-
+        $code = $this->resetPasswordService->createResetPassword($data->email);
+        
         // Send email via n8n
-        $this->emailVerificationService->sendPasswordResetEmail($data->email, (string)$code);
+        $this->emailVerificationService->sendPasswordResetEmail($data->email, $code);
 
         return [
             'success' => true,

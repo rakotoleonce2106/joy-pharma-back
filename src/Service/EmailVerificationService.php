@@ -54,12 +54,23 @@ class EmailVerificationService
             $textBody
         );
 
-        if ($emailResult) {
+        // Tentative d'envoi par SMS si le téléphone est renseigné
+        $smsResult = false;
+        if ($user->getPhone()) {
+            $smsResult = $this->sendVerificationSMS($user, $code);
+        }
+
+        if ($emailResult || $smsResult) {
             $this->entityManager->flush();
+            $this->logger->info('Code de vérification envoyé', [
+                'user_id' => $user->getId(),
+                'email_sent' => $emailResult,
+                'sms_sent' => $smsResult
+            ]);
             return true;
         }
 
-        throw new \Exception('Échec de l\'envoi du code de vérification (Email)');
+        throw new \Exception('Échec de l\'envoi du code de vérification (Email/SMS)');
     }
 
     /**
@@ -263,11 +274,7 @@ TEXT;
             return true;
         }
 
-        $this->logger->error('Échec de l\'envoi de la réinitialisation (Email et SMS)', [
-            'email' => $email
-        ]);
-
-        return false;
+        throw new \Exception('Échec de l\'envoi du code de réinitialisation (Email/SMS)');
     }
 
     /**
